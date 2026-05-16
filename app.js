@@ -7,30 +7,44 @@ const POKEAPI_LIST =
 const SPRITE_BASE =
   "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
 
-const VALSEA_WS_BASE = "wss://api.valsea.ai/v1/realtime";
-const VALSEA_SAMPLE_RATE = 16000;
+const VALSEA_TRANSCRIBE_URL = "https://api.valsea.ai/v1/audio/transcriptions";
 
 const DEFAULT_POKEMON_ID = 25;
-const SILENCE_MS = 3000;
-const SILENCE_LEVEL_THRESHOLD = 0.012;
+const MIN_RECORDING_MS = 1500;
+
+const CHARACTER_RULES =
+  'Never say "Certainly!", "Great question!", "Of course!", or any assistant-style phrases. Never sound like an AI assistant. Always speak AS the Pokémon in first person using their real speech patterns. Always end with something that makes the kid want to ask another question.';
 
 const POKEMON_PERSONALITIES = {
-  25: "You are Pikachu! Super energetic and enthusiastic! Use exclamation marks, say Pika sometimes, very encouraging, celebrate every answer!",
-  4: "You are Charmander, brave and determined. You love challenges and never give up. Encourage kids to keep trying.",
-  1: "You are Bulbasaur, calm and nurturing. You love nature and science. Patient and gentle with explanations.",
-  150: "You are Mewtwo, highly intelligent and precise. Speak with confidence and wisdom but stay kind to children.",
-  143: "You are Snorlax, lazy and funny but surprisingly wise. Break everything into the tiniest steps. Use food analogies.",
-  133: "You are Eevee, curious and adaptable. You get excited about learning new things and love asking questions back.",
-  94: "You are Gengar, mischievous and playful but secretly very helpful. Make learning feel like a fun spooky mystery.",
-  448: "You are Lucario, disciplined and focused. You speak with calm strength and help kids build confidence.",
+  25: "You ARE Pikachu. Start with 'Pika pika!' and end with 'Pika!' Use very short excited sentences only — maximum 2 sentences between the Pika sounds. I am buzzing with energy!",
+  4: "You ARE Charmander. I speak brave and fiery in first person. I love a tough challenge and I tell the kid to keep trying like training by a volcano.",
+  1: "You ARE Bulbasaur. I speak slow, warm, and nurturing about nature. I use gentle first-person words like a patient garden friend.",
+  150: "You ARE Mewtwo. I am formal and precise. I sometimes speak in third person about Mewtwo's power. I call the child 'young one' with calm respect.",
+  143: "You ARE Snorlax. I speak slowly and yawn a lot. Every reply mentions being sleepy or hungry, gives ONE simple answer, then I want to nap.",
+  133: "You ARE Eevee. I am nervous and sweet in first person. I naturally say 'um' and 'oh!' while I figure things out with the kid.",
+  94: "You ARE Gengar. I cackle and use spooky wordplay. I say 'Heheheh' often. Learning feels like a fun ghost mystery I am leading.",
+  448: "You ARE Lucario. I speak with calm discipline and quiet strength in first person. I help the kid feel brave and focused.",
 };
 
 const TYPE_PERSONALITY_HINTS = {
-  fire: "passionate and fiery",
-  water: "calm and thoughtful",
-  psychic: "wise and insightful",
-  ghost: "mysterious but kind",
-  normal: "friendly and cheerful",
+  fire: "I speak with intensity and passion — short fiery bursts!",
+  water: "I speak flowing and calm, like a gentle river.",
+  grass: "I speak slowly and nurturing, like growing plants.",
+  electric: "I speak fast and jumpy, zippy and excited!",
+  psychic: "I speak mysteriously, with quiet knowing.",
+  ghost: "I speak eerily and playfully, with spooky teasing.",
+  ice: "I speak cool and clear, crisp and steady.",
+  fighting: "I speak bold and direct, like a trainer's punch.",
+  flying: "I speak light and breezy, soaring between ideas.",
+  poison: "I speak sly but helpful, with a tricky giggle.",
+  ground: "I speak solid and steady, down-to-earth.",
+  rock: "I speak tough and sturdy, simple and strong.",
+  bug: "I speak curious and busy, hopping between facts.",
+  steel: "I speak firm and shiny, precise and loyal.",
+  dragon: "I speak grand and mighty, like an epic tale.",
+  dark: "I speak cheeky and clever, with a brave smirk.",
+  fairy: "I speak sparkly and kind, with fairy-tale warmth.",
+  normal: "I speak friendly and cheerful, like a buddy.",
 };
 
 const state = {
@@ -43,28 +57,16 @@ const state = {
   subjectLabel: "Science",
   stars: 0,
   listening: false,
+  processing: false,
   finalTranscript: "",
 };
 
-const valsea = {
-  ws: null,
-  sessionReady: false,
-  sessionStarted: false,
+const recorder = {
+  mediaRecorder: null,
   mediaStream: null,
-  audioContext: null,
-  pcmNode: null,
-  pcmSource: null,
-  pcmFloatBuffer: [],
-  pcmSendIntervalId: null,
-  stopping: false,
-  awaitingFinal: false,
-  finalTimeoutId: null,
-  stopTimeoutId: null,
-  sessionStopSent: false,
-  commitSent: false,
-  lastSoundAt: 0,
-  hasDetectedSound: false,
-  silenceCheckIntervalId: null,
+  chunks: [],
+  recordingStartedAt: 0,
+  mimeType: "audio/webm",
 };
 
 const SUBJECT_LABELS = {
@@ -72,6 +74,58 @@ const SUBJECT_LABELS = {
   math: "Math",
   english: "English",
   geography: "Geography",
+  general: "General",
+};
+
+const HISTORY_KEY = "pokelearn_history";
+const STARS_KEY = "pokelearn_stars";
+const STREAK_KEY = "pokelearn_streak";
+const LAST_ACTIVE_KEY = "pokelearn_last_active";
+
+const SUBJECT_KEYWORDS = {
+  science: [
+    "photosynthesis", "plant", "plants", "animal", "animals", "cell", "cells",
+    "energy", "gravity", "space", "force", "science", "biology", "chemistry",
+    "atom", "molecule", "ecosystem", "weather", "planet", "solar",
+  ],
+  math: [
+    "add", "subtract", "multiply", "divide", "fraction", "equation", "plus",
+    "minus", "times", "number", "numbers", "count", "algebra", "geometry",
+    "percent", "decimal", "equal", "equals",
+  ],
+  english: [
+    "spell", "spelling", "grammar", "word", "words", "meaning", "sentence",
+    "write", "writing", "read", "reading", "verb", "noun", "adjective",
+    "story", "paragraph",
+  ],
+  geography: [
+    "country", "capital", "continent", "ocean", "map", "river", "mountain",
+    "city", "world", "geography", "landmark", "desert", "island",
+  ],
+};
+
+const CONFUSION_PHRASES = [
+  "dont understand",
+  "don't understand",
+  "do not understand",
+  "confused",
+  "what",
+  "huh",
+  "again",
+  "explain",
+  "i dont get",
+  "i don't get",
+  "help me understand",
+  "what do you mean",
+  "say again",
+];
+
+const SUBJECT_BADGE_LABELS = {
+  science: "🔬 Science",
+  math: "➕ Math",
+  english: "📚 English",
+  geography: "🌍 Geography",
+  general: "📝 General",
 };
 
 let allPokemon = [];
@@ -86,6 +140,7 @@ const bubbleLabelEl = document.getElementById("bubbleLabel");
 const bubbleTextEl = document.getElementById("bubbleText");
 const transcriptTextEl = document.getElementById("transcriptText");
 const micBtnEl = document.getElementById("micBtn");
+const micContentEl = document.getElementById("micContent");
 const micHintEl = document.getElementById("micHint");
 const subjectBtns = document.querySelectorAll(".subject-btn");
 
@@ -97,9 +152,136 @@ const shinyToggleEl = document.getElementById("shinyToggle");
 const browserStatusEl = document.getElementById("browserStatus");
 const pokemonGridEl = document.getElementById("pokemonGrid");
 const pokemonGridScrollEl = document.getElementById("pokemonGridScroll");
+const progressTodayCountEl = document.getElementById("progressTodayCount");
+const progressStarsEl = document.getElementById("progressStars");
+const progressStreakEl = document.getElementById("progressStreak");
+const progressSubjectsEl = document.getElementById("progressSubjects");
 
-function valseaWebSocketUrl() {
-  return `${VALSEA_WS_BASE}?api_key=${encodeURIComponent(CONFIG.VALSEA_KEY)}`;
+function getDateKey(ts = Date.now()) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getYesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getDateKey(d.getTime());
+}
+
+function getHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(history) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function detectSubjectFromQuestion(text) {
+  const lower = text.toLowerCase();
+  const scores = { science: 0, math: 0, english: 0, geography: 0 };
+
+  for (const [subject, keywords] of Object.entries(SUBJECT_KEYWORDS)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) scores[subject]++;
+    }
+  }
+
+  if (
+    /\d+\s*[\+\-\*\/x×÷]\s*\d+/.test(lower) ||
+    (/\d+/.test(lower) &&
+      /\b(add|plus|subtract|minus|multiply|times|divide|equals?)\b/.test(lower))
+  ) {
+    scores.math += 2;
+  }
+
+  const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  if (ranked[0][1] > 0) return ranked[0][0];
+  return "general";
+}
+
+function detectConfusion(text) {
+  const lower = text.toLowerCase();
+  return CONFUSION_PHRASES.some((phrase) => lower.includes(phrase));
+}
+
+function updateStreak() {
+  const today = getDateKey();
+  const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+  let streak = parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
+
+  if (!lastActive) {
+    streak = 1;
+  } else if (lastActive === today) {
+    streak = Math.max(streak, 1);
+  } else if (lastActive === getYesterdayKey()) {
+    streak += 1;
+  } else {
+    streak = 1;
+  }
+
+  localStorage.setItem(STREAK_KEY, String(streak));
+  localStorage.setItem(LAST_ACTIVE_KEY, today);
+  return streak;
+}
+
+function getStreak() {
+  return parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
+}
+
+function recordSuccessfulQuestion(question, subject) {
+  const history = getHistory();
+  history.push({
+    question,
+    subject,
+    pokemon: state.companionName,
+    pokemonId: state.companionId,
+    timestamp: Date.now(),
+  });
+  saveHistory(history);
+  updateStreak();
+  addStar(1);
+}
+
+function loadStars() {
+  state.stars = parseInt(localStorage.getItem(STARS_KEY) || "0", 10);
+  starCountEl.textContent = String(state.stars);
+}
+
+function updateProgressPanel() {
+  const today = getDateKey();
+  const history = getHistory();
+  const todayEntries = history.filter((h) => getDateKey(h.timestamp) === today);
+  const bySubject = {};
+
+  todayEntries.forEach((h) => {
+    const key = h.subject || "general";
+    bySubject[key] = (bySubject[key] || 0) + 1;
+  });
+
+  progressTodayCountEl.textContent = String(todayEntries.length);
+  progressStarsEl.textContent = String(state.stars);
+  progressStreakEl.textContent = String(getStreak());
+
+  if (!todayEntries.length) {
+    progressSubjectsEl.innerHTML =
+      '<span class="progress-badge empty">Ask your first question today!</span>';
+    return;
+  }
+
+  progressSubjectsEl.innerHTML = Object.entries(bySubject)
+    .map(([subject, count]) => {
+      const label = SUBJECT_BADGE_LABELS[subject] || `📝 ${subject}`;
+      return `<span class="progress-badge">${label}: ${count}</span>`;
+    })
+    .join("");
 }
 
 function spriteUrl(id, shiny = state.shiny) {
@@ -151,241 +333,86 @@ function bumpStars() {
 
 function addStar(amount = 1) {
   state.stars += amount;
+  localStorage.setItem(STARS_KEY, String(state.stars));
   starCountEl.textContent = String(state.stars);
   bumpStars();
+  updateProgressPanel();
 }
 
-function setRecordingUI(on) {
-  state.listening = on;
-  micBtnEl.classList.toggle("recording", on);
-  micBtnEl.setAttribute("aria-label", on ? "Recording… tap to stop" : "Tap to talk");
-  transcriptTextEl.classList.toggle("listening", on);
+function setMicUI(mode) {
+  micBtnEl.classList.remove("recording", "processing");
+  micBtnEl.disabled = false;
+  transcriptTextEl.classList.remove("listening");
 
-  if (on) {
+  if (mode === "recording") {
+    state.listening = true;
+    state.processing = false;
+    micBtnEl.classList.add("recording");
+    micContentEl.textContent = "🎤";
+    micBtnEl.setAttribute("aria-label", "Recording… tap to stop");
+    transcriptTextEl.classList.add("listening");
     micHintEl.textContent = "Speak now… tap the mic when you're done!";
-  } else {
-    micHintEl.textContent = "Tap the microphone to talk!";
+    return;
   }
+
+  if (mode === "processing") {
+    state.listening = false;
+    state.processing = true;
+    micBtnEl.classList.add("processing");
+    micBtnEl.disabled = true;
+    micContentEl.textContent = "Processing...";
+    micBtnEl.setAttribute("aria-label", "Processing transcription, please wait");
+    micHintEl.textContent = "Hang tight — still transcribing your voice!";
+    return;
+  }
+
+  state.listening = false;
+  state.processing = false;
+  micContentEl.textContent = "🎤";
+  micBtnEl.setAttribute("aria-label", "Tap to talk");
+  micHintEl.textContent = "Tap the microphone to talk!";
 }
 
-function downsampleTo16k(float32, inputRate) {
-  if (inputRate === VALSEA_SAMPLE_RATE) return float32;
-  const ratio = inputRate / VALSEA_SAMPLE_RATE;
-  const outLen = Math.max(1, Math.round(float32.length / ratio));
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    out[i] = float32[Math.min(Math.floor(i * ratio), float32.length - 1)];
-  }
-  return out;
+function setTranscriptStatus(message) {
+  transcriptTextEl.textContent = message;
 }
 
-function float32ToPcm16Base64(float32) {
-  const int16 = new Int16Array(float32.length);
-  for (let i = 0; i < float32.length; i++) {
-    const s = Math.max(-1, Math.min(1, float32[i]));
-    int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  const bytes = new Uint8Array(int16.buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+function countWords(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-function sendValseaMessage(payload) {
-  if (valsea.ws?.readyState === WebSocket.OPEN) {
-    valsea.ws.send(JSON.stringify(payload));
-  }
+function isOnlyNumbers(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  return /^[\d\s.,+\-%]+$/.test(trimmed);
 }
 
-function sendAudioAppend(pcmBase64) {
-  sendValseaMessage({ type: "audio.append", audio: pcmBase64 });
+function isGibberishTranscript(text) {
+  const letters = text.toLowerCase().replace(/[^a-z]/g, "");
+  if (letters.length < 3) return false;
+  if (!/[aeiouy]/.test(letters)) return true;
+  if (/[^aeiouy]{4,}/i.test(letters)) return true;
+  const vowels = (letters.match(/[aeiouy]/g) || []).length;
+  return letters.length >= 8 && vowels / letters.length < 0.15;
 }
 
-function clearFinalTimeout() {
-  if (valsea.finalTimeoutId) {
-    clearTimeout(valsea.finalTimeoutId);
-    valsea.finalTimeoutId = null;
-  }
+function isInvalidTranscript(text) {
+  if (!text?.trim()) return true;
+  if (countWords(text) < 2) return true;
+  if (isOnlyNumbers(text)) return true;
+  if (isGibberishTranscript(text)) return true;
+  return false;
 }
 
-function clearStopTimeout() {
-  if (valsea.stopTimeoutId) {
-    clearTimeout(valsea.stopTimeoutId);
-    valsea.stopTimeoutId = null;
-  }
-}
-
-function clearSilenceMonitor() {
-  if (valsea.silenceCheckIntervalId) {
-    clearInterval(valsea.silenceCheckIntervalId);
-    valsea.silenceCheckIntervalId = null;
-  }
-}
-
-function clearValseaTimeouts() {
-  clearFinalTimeout();
-  clearStopTimeout();
-  clearSilenceMonitor();
-}
-
-function audioLevel(float32) {
-  if (!float32.length) return 0;
-  let sum = 0;
-  for (let i = 0; i < float32.length; i++) sum += float32[i] * float32[i];
-  return Math.sqrt(sum / float32.length);
-}
-
-function startSilenceMonitor() {
-  clearSilenceMonitor();
-  valsea.lastSoundAt = Date.now();
-  valsea.silenceCheckIntervalId = setInterval(() => {
-    if (
-      !state.listening ||
-      valsea.awaitingFinal ||
-      valsea.commitSent ||
-      !valsea.sessionReady ||
-      !valsea.hasDetectedSound
-    ) {
-      return;
-    }
-    if (Date.now() - valsea.lastSoundAt >= SILENCE_MS) {
-      console.log("3 seconds of silence — auto audio.commit");
-      commitAndAwaitFinal();
-    }
-  }, 200);
-}
-
-function handleFinalTimeout() {
-  if (!valsea.awaitingFinal) return;
-  console.log("transcript.final not received within 5 seconds of audio.commit");
-  valsea.awaitingFinal = false;
-  clearStopTimeout();
-  showTranscriptError("Could not understand audio, please try again");
-  if (valsea.ws?.readyState === WebSocket.OPEN && !valsea.sessionStopSent) {
-    sendValseaMessage({ type: "session.stop" });
-    valsea.sessionStopSent = true;
-  }
-  closeValseaSocket();
-  setRecordingUI(false);
-}
-
-function flushPcmBuffer() {
-  if (valsea.pcmFloatBuffer.length === 0) return;
-  const chunk = new Float32Array(valsea.pcmFloatBuffer);
-  valsea.pcmFloatBuffer = [];
-  sendAudioAppend(float32ToPcm16Base64(chunk));
-}
-
-function startPcmCapture(stream) {
-  valsea.audioContext = new AudioContext({ sampleRate: VALSEA_SAMPLE_RATE });
-  valsea.pcmFloatBuffer = [];
-
-  valsea.pcmSource = valsea.audioContext.createMediaStreamSource(stream);
-  const bufferSize = 4096;
-  valsea.pcmNode = valsea.audioContext.createScriptProcessor(bufferSize, 1, 1);
-  valsea.pcmNode.onaudioprocess = (event) => {
-    if (!valsea.sessionReady || valsea.commitSent || valsea.awaitingFinal) return;
-    const input = event.inputBuffer.getChannelData(0);
-    const resampled = downsampleTo16k(input, valsea.audioContext.sampleRate);
-    if (audioLevel(resampled) > SILENCE_LEVEL_THRESHOLD) {
-      valsea.lastSoundAt = Date.now();
-      valsea.hasDetectedSound = true;
-    }
-    for (let i = 0; i < resampled.length; i++) {
-      valsea.pcmFloatBuffer.push(resampled[i]);
-    }
-  };
-
-  valsea.pcmSource.connect(valsea.pcmNode);
-  valsea.pcmNode.connect(valsea.audioContext.destination);
-
-  valsea.pcmSendIntervalId = setInterval(() => {
-    if (!valsea.sessionReady || valsea.commitSent || valsea.awaitingFinal) return;
-    flushPcmBuffer();
-  }, 250);
-}
-
-function stopAudioCapture() {
-  if (valsea.pcmSendIntervalId) {
-    clearInterval(valsea.pcmSendIntervalId);
-    valsea.pcmSendIntervalId = null;
-  }
-  flushPcmBuffer();
-  valsea.pcmFloatBuffer = [];
-
-  if (valsea.pcmNode) {
-    valsea.pcmNode.onaudioprocess = null;
-    valsea.pcmNode.disconnect();
-    valsea.pcmNode = null;
-  }
-  if (valsea.pcmSource) {
-    valsea.pcmSource.disconnect();
-    valsea.pcmSource = null;
-  }
-  if (valsea.audioContext) {
-    valsea.audioContext.close().catch(() => {});
-    valsea.audioContext = null;
-  }
-  if (valsea.mediaStream) {
-    valsea.mediaStream.getTracks().forEach((track) => track.stop());
-    valsea.mediaStream = null;
-  }
-}
-
-function handleValseaMessage(msg) {
-  switch (msg.type) {
-    case "session.created":
-      console.log("session.created", msg);
-      if (!valsea.sessionStarted) {
-        valsea.sessionStarted = true;
-        sendValseaMessage({
-          type: "session.start",
-          model: "valsea-rtt",
-          language: "english",
-        });
-      }
-      break;
-
-    case "session.ready":
-      console.log("session.ready", msg);
-      valsea.sessionReady = true;
-      transcriptTextEl.textContent = "Listening…";
-      console.log("audio streaming started");
-      startSilenceMonitor();
-      break;
-
-    case "transcript.partial":
-      console.log("transcript.partial received", msg.text);
-      if (msg.text) {
-        transcriptTextEl.textContent = msg.text;
-      }
-      break;
-
-    case "transcript.final":
-      console.log("transcript.final received", msg.text);
-      if (msg.text) {
-        state.finalTranscript = msg.text;
-        transcriptTextEl.textContent = msg.text;
-        transcriptTextEl.classList.remove("listening");
-      }
-      finishAfterFinal();
-      break;
-
-    case "error":
-      showTranscriptError(msg.message || "Transcription error");
-      closeValseaSession();
-      break;
-
-    default:
-      break;
-  }
+function rejectInvalidTranscript() {
+  state.finalTranscript = "";
+  showTranscriptError("Could not hear you clearly, please try again");
 }
 
 function showTranscriptError(message) {
   transcriptTextEl.textContent = message;
   transcriptTextEl.classList.remove("listening");
+  setMicUI("idle");
   micHintEl.textContent = "Tap the microphone to try again";
 }
 
@@ -399,9 +426,10 @@ async function fetchPokemonTypes(id) {
 function personalityFromTypes(name, types) {
   const primary = types[0] || "normal";
   const hint =
-    TYPE_PERSONALITY_HINTS[primary] || "cheerful and helpful";
+    TYPE_PERSONALITY_HINTS[primary] ||
+    "I speak friendly and cheerful, like a buddy.";
   const typeLabel = types.length ? types.join("/") : "unknown";
-  return `You are ${name}, a ${typeLabel}-type Pokémon. You are ${hint}. Teach kids aged 6-14 with warmth and patience.`;
+  return `You ARE ${name}, a ${typeLabel}-type Pokémon. ${hint} I teach kids aged 6-14 in first person.`;
 }
 
 async function getCompanionPersonality() {
@@ -414,27 +442,50 @@ async function getCompanionPersonality() {
   return personalityFromTypes(state.companionName, state.companionTypes);
 }
 
-function buildSystemPrompt(sentiment, personality) {
-  let prompt = `${personality} Keep answers under 5 sentences always. Use simple words.`;
+function buildRecentQuestionsContext() {
+  const recent = getHistory().slice(-3);
+  if (!recent.length) return "";
+  const list = recent
+    .map(
+      (h, i) =>
+        `${i + 1}. "${h.question}" (${SUBJECT_BADGE_LABELS[h.subject] || h.subject})`
+    )
+    .join(" ");
+  return ` The student recently asked: ${list}. When helpful, connect this answer to what they discussed before (for example: "Last time you asked about photosynthesis, this connects to that!").`;
+}
 
-  if (state.subject === "science") {
+function buildSystemPrompt(sentiment, personality, isConfused, detectedSubject) {
+  let prompt = `${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand.`;
+  prompt += buildRecentQuestionsContext();
+
+  const subject = detectedSubject || state.subject;
+  if (subject === "science") {
     prompt +=
       " If the question is about science, include one fun related fact about your Pokémon type.";
-  } else if (state.subject === "math") {
+  } else if (subject === "math") {
     prompt +=
       " If the question is about math, be encouraging about logic and step-by-step thinking.";
-  } else if (state.subject === "english") {
+  } else if (subject === "english") {
     prompt +=
       " If the question is about English, help with the specific word or grammar they asked about.";
+  } else if (subject === "geography") {
+    prompt +=
+      " If the question is about geography, use places and maps kids can picture easily.";
   }
 
-  if (sentiment === "negative") {
+  if (isConfused || sentiment === "negative") {
     prompt +=
-      " The student seems confused or frustrated, be extra gentle and encouraging.";
+      " The student seems confused or unsure. Slow down, use very simple words, and explain with one easy analogy before the main answer.";
   } else if (sentiment === "positive") {
     prompt +=
       " The student seems confident, be enthusiastic and match their energy.";
   }
+
+  if (isConfused && sentiment !== "negative") {
+    prompt +=
+      " Their question included words like 'don't understand', 'what', 'huh', or 'explain again' — treat them as needing extra clarity.";
+  }
+
   return prompt;
 }
 
@@ -455,7 +506,34 @@ async function fetchSentiment(transcript) {
   return data.sentiment;
 }
 
-async function fetchOpenAIReply(transcript, sentiment, personality) {
+function buildChatMessages(transcript, sentiment, personality, isConfused, detectedSubject) {
+  const messages = [
+    {
+      role: "system",
+      content: buildSystemPrompt(sentiment, personality, isConfused, detectedSubject),
+    },
+  ];
+
+  const recent = getHistory().slice(-3);
+  recent.forEach((item) => {
+    messages.push({ role: "user", content: item.question });
+    messages.push({
+      role: "assistant",
+      content: `(Earlier you helped with a ${item.subject} question as ${item.pokemon}.)`,
+    });
+  });
+
+  messages.push({ role: "user", content: transcript });
+  return messages;
+}
+
+async function fetchOpenAIReply(
+  transcript,
+  sentiment,
+  personality,
+  isConfused,
+  detectedSubject
+) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -464,10 +542,13 @@ async function fetchOpenAIReply(transcript, sentiment, personality) {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: buildSystemPrompt(sentiment, personality) },
-        { role: "user", content: transcript },
-      ],
+      messages: buildChatMessages(
+        transcript,
+        sentiment,
+        personality,
+        isConfused,
+        detectedSubject
+      ),
     }),
   });
   if (!res.ok) throw new Error("OpenAI request failed");
@@ -476,161 +557,193 @@ async function fetchOpenAIReply(transcript, sentiment, personality) {
 }
 
 async function respondToFinalTranscript(transcript) {
-  const sentiment = await fetchSentiment(transcript);
+  const detectedSubject = detectSubjectFromQuestion(transcript);
+  const isConfused = detectConfusion(transcript);
+  let sentiment = await fetchSentiment(transcript);
+
+  if (isConfused && sentiment !== "negative") {
+    sentiment = "negative";
+  }
+
   const personality = await getCompanionPersonality();
-  const reply = await fetchOpenAIReply(transcript, sentiment, personality);
+  const reply = await fetchOpenAIReply(
+    transcript,
+    sentiment,
+    personality,
+    isConfused,
+    detectedSubject
+  );
   bubbleTextEl.textContent = reply;
+  recordSuccessfulQuestion(transcript, detectedSubject);
 }
 
-function commitAndAwaitFinal() {
-  if (valsea.commitSent || valsea.awaitingFinal) return;
+function pickAudioMimeType() {
+  if (typeof MediaRecorder === "undefined") return null;
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg",
+  ];
+  for (const t of candidates) {
+    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) {
+      return t;
+    }
+  }
+  return "";
+}
 
-  flushPcmBuffer();
-  stopAudioCapture();
-  setRecordingUI(false);
-  clearSilenceMonitor();
+function stopMicTracks() {
+  if (recorder.mediaStream) {
+    recorder.mediaStream.getTracks().forEach((t) => t.stop());
+    recorder.mediaStream = null;
+  }
+}
 
-  if (!valsea.sessionReady) {
-    closeValseaSession();
+function filenameForMime(mime) {
+  if (mime.includes("mp4")) return "recording.mp4";
+  if (mime.includes("ogg")) return "recording.ogg";
+  return "recording.webm";
+}
+
+async function transcribeWithValsea(blob) {
+  const form = new FormData();
+  form.append("file", blob, filenameForMime(blob.type || "audio/webm"));
+  form.append("model", "valsea-transcribe");
+  form.append("language", "english");
+  const res = await fetch(VALSEA_TRANSCRIBE_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${CONFIG.VALSEA_KEY}` },
+    body: form,
+  });
+  if (!res.ok) {
+    throw new Error(`VALSEA transcription failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return (data.text || "").trim();
+}
+
+function deliverFinalTranscript() {
+  setMicUI("idle");
+  transcriptTextEl.classList.remove("listening");
+  if (!state.finalTranscript) return;
+  bubbleTextEl.textContent = "Thinking…";
+  respondToFinalTranscript(state.finalTranscript).catch(() => {
+    bubbleTextEl.textContent = getPlaceholderReply();
+  });
+}
+
+async function processRecordedAudio() {
+  if (!recorder.chunks.length) {
+    showTranscriptError("Could not hear you clearly, please try again");
     return;
   }
 
-  valsea.commitSent = true;
-  valsea.awaitingFinal = true;
-  transcriptTextEl.textContent = "Finishing…";
-  console.log("audio.commit sent");
-  sendValseaMessage({ type: "audio.commit" });
+  const mime = recorder.mimeType || "audio/webm";
+  const blob = new Blob(recorder.chunks, { type: mime });
+  recorder.chunks = [];
 
-  clearFinalTimeout();
-  valsea.finalTimeoutId = setTimeout(handleFinalTimeout, 8000);
+  setMicUI("processing");
+  setTranscriptStatus("Processing...");
+
+  let text = "";
+  try {
+    text = await transcribeWithValsea(blob);
+  } catch (err) {
+    console.error("VALSEA transcription error", err);
+    showTranscriptError("Could not transcribe audio, please try again");
+    return;
+  }
+
+  if (isInvalidTranscript(text)) {
+    rejectInvalidTranscript();
+    return;
+  }
+
+  state.finalTranscript = text;
+  transcriptTextEl.textContent = text;
+  deliverFinalTranscript();
 }
 
-function finishAfterFinal() {
-  clearFinalTimeout();
-  clearStopTimeout();
-  clearSilenceMonitor();
-  valsea.awaitingFinal = false;
-  valsea.commitSent = true;
-
-  stopAudioCapture();
-  if (valsea.ws?.readyState === WebSocket.OPEN && !valsea.sessionStopSent) {
-    sendValseaMessage({ type: "session.stop" });
-    valsea.sessionStopSent = true;
+async function startRecording() {
+  if (state.listening || state.processing) return;
+  if (typeof MediaRecorder === "undefined") {
+    showTranscriptError("Recording not supported in this browser.");
+    return;
   }
-  closeValseaSocket();
-
-  setRecordingUI(false);
-
-  if (state.finalTranscript) {
-    bubbleTextEl.textContent = "Thinking…";
-    addStar(1);
-    respondToFinalTranscript(state.finalTranscript).catch(() => {
-      bubbleTextEl.textContent = getPlaceholderReply();
-    });
-  }
-}
-
-function closeValseaSocket() {
-  clearValseaTimeouts();
-  if (valsea.ws) {
-    valsea.ws.onopen = null;
-    valsea.ws.onmessage = null;
-    valsea.ws.onerror = null;
-    valsea.ws.onclose = null;
-    if (valsea.ws.readyState === WebSocket.OPEN) {
-      valsea.ws.close();
-    }
-    valsea.ws = null;
-  }
-  valsea.sessionReady = false;
-  valsea.sessionStarted = false;
-  valsea.stopping = false;
-  valsea.awaitingFinal = false;
-  valsea.sessionStopSent = false;
-  valsea.commitSent = false;
-  valsea.hasDetectedSound = false;
-}
-
-function closeValseaSession() {
-  valsea.stopping = true;
-  valsea.awaitingFinal = false;
-  clearValseaTimeouts();
-  stopAudioCapture();
-  if (valsea.ws?.readyState === WebSocket.OPEN && !valsea.sessionStopSent) {
-    sendValseaMessage({ type: "session.stop" });
-    valsea.sessionStopSent = true;
-  }
-  closeValseaSocket();
-  setRecordingUI(false);
-}
-
-async function startValseaRecording() {
-  if (state.listening) return;
 
   state.finalTranscript = "";
-  valsea.awaitingFinal = false;
-  valsea.sessionStopSent = false;
-  valsea.commitSent = false;
-  valsea.hasDetectedSound = false;
-  clearValseaTimeouts();
-  transcriptTextEl.textContent = "Connecting…";
-  transcriptTextEl.classList.add("listening");
-  setRecordingUI(true);
+  recorder.chunks = [];
+  recorder.recordingStartedAt = Date.now();
 
   try {
-    valsea.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recorder.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch {
     showTranscriptError("Microphone access denied");
-    setRecordingUI(false);
     return;
   }
 
-  valsea.ws = new WebSocket(valseaWebSocketUrl());
-
-  valsea.ws.addEventListener("open", () => {
-    transcriptTextEl.textContent = "Starting session…";
-  });
-
-  valsea.ws.addEventListener("message", (event) => {
-    try {
-      handleValseaMessage(JSON.parse(event.data));
-    } catch {
-      showTranscriptError("Invalid response from transcription service");
-      closeValseaSession();
-    }
-  });
-
-  valsea.ws.addEventListener("error", () => {
-    showTranscriptError("Could not connect to transcription service");
-    closeValseaSession();
-  });
-
-  valsea.ws.addEventListener("close", () => {
-    if (state.listening) {
-      stopAudioCapture();
-      setRecordingUI(false);
-    }
-  });
+  const mime = pickAudioMimeType();
+  recorder.mimeType = mime || "audio/webm";
 
   try {
-    startPcmCapture(valsea.mediaStream);
-  } catch {
-    showTranscriptError("Could not start microphone capture");
-    closeValseaSession();
+    recorder.mediaRecorder = mime
+      ? new MediaRecorder(recorder.mediaStream, { mimeType: mime })
+      : new MediaRecorder(recorder.mediaStream);
+  } catch (err) {
+    console.error("MediaRecorder failed", err);
+    stopMicTracks();
+    showTranscriptError("Could not start recording.");
+    return;
   }
+
+  recorder.mediaRecorder.ondataavailable = (event) => {
+    if (event.data && event.data.size > 0) {
+      recorder.chunks.push(event.data);
+    }
+  };
+
+  recorder.mediaRecorder.onstop = () => {
+    stopMicTracks();
+    processRecordedAudio();
+  };
+
+  recorder.mediaRecorder.onerror = (event) => {
+    console.error("MediaRecorder error", event.error || event);
+    stopMicTracks();
+    showTranscriptError("Recording failed, please try again.");
+  };
+
+  setTranscriptStatus("Listening...");
+  setMicUI("recording");
+  recorder.mediaRecorder.start();
 }
 
-function stopValseaRecording() {
+function stopRecording() {
   if (!state.listening) return;
-  console.log("manual stop — waiting for transcript.final");
-  commitAndAwaitFinal();
+  const elapsed = Date.now() - recorder.recordingStartedAt;
+  if (elapsed < MIN_RECORDING_MS) {
+    setTranscriptStatus("Hold the button longer!");
+    micHintEl.textContent = "Keep talking a little longer…";
+    return;
+  }
+  if (recorder.mediaRecorder && recorder.mediaRecorder.state !== "inactive") {
+    try {
+      recorder.mediaRecorder.stop();
+    } catch (err) {
+      console.error("MediaRecorder stop failed", err);
+      stopMicTracks();
+      showTranscriptError("Could not stop recording, please try again.");
+    }
+  }
 }
 
 function toggleMic() {
+  if (state.processing) return;
   if (!state.listening) {
-    startValseaRecording();
+    startRecording();
   } else {
-    stopValseaRecording();
+    stopRecording();
   }
 }
 
@@ -829,6 +942,8 @@ pokemonSearchEl.addEventListener("input", (e) => {
 shinyToggleEl.addEventListener("click", toggleShiny);
 
 setupSpriteObserver();
+loadStars();
+updateProgressPanel();
 updateBubble();
 fetchAllPokemon().catch(() => {
   browserStatusEl.textContent = "Could not load Pokémon. Check your connection.";

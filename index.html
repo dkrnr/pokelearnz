@@ -76,6 +76,16 @@
       </div>
     </section>
 
+    <section class="progress-panel" id="progressPanel" aria-label="Your progress">
+      <p class="section-label">Your progress</p>
+      <div class="progress-card">
+        <p class="progress-stat">Today: <strong id="progressTodayCount">0</strong> questions</p>
+        <p class="progress-stat">⭐ Stars: <strong id="progressStars">0</strong></p>
+        <p class="progress-stat">🔥 Streak: <strong id="progressStreak">0</strong> days</p>
+        <div class="progress-subjects" id="progressSubjects"></div>
+      </div>
+    </section>
+
     <main class="chat-area">
       <div class="speech-bubble" id="speechBubble">
         <p class="bubble-label" id="bubbleLabel">Pikachu says:</p>
@@ -88,8 +98,8 @@
       </div>
 
       <div class="mic-wrap">
-        <button type="button" class="mic-btn" id="micBtn" aria-label="Hold to talk">
-          <span class="mic-icon" aria-hidden="true">🎤</span>
+        <button type="button" class="mic-btn" id="micBtn" aria-label="Tap to talk">
+          <span class="mic-content" id="micContent">🎤</span>
         </button>
         <p class="mic-hint" id="micHint">Tap the microphone to talk!</p>
       </div>
