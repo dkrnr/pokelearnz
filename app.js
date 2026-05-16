@@ -113,6 +113,80 @@ const EMOTION_KEYWORDS = {
   ],
 };
 
+// Content safety ----------------------------------------------------------------
+
+const NSFW_WORDS = [
+  // profanity
+  "fuck", "fucking", "fucker", "fucks", "fucked",
+  "shit", "shits", "shitting", "bullshit",
+  "bitch", "bitches", "bitchy",
+  "cunt", "cunts",
+  "asshole", "assholes",
+  "bastard", "bastards",
+  "damn", "goddamn",
+  // sexual
+  "cock", "cocks", "dick", "dicks", "penis",
+  "pussy", "vagina",
+  "boob", "boobs", "tit", "tits", "breast",
+  "porn", "porno", "pornography",
+  "sex", "sexual", "sexy",
+  "nude", "nudes", "naked",
+  "condom", "masturbate", "masturbation",
+  "orgasm", "erection",
+  // slurs
+  "nigger", "niggers", "nigga", "niggas",
+  "faggot", "faggots", "fag",
+  "retard", "retards", "retarded",
+  // self-harm / violence
+  "suicide", "suicidal",
+  "rape", "raping", "raped", "rapist",
+  "kill yourself", "kys",
+  // hard drugs
+  "heroin", "cocaine", "meth", "methamphetamine", "crack",
+];
+
+const NSFW_PATTERNS = [
+  /\bf+[u*@#]+c+k/i,       // f*ck, f**k, fuuuck
+  /\bs+h+[i!1*]+t/i,       // sh!t, sh*t, shiiit
+  /\bb+[i!1*]+t+c+h/i,     // b!tch, b*tch
+  /\ba+s+\s*h+o+l+e/i,     // a s s h o l e (spaced)
+  /\bn+[i*!1]+g+[gae]+/i,  // n-word obfuscations
+];
+
+function containsNSFW(text) {
+  const lower = (text || "").toLowerCase();
+  for (const word of NSFW_WORDS) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(lower)) return true;
+  }
+  for (const pattern of NSFW_PATTERNS) {
+    if (pattern.test(lower)) return true;
+  }
+  return false;
+}
+
+function censorText(text) {
+  let result = text;
+  for (const word of NSFW_WORDS) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "***");
+  }
+  return result;
+}
+
+function getBlockedResponse() {
+  const name = state.companionName;
+  const redirects = [
+    `Whoa, trainer! That's not something ${name} can explore. Let's use that energy for something awesome — ask me about science, space, history, or nature! ⚡`,
+    `Hmm, ${name} can't go there! But there's a whole world of amazing things to discover together. What do you actually want to learn today? 🌟`,
+    `Oops! That question is out of bounds in our Pokémon classroom. ${name} knows SO many cool facts — ask me anything about the world around you!`,
+    `${name} says: nope, not that one! Let's keep our adventure fun and amazing. Try asking about animals, math, how stars work… the list goes on! ✨`,
+  ];
+  return redirects[Math.floor(Math.random() * redirects.length)];
+}
+
+// End content safety ----------------------------------------------------------
+
 const recorder = {
   mediaRecorder: null,
   mediaStream: null,
@@ -395,8 +469,14 @@ function greeting(name) {
   return `Hi trainer! I'm ${name}! Tap the mic or use 💬 to ask me anything!`;
 }
 
+function updateBubbleLabel() {
+  bubbleLabelEl.textContent = state.shiny
+    ? `✨ Shiny ${state.companionName} says:`
+    : `${state.companionName} says:`;
+}
+
 function updateBubble() {
-  bubbleLabelEl.textContent = `${state.companionName} says:`;
+  updateBubbleLabel();
   bubbleTextEl.textContent = greeting(state.companionName);
 }
 
@@ -601,7 +681,7 @@ const SUBJECT_PROMPT_HINTS = {
 };
 
 function buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz) {
-  let prompt = `${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
+  let prompt = `SAFETY RULE (highest priority): You are speaking exclusively to children aged 6–14. If any question is inappropriate, sexual, violent, or harmful, do NOT engage with it — stay in character and cheerfully redirect the child to ask something they can learn. ${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
   prompt += buildRecentQuestionsContext();
 
   if (state.language && state.language !== "english") {
@@ -756,6 +836,14 @@ function clearConversationHistory() {
 }
 
 async function respondToFinalTranscript(transcript) {
+  if (containsNSFW(transcript)) {
+    transcriptTextEl.textContent = censorText(transcript);
+    bubbleTextEl.textContent = getBlockedResponse();
+    updateBubbleLabel();
+    setMicUI("idle");
+    return;
+  }
+
   const detectedSubject = detectSubjectFromQuestion(transcript);
   state.subject = detectedSubject;
   state.subjectLabel = SUBJECT_LABELS[detectedSubject] || SUBJECT_LABELS.general;
@@ -998,7 +1086,9 @@ function updateHero() {
   heroSpriteEl.src = spriteUrl(state.companionId);
   heroSpriteEl.alt = state.companionName;
   heroNameEl.textContent = state.companionName;
-  heroIdEl.textContent = formatPokemonId(state.companionId);
+  heroIdEl.textContent = state.shiny
+    ? `${formatPokemonId(state.companionId)} ✨`
+    : formatPokemonId(state.companionId);
   triggerHeroBounce();
 }
 
@@ -1138,6 +1228,7 @@ function toggleShiny() {
   shinyToggleEl.classList.toggle("active", state.shiny);
   shinyToggleEl.setAttribute("aria-pressed", String(state.shiny));
   shinyToggleEl.textContent = state.shiny ? "✨ Shiny ON" : "✨ Shiny";
+  document.body.classList.toggle("shiny-mode", state.shiny);
 
   pokemonGridEl.querySelectorAll("img[data-id]").forEach((img) => {
     if (img.dataset.loaded === "true") {
@@ -1145,6 +1236,10 @@ function toggleShiny() {
     }
   });
   heroSpriteEl.src = spriteUrl(state.companionId);
+  heroIdEl.textContent = state.shiny
+    ? `${formatPokemonId(state.companionId)} ✨`
+    : formatPokemonId(state.companionId);
+  updateBubbleLabel();
 }
 
 async function fetchAllPokemon() {
@@ -1182,7 +1277,10 @@ function hideQuizCard() {
   state.pendingQuiz = null;
   quizCardEl.hidden = true;
   if (quizOptionsEl) quizOptionsEl.replaceChildren();
-  if (quizFeedbackEl) quizFeedbackEl.textContent = "";
+  if (quizFeedbackEl) {
+    quizFeedbackEl.textContent = "";
+    quizFeedbackEl.classList.remove("feedback-reveal");
+  }
 }
 
 function showQuizCard(quiz) {
@@ -1235,6 +1333,9 @@ async function handleQuizAnswer(btn) {
   } else {
     quizFeedbackEl.textContent = "Let's hear it from your buddy…";
   }
+  quizFeedbackEl.classList.remove("feedback-reveal");
+  void quizFeedbackEl.offsetWidth;
+  quizFeedbackEl.classList.add("feedback-reveal");
 
   state.quizActive = false;
   try {
