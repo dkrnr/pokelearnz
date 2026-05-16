@@ -288,6 +288,10 @@ function detectSubjectFromQuestion(text) {
 
 function updateSubjectBadge(subject) {
   if (!subjectBadgeEl) return;
+  if (!subject || subject === "general") {
+    subjectBadgeEl.hidden = true;
+    return;
+  }
   const label = SUBJECT_BADGE_LABELS[subject] || SUBJECT_BADGE_LABELS.general;
   subjectBadgeEl.textContent = label;
   subjectBadgeEl.hidden = false;
@@ -765,7 +769,6 @@ async function respondToFinalTranscript(transcript) {
   }
 
   const emotion = deriveEmotionState(transcript, sentiment);
-  console.log("Detected emotion:", emotion, "sentiment:", sentiment);
 
   const shouldQuiz = state.questionsSinceQuiz >= QUIZ_TRIGGER_EVERY - 1 && !state.quizActive;
   const personality = await getCompanionPersonality();
@@ -777,6 +780,8 @@ async function respondToFinalTranscript(transcript) {
     detectedSubject,
     shouldQuiz
   );
+
+  console.log("Detected emotion:", emotion, "sentiment:", sentiment);
 
   const { answerText, quiz } = parseQuizFromReply(rawReply);
   bubbleTextEl.textContent = answerText;
