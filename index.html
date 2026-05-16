@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokeLearn — Learn by Talking!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-shapes" aria-hidden="true">
+    <span class="shape shape-1"></span>
+    <span class="shape shape-2"></span>
+    <span class="shape shape-3"></span>
+    <span class="shape shape-4"></span>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <h1 class="title">PokeLearn 🎮 Learn by Talking!</h1>
+      <div class="star-counter" id="starCounter" aria-label="Stars earned">
+        <span class="star-icon">⭐</span>
+        <span class="star-count" id="starCount">0</span>
+      </div>
+    </header>
+
+    <section class="subjects" aria-label="Choose a subject">
+      <p class="section-label">Pick a subject</p>
+      <div class="subject-row" role="group" aria-label="Subjects">
+        <button type="button" class="subject-btn active" data-subject="science">🔬 Science</button>
+        <button type="button" class="subject-btn" data-subject="math">🔢 Math</button>
+        <button type="button" class="subject-btn" data-subject="english">📚 English</button>
+        <button type="button" class="subject-btn" data-subject="geography">🌍 Geography</button>
+      </div>
+    </section>
+
+    <section class="pokemon-browser" aria-label="Choose your teacher">
+      <p class="section-label">Choose your teacher</p>
+
+      <div class="companion-hero" id="companionHero">
+        <div class="hero-sprite-wrap">
+          <img
+            class="hero-sprite"
+            id="heroSprite"
+            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png"
+            alt="Pikachu"
+            width="120"
+            height="120"
+          >
+        </div>
+        <p class="hero-name" id="heroName">Pikachu</p>
+        <p class="hero-id" id="heroId">#025</p>
+      </div>
+
+      <div class="browser-controls">
+        <label class="search-wrap">
+          <span class="visually-hidden">Search Pokémon by name</span>
+          <input
+            type="search"
+            class="pokemon-search"
+            id="pokemonSearch"
+            placeholder="🔍 Search Pokémon…"
+            autocomplete="off"
+          >
+        </label>
+        <button type="button" class="shiny-toggle" id="shinyToggle" aria-pressed="false">
+          ✨ Shiny
+        </button>
+      </div>
+
+      <p class="browser-status" id="browserStatus">Loading Pokémon…</p>
+      <div class="pokemon-grid-scroll" id="pokemonGridScroll">
+        <div class="pokemon-grid" id="pokemonGrid" role="listbox" aria-label="Pokémon list"></div>
+      </div>
+    </section>
+
+    <section class="progress-panel" id="progressPanel" aria-label="Your progress">
+      <p class="section-label">Your progress</p>
+      <div class="progress-card">
+        <p class="progress-stat">Today: <strong id="progressTodayCount">0</strong> questions</p>
+        <p class="progress-stat">⭐ Stars: <strong id="progressStars">0</strong></p>
+        <p class="progress-stat">🔥 Streak: <strong id="progressStreak">0</strong> days</p>
+        <div class="progress-subjects" id="progressSubjects"></div>
+      </div>
+    </section>
+
+    <main class="chat-area">
+      <div class="speech-bubble" id="speechBubble">
+        <p class="bubble-label" id="bubbleLabel">Pikachu says:</p>
+        <p class="bubble-text" id="bubbleText">Hi trainer! I'm Pikachu! Tap the mic and ask me anything about Science.</p>
+      </div>
+
+      <div class="transcript-box" id="transcriptBox" aria-live="polite">
+        <span class="transcript-label">You said:</span>
+        <span class="transcript-text" id="transcriptText">—</span>
+      </div>
+
+      <div class="lang-toggle" id="langToggle" role="group" aria-label="Choose your language">
+        <button type="button" class="lang-btn active" data-lang="english" aria-pressed="true">🇬🇧 English</button>
+        <button type="button" class="lang-btn" data-lang="sinhala" aria-pressed="false">🇱🇰 Sinhala</button>
+        <button type="button" class="lang-btn" data-lang="tamil" aria-pressed="false">🇮🇳 Tamil</button>
+      </div>
+
+      <div class="mic-wrap">
+        <button type="button" class="mic-btn" id="micBtn" aria-label="Tap to talk">
+          <span class="mic-content" id="micContent">🎤</span>
+        </button>
+        <p class="mic-hint" id="micHint">Tap the microphone to talk!</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
