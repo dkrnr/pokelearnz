@@ -59,6 +59,45 @@ const state = {
   listening: false,
   processing: false,
   finalTranscript: "",
+  language: "english",
+  conversationHistory: [],
+};
+
+const LANGUAGE_CODES = {
+  english: "english",
+  sinhala: "si",
+  tamil: "ta",
+};
+
+const LANGUAGE_LABELS = {
+  english: "English",
+  sinhala: "Sinhala",
+  tamil: "Tamil",
+};
+
+const VALSEA_HINT_TEXT =
+  "This is a child speaking to a Pokemon educational app. They may mix languages.";
+
+const MAX_CONVERSATION_MESSAGES = 6;
+
+const EMOTION_KEYWORDS = {
+  confused: [
+    "dont get it", "don't get it", "confused", "hard", "difficult", "why",
+    "what does", "i dont know", "i don't know", "help", "dont understand",
+    "don't understand", "huh",
+  ],
+  confident: [
+    "cool", "wow", "amazing", "i know", "easy", "got it", "yes!", "yay",
+    "awesome", "i can",
+  ],
+  disengaged: [
+    "boring", "dont want", "don't want", "stop", "tired", "whatever",
+    "i'm done", "im done",
+  ],
+  frustrated: [
+    "ugh", "argh", "i give up", "stupid", "hate this", "can't", "cant do it",
+    "frustrated",
+  ],
 };
 
 const recorder = {
@@ -156,6 +195,8 @@ const progressTodayCountEl = document.getElementById("progressTodayCount");
 const progressStarsEl = document.getElementById("progressStars");
 const progressStreakEl = document.getElementById("progressStreak");
 const progressSubjectsEl = document.getElementById("progressSubjects");
+const langToggleEl = document.getElementById("langToggle");
+const langBtns = langToggleEl ? langToggleEl.querySelectorAll(".lang-btn") : [];
 
 function getDateKey(ts = Date.now()) {
   const d = new Date(ts);
@@ -454,9 +495,55 @@ function buildRecentQuestionsContext() {
   return ` The student recently asked: ${list}. When helpful, connect this answer to what they discussed before (for example: "Last time you asked about photosynthesis, this connects to that!").`;
 }
 
-function buildSystemPrompt(sentiment, personality, isConfused, detectedSubject) {
-  let prompt = `${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand.`;
+function scoreEmotionFromText(text) {
+  const lower = text.toLowerCase();
+  const scores = { confused: 0, confident: 0, disengaged: 0, frustrated: 0 };
+  for (const [emotion, words] of Object.entries(EMOTION_KEYWORDS)) {
+    for (const w of words) {
+      if (lower.includes(w)) scores[emotion]++;
+    }
+  }
+  return scores;
+}
+
+function deriveEmotionState(text, sentiment) {
+  const scores = scoreEmotionFromText(text);
+  const topEntry = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  const [topEmotion, topScore] = topEntry;
+
+  if (sentiment === "negative" && topScore === 0) return "frustrated";
+  if (topScore === 0) {
+    if (sentiment === "positive") return "confident";
+    if (sentiment === "negative") return "frustrated";
+    return "neutral";
+  }
+
+  if (topEmotion === "confused" && sentiment === "negative" && scores.frustrated > 0) {
+    return "frustrated";
+  }
+  return topEmotion;
+}
+
+const EMOTION_INSTRUCTIONS = {
+  confused:
+    " The student feels CONFUSED. Slow down. Use one simple analogy. Break the answer into 2 tiny steps. Be extra warm and patient.",
+  confident:
+    " The student feels CONFIDENT. Be excited and high-energy. Add one fun bonus fact. Encourage them to try a harder follow-up question.",
+  disengaged:
+    " The student feels DISENGAGED. Be dramatic and surprising. Start with something unexpected about the topic, like \"Wait wait wait — did you know?!\" Make it feel like a tiny adventure.",
+  frustrated:
+    " The student feels FRUSTRATED. Be very gentle. Validate their feeling first (for example: \"Even I find this tricky sometimes!\"). Then give one small, kind step forward.",
+  neutral:
+    " The student feels NEUTRAL. Be warm, curious, and inviting. Keep it light and fun.",
+};
+
+function buildSystemPrompt(emotion, personality, detectedSubject) {
+  let prompt = `${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
   prompt += buildRecentQuestionsContext();
+
+  if (state.language && state.language !== "english") {
+    prompt += ` The child chose to speak in ${LANGUAGE_LABELS[state.language]}. Reply in clear, simple English, but feel free to acknowledge a single ${LANGUAGE_LABELS[state.language]} word warmly if it helps them feel understood.`;
+  }
 
   const subject = detectedSubject || state.subject;
   if (subject === "science") {
@@ -473,19 +560,7 @@ function buildSystemPrompt(sentiment, personality, isConfused, detectedSubject) 
       " If the question is about geography, use places and maps kids can picture easily.";
   }
 
-  if (isConfused || sentiment === "negative") {
-    prompt +=
-      " The student seems confused or unsure. Slow down, use very simple words, and explain with one easy analogy before the main answer.";
-  } else if (sentiment === "positive") {
-    prompt +=
-      " The student seems confident, be enthusiastic and match their energy.";
-  }
-
-  if (isConfused && sentiment !== "negative") {
-    prompt +=
-      " Their question included words like 'don't understand', 'what', 'huh', or 'explain again' — treat them as needing extra clarity.";
-  }
-
+  prompt += EMOTION_INSTRUCTIONS[emotion] || EMOTION_INSTRUCTIONS.neutral;
   return prompt;
 }
 
@@ -506,34 +581,23 @@ async function fetchSentiment(transcript) {
   return data.sentiment;
 }
 
-function buildChatMessages(transcript, sentiment, personality, isConfused, detectedSubject) {
+function buildChatMessages(transcript, emotion, personality, detectedSubject) {
   const messages = [
     {
       role: "system",
-      content: buildSystemPrompt(sentiment, personality, isConfused, detectedSubject),
+      content: buildSystemPrompt(emotion, personality, detectedSubject),
     },
   ];
 
-  const recent = getHistory().slice(-3);
-  recent.forEach((item) => {
-    messages.push({ role: "user", content: item.question });
-    messages.push({
-      role: "assistant",
-      content: `(Earlier you helped with a ${item.subject} question as ${item.pokemon}.)`,
-    });
+  state.conversationHistory.forEach((msg) => {
+    messages.push({ role: msg.role, content: msg.content });
   });
 
   messages.push({ role: "user", content: transcript });
   return messages;
 }
 
-async function fetchOpenAIReply(
-  transcript,
-  sentiment,
-  personality,
-  isConfused,
-  detectedSubject
-) {
+async function fetchOpenAIReply(transcript, emotion, personality, detectedSubject) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -542,13 +606,7 @@ async function fetchOpenAIReply(
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      messages: buildChatMessages(
-        transcript,
-        sentiment,
-        personality,
-        isConfused,
-        detectedSubject
-      ),
+      messages: buildChatMessages(transcript, emotion, personality, detectedSubject),
     }),
   });
   if (!res.ok) throw new Error("OpenAI request failed");
@@ -556,24 +614,43 @@ async function fetchOpenAIReply(
   return data.choices[0].message.content;
 }
 
+function pushConversationTurn(userText, assistantText) {
+  state.conversationHistory.push({ role: "user", content: userText });
+  state.conversationHistory.push({ role: "assistant", content: assistantText });
+  if (state.conversationHistory.length > MAX_CONVERSATION_MESSAGES) {
+    state.conversationHistory.splice(
+      0,
+      state.conversationHistory.length - MAX_CONVERSATION_MESSAGES
+    );
+  }
+}
+
+function clearConversationHistory() {
+  state.conversationHistory = [];
+}
+
 async function respondToFinalTranscript(transcript) {
   const detectedSubject = detectSubjectFromQuestion(transcript);
-  const isConfused = detectConfusion(transcript);
-  let sentiment = await fetchSentiment(transcript);
 
-  if (isConfused && sentiment !== "negative") {
-    sentiment = "negative";
+  let sentiment = "neutral";
+  try {
+    sentiment = await fetchSentiment(transcript);
+  } catch (err) {
+    console.warn("Sentiment fetch failed, using text-only emotion analysis", err);
   }
+
+  const emotion = deriveEmotionState(transcript, sentiment);
+  console.log("Detected emotion:", emotion, "sentiment:", sentiment);
 
   const personality = await getCompanionPersonality();
   const reply = await fetchOpenAIReply(
     transcript,
-    sentiment,
+    emotion,
     personality,
-    isConfused,
     detectedSubject
   );
   bubbleTextEl.textContent = reply;
+  pushConversationTurn(transcript, reply);
   recordSuccessfulQuestion(transcript, detectedSubject);
 }
 
@@ -606,11 +683,16 @@ function filenameForMime(mime) {
   return "recording.webm";
 }
 
+function getValseaLanguageCode() {
+  return LANGUAGE_CODES[state.language] || "english";
+}
+
 async function transcribeWithValsea(blob) {
   const form = new FormData();
   form.append("file", blob, filenameForMime(blob.type || "audio/webm"));
   form.append("model", "valsea-transcribe");
-  form.append("language", "english");
+  form.append("language", getValseaLanguageCode());
+  form.append("hint_text", VALSEA_HINT_TEXT);
   const res = await fetch(VALSEA_TRANSCRIBE_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${CONFIG.VALSEA_KEY}` },
@@ -775,6 +857,7 @@ function selectPokemon(pokemon, cellEl) {
   state.companionSlug = pokemon.name;
   state.companionName = formatPokemonName(pokemon.name);
   state.companionTypes = null;
+  clearConversationHistory();
   fetchPokemonTypes(pokemon.id)
     .then((types) => {
       if (state.companionId === pokemon.id) state.companionTypes = types;
@@ -788,6 +871,16 @@ function selectPokemon(pokemon, cellEl) {
 
   updateHero();
   updateBubble();
+}
+
+function setLanguage(lang) {
+  if (!LANGUAGE_CODES[lang]) return;
+  state.language = lang;
+  langBtns.forEach((btn) => {
+    const isActive = btn.dataset.lang === lang;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
+  });
 }
 
 function loadSpriteForImg(img) {
@@ -940,6 +1033,10 @@ pokemonSearchEl.addEventListener("input", (e) => {
 });
 
 shinyToggleEl.addEventListener("click", toggleShiny);
+
+langBtns.forEach((btn) => {
+  btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+});
 
 setupSpriteObserver();
 loadStars();
