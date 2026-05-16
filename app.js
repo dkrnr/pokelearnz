@@ -15,36 +15,42 @@ const MIN_RECORDING_MS = 1500;
 const CHARACTER_RULES =
   'Never say "Certainly!", "Great question!", "Of course!", or any assistant-style phrases. Never sound like an AI assistant. Always speak AS the Pokémon in first person using their real speech patterns. Always end with something that makes the kid want to ask another question.';
 
-const POKEMON_PERSONALITIES = {
-  25: "You ARE Pikachu. Start with 'Pika pika!' and end with 'Pika!' Use very short excited sentences only — maximum 2 sentences between the Pika sounds. I am buzzing with energy!",
-  4: "You ARE Charmander. I speak brave and fiery in first person. I love a tough challenge and I tell the kid to keep trying like training by a volcano.",
-  1: "You ARE Bulbasaur. I speak slow, warm, and nurturing about nature. I use gentle first-person words like a patient garden friend.",
-  150: "You ARE Mewtwo. I am formal and precise. I sometimes speak in third person about Mewtwo's power. I call the child 'young one' with calm respect.",
-  143: "You ARE Snorlax. I speak slowly and yawn a lot. Every reply mentions being sleepy or hungry, gives ONE simple answer, then I want to nap.",
-  133: "You ARE Eevee. I am nervous and sweet in first person. I naturally say 'um' and 'oh!' while I figure things out with the kid.",
-  94: "You ARE Gengar. I cackle and use spooky wordplay. I say 'Heheheh' often. Learning feels like a fun ghost mystery I am leading.",
-  448: "You ARE Lucario. I speak with calm discipline and quiet strength in first person. I help the kid feel brave and focused.",
+const POKEMON_PERSONALITIES_FALLBACK = {
+  25: "You ARE Pikachu. Start with Pika pika! and end with Pika! Use very short excited sentences only, maximum 2 sentences between the Pika sounds. You are buzzing with energy!",
+  4: "You ARE Charmander. Speak brave and fiery in first person. Love a tough challenge and tell the kid to keep trying like training by a volcano.",
+  1: "You ARE Bulbasaur. Speak slow, warm, and nurturing about nature. Use gentle first-person words like a patient garden friend.",
+  150: "You ARE Mewtwo. Formal and precise. Sometimes speak in third person about Mewtwo power. Call the child young one with calm respect.",
+  143: "You ARE Snorlax. Speak slowly and yawn a lot. Every reply mentions being sleepy or hungry, give ONE simple answer, then want to nap.",
+  133: "You ARE Eevee. Nervous and sweet in first person. Naturally say um and oh! while figuring things out with the kid.",
+  94: "You ARE Gengar. Cackle and use spooky wordplay. Say Heheheh often. Make learning feel like a fun ghost mystery you are leading.",
+  448: "You ARE Lucario. Speak with calm discipline and quiet strength in first person. Help the kid feel brave and focused.",
 };
 
-const TYPE_PERSONALITY_HINTS = {
-  fire: "I speak with intensity and passion — short fiery bursts!",
-  water: "I speak flowing and calm, like a gentle river.",
-  grass: "I speak slowly and nurturing, like growing plants.",
-  electric: "I speak fast and jumpy, zippy and excited!",
-  psychic: "I speak mysteriously, with quiet knowing.",
-  ghost: "I speak eerily and playfully, with spooky teasing.",
-  ice: "I speak cool and clear, crisp and steady.",
-  fighting: "I speak bold and direct, like a trainer's punch.",
-  flying: "I speak light and breezy, soaring between ideas.",
-  poison: "I speak sly but helpful, with a tricky giggle.",
-  ground: "I speak solid and steady, down-to-earth.",
-  rock: "I speak tough and sturdy, simple and strong.",
-  bug: "I speak curious and busy, hopping between facts.",
-  steel: "I speak firm and shiny, precise and loyal.",
-  dragon: "I speak grand and mighty, like an epic tale.",
-  dark: "I speak cheeky and clever, with a brave smirk.",
-  fairy: "I speak sparkly and kind, with fairy-tale warmth.",
-  normal: "I speak friendly and cheerful, like a buddy.",
+let POKEMON_PERSONALITIES = POKEMON_PERSONALITIES_FALLBACK;
+let personalitiesReady = false;
+
+const TYPE_PERSONALITY_FALLBACKS = {
+  fire: "You speak passionate and intense, use fire metaphors, and never give up. Encourage the kid like a flame that keeps burning.",
+  water: "You are calm and flowing, use ocean metaphors, and are patient like a gentle river guiding the kid.",
+  grass: "You are nurturing and slow, use garden metaphors, and gentle like a kind plant friend helping things grow.",
+  electric: "You are fast and jumpy, use electricity metaphors, and energetic — spark the kid's curiosity!",
+  psychic: "You are mysterious and wise, use mind metaphors, and thoughtful like a calm psychic guide.",
+  ghost: "You are spooky and playful, use mystery metaphors, and mischievous in a friendly haunted-house way.",
+  dragon: "You are proud and epic, use adventure metaphors, and brave like a legendary dragon teacher.",
+  normal: "You are friendly and encouraging, warm and relatable, and easy to talk to like a buddy.",
+};
+
+const SECONDARY_TYPE_HINTS = {
+  ice: "Cool and clear, crisp and steady.",
+  fighting: "Bold and direct, like a trainer's punch.",
+  flying: "Light and breezy, soaring between ideas.",
+  poison: "Sly but helpful, with a tricky giggle.",
+  ground: "Solid and steady, down-to-earth.",
+  rock: "Tough and sturdy, simple and strong.",
+  bug: "Curious and busy, hopping between facts.",
+  steel: "Firm and shiny, precise and loyal.",
+  dark: "Cheeky and clever, with a brave smirk.",
+  fairy: "Sparkly and kind, with fairy-tale warmth.",
 };
 
 const state = {
@@ -53,15 +59,22 @@ const state = {
   companionSlug: "pikachu",
   companionTypes: ["electric"],
   shiny: false,
-  subject: "science",
-  subjectLabel: "Science",
+  subject: "general",
+  subjectLabel: "General Knowledge",
   stars: 0,
   listening: false,
   processing: false,
   finalTranscript: "",
   language: "english",
   conversationHistory: [],
+  lastTopic: "",
+  questionsSinceQuiz: 0,
+  pendingQuiz: null,
+  quizActive: false,
 };
+
+const QUIZ_TRIGGER_EVERY = 3;
+const QUIZ_REWARD_STARS = 25;
 
 const LANGUAGE_CODES = {
   english: "english",
@@ -113,7 +126,11 @@ const SUBJECT_LABELS = {
   math: "Math",
   english: "English",
   geography: "Geography",
-  general: "General",
+  history: "History",
+  nature: "Science & Nature",
+  art: "Art & Music",
+  technology: "Technology",
+  general: "General Knowledge",
 };
 
 const HISTORY_KEY = "pokelearn_history";
@@ -123,48 +140,49 @@ const LAST_ACTIVE_KEY = "pokelearn_last_active";
 
 const SUBJECT_KEYWORDS = {
   science: [
-    "photosynthesis", "plant", "plants", "animal", "animals", "cell", "cells",
-    "energy", "gravity", "space", "force", "science", "biology", "chemistry",
-    "atom", "molecule", "ecosystem", "weather", "planet", "solar",
+    "photosynthesis", "cell", "animal", "plant", "gravity", "space", "force",
+    "energy", "atom", "biology", "chemistry", "physics", "experiment",
   ],
   math: [
-    "add", "subtract", "multiply", "divide", "fraction", "equation", "plus",
-    "minus", "times", "number", "numbers", "count", "algebra", "geometry",
-    "percent", "decimal", "equal", "equals",
+    "add", "subtract", "multiply", "divide", "fraction", "equation", "number",
+    "calculate", "geometry", "algebra", "percentage", "average",
   ],
   english: [
-    "spell", "spelling", "grammar", "word", "words", "meaning", "sentence",
-    "write", "writing", "read", "reading", "verb", "noun", "adjective",
-    "story", "paragraph",
+    "spell", "grammar", "word", "meaning", "sentence", "write", "read",
+    "vocabulary", "pronoun", "verb", "noun", "tense", "essay",
   ],
   geography: [
-    "country", "capital", "continent", "ocean", "map", "river", "mountain",
-    "city", "world", "geography", "landmark", "desert", "island",
+    "country", "capital", "continent", "ocean", "river", "mountain", "map",
+    "climate", "population", "city",
+  ],
+  history: [
+    "war", "king", "queen", "ancient", "civilization", "empire", "century",
+    "revolution", "historical", "dynasty",
+  ],
+  nature: [
+    "weather", "volcano", "earthquake", "dinosaur", "evolution", "ecosystem",
+    "habitat",
+  ],
+  art: [
+    "draw", "paint", "color", "music", "song", "instrument", "dance",
+    "creativity",
+  ],
+  technology: [
+    "computer", "internet", "code", "robot", "ai", "app", "website", "machine",
+    "program",
   ],
 };
-
-const CONFUSION_PHRASES = [
-  "dont understand",
-  "don't understand",
-  "do not understand",
-  "confused",
-  "what",
-  "huh",
-  "again",
-  "explain",
-  "i dont get",
-  "i don't get",
-  "help me understand",
-  "what do you mean",
-  "say again",
-];
 
 const SUBJECT_BADGE_LABELS = {
   science: "🔬 Science",
   math: "➕ Math",
   english: "📚 English",
   geography: "🌍 Geography",
-  general: "📝 General",
+  history: "🏛️ History",
+  nature: "🌋 Science & Nature",
+  art: "🎨 Art & Music",
+  technology: "💻 Technology",
+  general: "📝 General Knowledge",
 };
 
 let allPokemon = [];
@@ -181,7 +199,7 @@ const transcriptTextEl = document.getElementById("transcriptText");
 const micBtnEl = document.getElementById("micBtn");
 const micContentEl = document.getElementById("micContent");
 const micHintEl = document.getElementById("micHint");
-const subjectBtns = document.querySelectorAll(".subject-btn");
+const subjectBadgeEl = document.getElementById("subjectBadge");
 
 const heroSpriteEl = document.getElementById("heroSprite");
 const heroNameEl = document.getElementById("heroName");
@@ -197,6 +215,22 @@ const progressStreakEl = document.getElementById("progressStreak");
 const progressSubjectsEl = document.getElementById("progressSubjects");
 const langToggleEl = document.getElementById("langToggle");
 const langBtns = langToggleEl ? langToggleEl.querySelectorAll(".lang-btn") : [];
+
+const quizCardEl = document.getElementById("quizCard");
+const quizQuestionEl = document.getElementById("quizQuestion");
+const quizOptionsEl = document.getElementById("quizOptions");
+const quizFeedbackEl = document.getElementById("quizFeedback");
+const quizCloseEl = document.getElementById("quizClose");
+
+const chatFabEl = document.getElementById("chatFab");
+const chatPanelEl = document.getElementById("chatPanel");
+const chatPanelCloseEl = document.getElementById("chatPanelClose");
+const chatPanelFormEl = document.getElementById("chatPanelForm");
+const chatPanelInputEl = document.getElementById("chatPanelInput");
+const chatPanelSendEl = document.getElementById("chatPanelSend");
+const chatPanelStatusEl = document.getElementById("chatPanelStatus");
+
+const starBurstEl = document.getElementById("starBurst");
 
 function getDateKey(ts = Date.now()) {
   const d = new Date(ts);
@@ -226,12 +260,16 @@ function saveHistory(history) {
 }
 
 function detectSubjectFromQuestion(text) {
-  const lower = text.toLowerCase();
-  const scores = { science: 0, math: 0, english: 0, geography: 0 };
+  const lower = (text || "").toLowerCase();
+  const scores = {
+    science: 0, math: 0, english: 0, geography: 0,
+    history: 0, nature: 0, art: 0, technology: 0,
+  };
 
   for (const [subject, keywords] of Object.entries(SUBJECT_KEYWORDS)) {
     for (const kw of keywords) {
-      if (lower.includes(kw)) scores[subject]++;
+      const pattern = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      if (pattern.test(lower)) scores[subject]++;
     }
   }
 
@@ -248,9 +286,11 @@ function detectSubjectFromQuestion(text) {
   return "general";
 }
 
-function detectConfusion(text) {
-  const lower = text.toLowerCase();
-  return CONFUSION_PHRASES.some((phrase) => lower.includes(phrase));
+function updateSubjectBadge(subject) {
+  if (!subjectBadgeEl) return;
+  const label = SUBJECT_BADGE_LABELS[subject] || SUBJECT_BADGE_LABELS.general;
+  subjectBadgeEl.textContent = label;
+  subjectBadgeEl.hidden = false;
 }
 
 function updateStreak() {
@@ -347,23 +387,13 @@ function parseIdFromUrl(url) {
   return parseInt(parts[parts.length - 1], 10);
 }
 
-function greeting(subject, name) {
-  return `Hi trainer! I'm ${name}! Tap the mic and ask me anything about ${subject}.`;
+function greeting(name) {
+  return `Hi trainer! I'm ${name}! Tap the mic or use 💬 to ask me anything!`;
 }
 
 function updateBubble() {
   bubbleLabelEl.textContent = `${state.companionName} says:`;
-  bubbleTextEl.textContent = greeting(state.subjectLabel, state.companionName);
-}
-
-function setSubject(btn) {
-  state.subject = btn.dataset.subject;
-  state.subjectLabel =
-    SUBJECT_LABELS[state.subject] ||
-    state.subject.charAt(0).toUpperCase() + state.subject.slice(1);
-
-  subjectBtns.forEach((b) => b.classList.toggle("active", b === btn));
-  updateBubble();
+  bubbleTextEl.textContent = greeting(state.companionName);
 }
 
 function bumpStars() {
@@ -418,35 +448,37 @@ function setTranscriptStatus(message) {
   transcriptTextEl.textContent = message;
 }
 
-function countWords(text) {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-function isOnlyNumbers(text) {
-  const trimmed = text.trim();
-  if (!trimmed) return true;
-  return /^[\d\s.,+\-%]+$/.test(trimmed);
-}
-
-function isGibberishTranscript(text) {
-  const letters = text.toLowerCase().replace(/[^a-z]/g, "");
-  if (letters.length < 3) return false;
-  if (!/[aeiouy]/.test(letters)) return true;
-  if (/[^aeiouy]{4,}/i.test(letters)) return true;
-  const vowels = (letters.match(/[aeiouy]/g) || []).length;
-  return letters.length >= 8 && vowels / letters.length < 0.15;
-}
-
 function isInvalidTranscript(text) {
-  if (!text?.trim()) return true;
-  if (countWords(text) < 2) return true;
-  if (isOnlyNumbers(text)) return true;
-  if (isGibberishTranscript(text)) return true;
+  const trimmed = (text || "").trim();
+  if (!trimmed) return true;
+  if (trimmed.length < 2) return true;
+  if (/^[^A-Za-z\u0B80-\u0BFF\u0D80-\u0DFF]+$/.test(trimmed)) return true;
   return false;
+}
+
+function resetRecorderState() {
+  if (recorder.mediaRecorder) {
+    try {
+      recorder.mediaRecorder.ondataavailable = null;
+      recorder.mediaRecorder.onstop = null;
+      recorder.mediaRecorder.onerror = null;
+      if (recorder.mediaRecorder.state !== "inactive") {
+        recorder.mediaRecorder.stop();
+      }
+    } catch (err) {
+      console.warn("MediaRecorder reset failed", err);
+    }
+  }
+  stopMicTracks();
+  recorder.mediaRecorder = null;
+  recorder.mediaStream = null;
+  recorder.chunks = [];
+  recorder.recordingStartedAt = 0;
 }
 
 function rejectInvalidTranscript() {
   state.finalTranscript = "";
+  resetRecorderState();
   showTranscriptError("Could not hear you clearly, please try again");
 }
 
@@ -465,17 +497,33 @@ async function fetchPokemonTypes(id) {
 }
 
 function personalityFromTypes(name, types) {
-  const primary = types[0] || "normal";
-  const hint =
-    TYPE_PERSONALITY_HINTS[primary] ||
-    "I speak friendly and cheerful, like a buddy.";
-  const typeLabel = types.length ? types.join("/") : "unknown";
-  return `You ARE ${name}, a ${typeLabel}-type Pokémon. ${hint} I teach kids aged 6-14 in first person.`;
+  const primary = (types && types[0]) || "normal";
+  const baseFallback = TYPE_PERSONALITY_FALLBACKS[primary] || TYPE_PERSONALITY_FALLBACKS.normal;
+  const secondary = types && types[1] ? SECONDARY_TYPE_HINTS[types[1]] : null;
+  const typeLabel = types && types.length ? types.join("/") : "normal";
+  const secondLine = secondary ? ` Also: ${secondary}` : "";
+  return `You ARE ${name}, a ${typeLabel}-type Pokémon. ${baseFallback}${secondLine} You teach kids aged 6-14 in first person and always stay in character.`;
+}
+
+async function loadPokemonPersonalities() {
+  browserStatusEl.textContent = "Loading personalities…";
+  pokemonGridEl.replaceChildren();
+  try {
+    const res = await fetch("./pokemonPersonalities.json");
+    if (!res.ok) throw new Error(`pokemonPersonalities.json: ${res.status}`);
+    POKEMON_PERSONALITIES = await res.json();
+  } catch {
+    POKEMON_PERSONALITIES = { ...POKEMON_PERSONALITIES_FALLBACK };
+  }
+  personalitiesReady = true;
 }
 
 async function getCompanionPersonality() {
-  if (POKEMON_PERSONALITIES[state.companionId]) {
-    return POKEMON_PERSONALITIES[state.companionId];
+  const mapped =
+    POKEMON_PERSONALITIES[state.companionId] ||
+    POKEMON_PERSONALITIES[String(state.companionId)];
+  if (mapped) {
+    return mapped;
   }
   if (!state.companionTypes?.length) {
     state.companionTypes = await fetchPokemonTypes(state.companionId);
@@ -537,7 +585,18 @@ const EMOTION_INSTRUCTIONS = {
     " The student feels NEUTRAL. Be warm, curious, and inviting. Keep it light and fun.",
 };
 
-function buildSystemPrompt(emotion, personality, detectedSubject) {
+const SUBJECT_PROMPT_HINTS = {
+  science: " If the question is about science, include one fun related fact about your Pokémon type.",
+  math: " If the question is about math, be encouraging about logic and step-by-step thinking.",
+  english: " If the question is about English, help with the specific word or grammar they asked about.",
+  geography: " If the question is about geography, use places and maps kids can picture easily.",
+  history: " If the question is about history, share one short story-like detail that makes the past feel alive.",
+  nature: " If the question is about nature, paint a vivid picture of the place, creature, or event.",
+  art: " If the question is about art or music, encourage creativity and describe colors, sounds, or motion vividly.",
+  technology: " If the question is about technology, explain it like a friendly invention demo a kid can imagine.",
+};
+
+function buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz) {
   let prompt = `${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
   prompt += buildRecentQuestionsContext();
 
@@ -546,21 +605,14 @@ function buildSystemPrompt(emotion, personality, detectedSubject) {
   }
 
   const subject = detectedSubject || state.subject;
-  if (subject === "science") {
-    prompt +=
-      " If the question is about science, include one fun related fact about your Pokémon type.";
-  } else if (subject === "math") {
-    prompt +=
-      " If the question is about math, be encouraging about logic and step-by-step thinking.";
-  } else if (subject === "english") {
-    prompt +=
-      " If the question is about English, help with the specific word or grammar they asked about.";
-  } else if (subject === "geography") {
-    prompt +=
-      " If the question is about geography, use places and maps kids can picture easily.";
-  }
+  prompt += SUBJECT_PROMPT_HINTS[subject] || "";
 
   prompt += EMOTION_INSTRUCTIONS[emotion] || EMOTION_INSTRUCTIONS.neutral;
+
+  if (includeQuiz) {
+    prompt +=
+      " After your normal in-character answer, on the VERY LAST line, output a single-line JSON block in this exact format and nothing after it: QUIZ:{\"question\":\"...\",\"options\":[\"A) ...\",\"B) ...\",\"C) ...\",\"D) ...\"],\"answer\":\"A\"} where the question is a fun age-appropriate multiple-choice question related to the topic you just explained, options are four short choices each starting with A) B) C) D), and answer is the single capital letter A B C or D of the correct option. Do not add any text after the QUIZ block.";
+  }
   return prompt;
 }
 
@@ -581,37 +633,107 @@ async function fetchSentiment(transcript) {
   return data.sentiment;
 }
 
-function buildChatMessages(transcript, emotion, personality, detectedSubject) {
-  const messages = [
-    {
-      role: "system",
-      content: buildSystemPrompt(emotion, personality, detectedSubject),
-    },
-  ];
-
-  state.conversationHistory.forEach((msg) => {
-    messages.push({ role: msg.role, content: msg.content });
-  });
-
-  messages.push({ role: "user", content: transcript });
-  return messages;
+function maskedOpenAIKey() {
+  const key = (typeof CONFIG !== "undefined" && CONFIG && CONFIG.OPENAI_KEY) || "";
+  if (!key) return "<EMPTY>";
+  return `${key.slice(0, 8)}…(len=${key.length})`;
 }
 
-async function fetchOpenAIReply(transcript, emotion, personality, detectedSubject) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${CONFIG.OPENAI_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: buildChatMessages(transcript, emotion, personality, detectedSubject),
-    }),
-  });
-  if (!res.ok) throw new Error("OpenAI request failed");
+function buildChatMessages(transcript, emotion, personality, detectedSubject, includeQuiz) {
+  const systemPrompt = buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz);
+  return [
+    { role: "system", content: systemPrompt },
+    ...state.conversationHistory.map((msg) => ({ role: msg.role, content: msg.content })),
+    { role: "user", content: transcript },
+  ];
+}
+
+async function callOpenAIChat(messages, label = "openai") {
+  const key = (typeof CONFIG !== "undefined" && CONFIG && CONFIG.OPENAI_KEY) || "";
+  console.log(`[${label}] OpenAI key check:`, maskedOpenAIKey());
+  if (!key) {
+    throw new Error("CONFIG.OPENAI_KEY is missing or empty. Add it to config.js.");
+  }
+
+  let res;
+  try {
+    res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+      }),
+    });
+  } catch (networkErr) {
+    console.error(`[${label}] Network error before reaching OpenAI:`, networkErr);
+    throw new Error(`Network error: ${networkErr.message || networkErr}`);
+  }
+
+  console.log(`[${label}] OpenAI status:`, res.status, res.statusText);
+
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      bodyText = await res.text();
+    } catch {
+      bodyText = "<could not read body>";
+    }
+    console.error(`[${label}] OpenAI error body:`, bodyText);
+    throw new Error(`OpenAI ${res.status} ${res.statusText}: ${bodyText.slice(0, 200)}`);
+  }
+
   const data = await res.json();
-  return data.choices[0].message.content;
+  const content = data?.choices?.[0]?.message?.content;
+  console.log(`[${label}] OpenAI raw response text:`, content);
+  if (!content) {
+    console.error(`[${label}] OpenAI returned no content. Full body:`, data);
+    throw new Error("OpenAI returned an empty response.");
+  }
+  return content;
+}
+
+async function fetchOpenAIReply(transcript, emotion, personality, detectedSubject, includeQuiz) {
+  const messages = buildChatMessages(transcript, emotion, personality, detectedSubject, includeQuiz);
+  console.log("[openai] Messages going to gpt-4o-mini:", messages);
+  return callOpenAIChat(messages, "openai");
+}
+
+function parseQuizFromReply(reply) {
+  if (!reply) return { answerText: reply || "", quiz: null };
+  const idx = reply.indexOf("QUIZ:");
+  if (idx < 0) return { answerText: reply.trim(), quiz: null };
+
+  const answerText = reply.slice(0, idx).trim();
+  const jsonPart = reply.slice(idx + 5).trim();
+
+  let quiz = null;
+  try {
+    const parsed = JSON.parse(jsonPart);
+    if (
+      parsed &&
+      typeof parsed.question === "string" &&
+      Array.isArray(parsed.options) &&
+      parsed.options.length === 4 &&
+      typeof parsed.answer === "string"
+    ) {
+      const answer = parsed.answer.trim().toUpperCase().charAt(0);
+      if (["A", "B", "C", "D"].includes(answer)) {
+        quiz = {
+          question: parsed.question.trim(),
+          options: parsed.options.map((o) => String(o).trim()),
+          answer,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to parse QUIZ JSON", err, jsonPart);
+  }
+
+  return { answerText: answerText || reply.trim(), quiz };
 }
 
 function pushConversationTurn(userText, assistantText) {
@@ -631,6 +753,9 @@ function clearConversationHistory() {
 
 async function respondToFinalTranscript(transcript) {
   const detectedSubject = detectSubjectFromQuestion(transcript);
+  state.subject = detectedSubject;
+  state.subjectLabel = SUBJECT_LABELS[detectedSubject] || SUBJECT_LABELS.general;
+  state.lastTopic = transcript;
 
   let sentiment = "neutral";
   try {
@@ -642,16 +767,28 @@ async function respondToFinalTranscript(transcript) {
   const emotion = deriveEmotionState(transcript, sentiment);
   console.log("Detected emotion:", emotion, "sentiment:", sentiment);
 
+  const shouldQuiz = state.questionsSinceQuiz >= QUIZ_TRIGGER_EVERY - 1 && !state.quizActive;
   const personality = await getCompanionPersonality();
-  const reply = await fetchOpenAIReply(
+
+  const rawReply = await fetchOpenAIReply(
     transcript,
     emotion,
     personality,
-    detectedSubject
+    detectedSubject,
+    shouldQuiz
   );
-  bubbleTextEl.textContent = reply;
-  pushConversationTurn(transcript, reply);
+
+  const { answerText, quiz } = parseQuizFromReply(rawReply);
+  bubbleTextEl.textContent = answerText;
+  updateSubjectBadge(detectedSubject);
+  pushConversationTurn(transcript, answerText);
   recordSuccessfulQuestion(transcript, detectedSubject);
+  state.questionsSinceQuiz += 1;
+
+  if (shouldQuiz && quiz) {
+    state.questionsSinceQuiz = 0;
+    showQuizCard(quiz);
+  }
 }
 
 function pickAudioMimeType() {
@@ -705,18 +842,28 @@ async function transcribeWithValsea(blob) {
   return (data.text || "").trim();
 }
 
+const BRAIN_ERROR_MESSAGE =
+  "Oops! Could not connect to my brain. Please check your internet and try again!";
+
+function showBrainError(err) {
+  console.error("Pokémon reply failed:", err);
+  const detail = err && err.message ? ` (${err.message})` : "";
+  bubbleTextEl.textContent = `${BRAIN_ERROR_MESSAGE}${detail}`;
+}
+
 function deliverFinalTranscript() {
   setMicUI("idle");
   transcriptTextEl.classList.remove("listening");
   if (!state.finalTranscript) return;
   bubbleTextEl.textContent = "Thinking…";
-  respondToFinalTranscript(state.finalTranscript).catch(() => {
-    bubbleTextEl.textContent = getPlaceholderReply();
+  respondToFinalTranscript(state.finalTranscript).catch((err) => {
+    showBrainError(err);
   });
 }
 
 async function processRecordedAudio() {
   if (!recorder.chunks.length) {
+    resetRecorderState();
     showTranscriptError("Could not hear you clearly, please try again");
     return;
   }
@@ -733,6 +880,7 @@ async function processRecordedAudio() {
     text = await transcribeWithValsea(blob);
   } catch (err) {
     console.error("VALSEA transcription error", err);
+    resetRecorderState();
     showTranscriptError("Could not transcribe audio, please try again");
     return;
   }
@@ -744,6 +892,7 @@ async function processRecordedAudio() {
 
   state.finalTranscript = text;
   transcriptTextEl.textContent = text;
+  resetRecorderState();
   deliverFinalTranscript();
 }
 
@@ -754,8 +903,8 @@ async function startRecording() {
     return;
   }
 
+  resetRecorderState();
   state.finalTranscript = "";
-  recorder.chunks = [];
   recorder.recordingStartedAt = Date.now();
 
   try {
@@ -774,7 +923,7 @@ async function startRecording() {
       : new MediaRecorder(recorder.mediaStream);
   } catch (err) {
     console.error("MediaRecorder failed", err);
-    stopMicTracks();
+    resetRecorderState();
     showTranscriptError("Could not start recording.");
     return;
   }
@@ -792,7 +941,7 @@ async function startRecording() {
 
   recorder.mediaRecorder.onerror = (event) => {
     console.error("MediaRecorder error", event.error || event);
-    stopMicTracks();
+    resetRecorderState();
     showTranscriptError("Recording failed, please try again.");
   };
 
@@ -814,7 +963,7 @@ function stopRecording() {
       recorder.mediaRecorder.stop();
     } catch (err) {
       console.error("MediaRecorder stop failed", err);
-      stopMicTracks();
+      resetRecorderState();
       showTranscriptError("Could not stop recording, please try again.");
     }
   }
@@ -827,10 +976,6 @@ function toggleMic() {
   } else {
     stopRecording();
   }
-}
-
-function getPlaceholderReply() {
-  return `Great question about ${state.subjectLabel}! Photosynthesis is how plants use sunlight to make food. You're doing awesome, trainer!`;
 }
 
 function triggerHeroBounce() {
@@ -853,10 +998,14 @@ function updateHero() {
 }
 
 function selectPokemon(pokemon, cellEl) {
+  if (!personalitiesReady) return;
   state.companionId = pokemon.id;
   state.companionSlug = pokemon.name;
   state.companionName = formatPokemonName(pokemon.name);
   state.companionTypes = null;
+  state.questionsSinceQuiz = 0;
+  state.lastTopic = "";
+  hideQuizCard();
   clearConversationHistory();
   fetchPokemonTypes(pokemon.id)
     .then((types) => {
@@ -871,6 +1020,7 @@ function selectPokemon(pokemon, cellEl) {
 
   updateHero();
   updateBubble();
+  if (subjectBadgeEl) subjectBadgeEl.hidden = true;
 }
 
 function setLanguage(lang) {
@@ -1021,9 +1171,162 @@ async function fetchAllPokemon() {
   }
 }
 
-subjectBtns.forEach((btn) => {
-  btn.addEventListener("click", () => setSubject(btn));
-});
+function hideQuizCard() {
+  if (!quizCardEl) return;
+  state.quizActive = false;
+  state.pendingQuiz = null;
+  quizCardEl.hidden = true;
+  if (quizOptionsEl) quizOptionsEl.replaceChildren();
+  if (quizFeedbackEl) quizFeedbackEl.textContent = "";
+}
+
+function showQuizCard(quiz) {
+  if (!quizCardEl || !quiz) return;
+  state.quizActive = true;
+  state.pendingQuiz = quiz;
+
+  quizQuestionEl.textContent = quiz.question;
+  quizFeedbackEl.textContent = "";
+  quizOptionsEl.replaceChildren();
+
+  quiz.options.forEach((label, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "quiz-option";
+    btn.dataset.color = String(idx);
+    btn.dataset.letter = String.fromCharCode(65 + idx);
+    btn.textContent = label;
+    btn.addEventListener("click", () => handleQuizAnswer(btn));
+    quizOptionsEl.appendChild(btn);
+  });
+
+  quizCardEl.hidden = false;
+  quizCardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function disableQuizButtons() {
+  quizOptionsEl.querySelectorAll(".quiz-option").forEach((b) => {
+    b.disabled = true;
+  });
+}
+
+async function handleQuizAnswer(btn) {
+  if (!state.pendingQuiz || !state.quizActive) return;
+  const chosen = btn.dataset.letter;
+  const quiz = state.pendingQuiz;
+  const isCorrect = chosen === quiz.answer;
+
+  disableQuizButtons();
+  btn.classList.add(isCorrect ? "correct" : "wrong");
+  if (!isCorrect) {
+    const correctBtn = quizOptionsEl.querySelector(`.quiz-option[data-letter="${quiz.answer}"]`);
+    if (correctBtn) correctBtn.classList.add("correct");
+  }
+
+  if (isCorrect) {
+    addStar(QUIZ_REWARD_STARS);
+    triggerStarBurst();
+    quizFeedbackEl.textContent = `🎉 +${QUIZ_REWARD_STARS} stars!`;
+  } else {
+    quizFeedbackEl.textContent = "Let's hear it from your buddy…";
+  }
+
+  state.quizActive = false;
+  try {
+    const reaction = await fetchQuizReaction(quiz, chosen, isCorrect);
+    bubbleTextEl.textContent = reaction;
+    pushConversationTurn(
+      `(Quiz answer: ${chosen}. ${isCorrect ? "Correct" : "Wrong"}.)`,
+      reaction
+    );
+  } catch (err) {
+    showBrainError(err);
+  }
+}
+
+async function fetchQuizReaction(quiz, chosen, isCorrect) {
+  const personality = await getCompanionPersonality();
+  const reactionInstruction = isCorrect
+    ? "The child just got the quiz question CORRECT. Celebrate IN CHARACTER with one short excited line and one tiny bonus fact. Do not include any QUIZ block."
+    : `The child answered ${chosen} but the correct answer was ${quiz.answer}. Gently explain why ${quiz.answer} is right IN CHARACTER, kind and encouraging in 2-3 sentences. Do not include any QUIZ block.`;
+
+  const systemPrompt = `${CHARACTER_RULES} ${personality} Always stay fully in character. ${reactionInstruction}`;
+
+  const userContent = `Quiz question: ${quiz.question}\nOptions: ${quiz.options.join(" | ")}\nMy answer: ${chosen}\nCorrect answer: ${quiz.answer}`;
+
+  return callOpenAIChat(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent },
+    ],
+    "openai-quiz"
+  );
+}
+
+function triggerStarBurst() {
+  if (!starBurstEl) return;
+  starBurstEl.hidden = false;
+  starBurstEl.replaceChildren();
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement("span");
+    star.className = "burst-star";
+    star.textContent = "⭐";
+    const angle = (Math.PI * 2 * i) / count;
+    const distance = 180 + Math.random() * 60;
+    star.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
+    star.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
+    star.style.fontSize = `${1.5 + Math.random() * 1.2}rem`;
+    starBurstEl.appendChild(star);
+  }
+  setTimeout(() => {
+    starBurstEl.replaceChildren();
+    starBurstEl.hidden = true;
+  }, 1100);
+}
+
+function openChatPanel() {
+  if (!chatPanelEl) return;
+  chatPanelEl.hidden = false;
+  chatPanelStatusEl.textContent = "";
+  setTimeout(() => chatPanelInputEl.focus(), 50);
+}
+
+function closeChatPanel() {
+  if (!chatPanelEl) return;
+  chatPanelEl.hidden = true;
+  chatPanelStatusEl.textContent = "";
+  chatPanelInputEl.value = "";
+  chatPanelSendEl.disabled = false;
+}
+
+async function handleTextChatSubmit(event) {
+  event.preventDefault();
+  const text = chatPanelInputEl.value.trim();
+  if (!text) return;
+  if (isInvalidTranscript(text)) {
+    chatPanelStatusEl.textContent = "Try a clearer question, trainer!";
+    return;
+  }
+
+  chatPanelSendEl.disabled = true;
+  chatPanelStatusEl.textContent = "Sending to your buddy…";
+
+  state.finalTranscript = text;
+  transcriptTextEl.textContent = text;
+  bubbleTextEl.textContent = "Thinking…";
+
+  try {
+    await respondToFinalTranscript(text);
+    chatPanelStatusEl.textContent = "Answered! Ask another?";
+    chatPanelInputEl.value = "";
+  } catch (err) {
+    showBrainError(err);
+    chatPanelStatusEl.textContent = err && err.message ? err.message : "Something went wrong. Try again.";
+  } finally {
+    chatPanelSendEl.disabled = false;
+  }
+}
 
 micBtnEl.addEventListener("click", toggleMic);
 
@@ -1038,10 +1341,27 @@ langBtns.forEach((btn) => {
   btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
 });
 
+if (quizCloseEl) quizCloseEl.addEventListener("click", hideQuizCard);
+if (chatFabEl) {
+  chatFabEl.addEventListener("click", () => {
+    if (chatPanelEl.hidden) openChatPanel();
+    else closeChatPanel();
+  });
+}
+if (chatPanelCloseEl) chatPanelCloseEl.addEventListener("click", closeChatPanel);
+if (chatPanelFormEl) chatPanelFormEl.addEventListener("submit", handleTextChatSubmit);
+
 setupSpriteObserver();
 loadStars();
 updateProgressPanel();
 updateBubble();
-fetchAllPokemon().catch(() => {
-  browserStatusEl.textContent = "Could not load Pokémon. Check your connection.";
-});
+async function initApp() {
+  await loadPokemonPersonalities();
+  try {
+    await fetchAllPokemon();
+  } catch {
+    browserStatusEl.textContent = "Could not load Pokémon. Check your connection.";
+  }
+}
+
+initApp();

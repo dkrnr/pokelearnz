@@ -26,16 +26,6 @@
       </div>
     </header>
 
-    <section class="subjects" aria-label="Choose a subject">
-      <p class="section-label">Pick a subject</p>
-      <div class="subject-row" role="group" aria-label="Subjects">
-        <button type="button" class="subject-btn active" data-subject="science">🔬 Science</button>
-        <button type="button" class="subject-btn" data-subject="math">🔢 Math</button>
-        <button type="button" class="subject-btn" data-subject="english">📚 English</button>
-        <button type="button" class="subject-btn" data-subject="geography">🌍 Geography</button>
-      </div>
-    </section>
-
     <section class="pokemon-browser" aria-label="Choose your teacher">
       <p class="section-label">Choose your teacher</p>
 
@@ -87,14 +77,26 @@
     </section>
 
     <main class="chat-area">
+      <div class="subject-badge" id="subjectBadge" aria-live="polite" hidden>📝 General Knowledge</div>
+
       <div class="speech-bubble" id="speechBubble">
         <p class="bubble-label" id="bubbleLabel">Pikachu says:</p>
-        <p class="bubble-text" id="bubbleText">Hi trainer! I'm Pikachu! Tap the mic and ask me anything about Science.</p>
+        <p class="bubble-text" id="bubbleText">Hi trainer! I'm Pikachu! Tap the mic and ask me anything!</p>
       </div>
 
       <div class="transcript-box" id="transcriptBox" aria-live="polite">
         <span class="transcript-label">You said:</span>
         <span class="transcript-text" id="transcriptText">—</span>
+      </div>
+
+      <div class="quiz-card" id="quizCard" hidden>
+        <div class="quiz-header">
+          <span class="quiz-tag">🎯 Quick Quiz!</span>
+          <button type="button" class="quiz-close" id="quizClose" aria-label="Close quiz">×</button>
+        </div>
+        <p class="quiz-question" id="quizQuestion"></p>
+        <div class="quiz-options" id="quizOptions" role="group" aria-label="Quiz choices"></div>
+        <p class="quiz-feedback" id="quizFeedback" aria-live="polite"></p>
       </div>
 
       <div class="lang-toggle" id="langToggle" role="group" aria-label="Choose your language">
@@ -111,6 +113,29 @@
       </div>
     </main>
   </div>
+
+  <button type="button" class="chat-fab" id="chatFab" aria-label="Open text chat">💬</button>
+
+  <div class="chat-panel" id="chatPanel" role="dialog" aria-modal="false" aria-labelledby="chatPanelTitle" hidden>
+    <div class="chat-panel-header">
+      <h2 class="chat-panel-title" id="chatPanelTitle">Type your question</h2>
+      <button type="button" class="chat-panel-close" id="chatPanelClose" aria-label="Close text chat">×</button>
+    </div>
+    <form class="chat-panel-form" id="chatPanelForm">
+      <input
+        type="text"
+        class="chat-panel-input"
+        id="chatPanelInput"
+        placeholder="Ask anything, trainer…"
+        autocomplete="off"
+        maxlength="200"
+      >
+      <button type="submit" class="chat-panel-send" id="chatPanelSend">Send</button>
+    </form>
+    <p class="chat-panel-status" id="chatPanelStatus"></p>
+  </div>
+
+  <div class="star-burst" id="starBurst" aria-hidden="true" hidden></div>
 
   <script src="config.js"></script>
   <script src="app.js"></script>
