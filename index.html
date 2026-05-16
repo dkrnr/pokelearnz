@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokeLearn — Learn by Talking!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-shapes" aria-hidden="true">
+    <span class="shape shape-1"></span>
+    <span class="shape shape-2"></span>
+    <span class="shape shape-3"></span>
+    <span class="shape shape-4"></span>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <h1 class="title">PokeLearn 🎮 Learn by Talking!</h1>
+      <div class="star-counter" id="starCounter" aria-label="Stars earned">
+        <span class="star-icon">⭐</span>
+        <span class="star-count" id="starCount">0</span>
+      </div>
+    </header>
+
+    <section class="subjects" aria-label="Choose a subject">
+      <p class="section-label">Pick a subject</p>
+      <div class="subject-row" role="group" aria-label="Subjects">
+        <button type="button" class="subject-btn active" data-subject="science">🔬 Science</button>
+        <button type="button" class="subject-btn" data-subject="math">🔢 Math</button>
+        <button type="button" class="subject-btn" data-subject="english">📚 English</button>
+        <button type="button" class="subject-btn" data-subject="geography">🌍 Geography</button>
+      </div>
+    </section>
+
+    <section class="companions" aria-label="Choose your teacher">
+      <p class="section-label">Choose your teacher</p>
+      <div class="companion-row">
+        <button type="button" class="companion-card active" data-companion="pikachu" data-name="Pikachu" data-emoji="⚡" data-theme="yellow">
+          <span class="companion-emoji">⚡</span>
+          <span class="companion-name">Pikachu</span>
+          <span class="companion-tag">Energetic &amp; fun!</span>
+        </button>
+        <button type="button" class="companion-card" data-companion="bulbasaur" data-name="Bulbasaur" data-emoji="🌿" data-theme="green">
+          <span class="companion-emoji">🌿</span>
+          <span class="companion-name">Bulbasaur</span>
+          <span class="companion-tag">Calm &amp; patient</span>
+        </button>
+        <button type="button" class="companion-card" data-companion="mewtwo" data-name="Mewtwo" data-emoji="🔮" data-theme="purple">
+          <span class="companion-emoji">🔮</span>
+          <span class="companion-name">Mewtwo</span>
+          <span class="companion-tag">Super smart!</span>
+        </button>
+      </div>
+    </section>
+
+    <main class="chat-area">
+      <div class="speech-bubble" id="speechBubble">
+        <p class="bubble-label" id="bubbleLabel">Pikachu says:</p>
+        <p class="bubble-text" id="bubbleText">Hi trainer! Tap the mic and ask me anything about Science. Pika pika! ⚡</p>
+      </div>
+
+      <div class="transcript-box" id="transcriptBox" aria-live="polite">
+        <span class="transcript-label">You said:</span>
+        <span class="transcript-text" id="transcriptText">—</span>
+      </div>
+
+      <div class="mic-wrap">
+        <button type="button" class="mic-btn" id="micBtn" aria-label="Hold to talk">
+          <span class="mic-icon" aria-hidden="true">🎤</span>
+        </button>
+        <p class="mic-hint" id="micHint">Tap the microphone to talk!</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
