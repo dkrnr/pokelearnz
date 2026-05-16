@@ -36,31 +36,50 @@
       </div>
     </section>
 
-    <section class="companions" aria-label="Choose your teacher">
+    <section class="pokemon-browser" aria-label="Choose your teacher">
       <p class="section-label">Choose your teacher</p>
-      <div class="companion-row">
-        <button type="button" class="companion-card active" data-companion="pikachu" data-name="Pikachu" data-emoji="⚡" data-theme="yellow">
-          <span class="companion-emoji">⚡</span>
-          <span class="companion-name">Pikachu</span>
-          <span class="companion-tag">Energetic &amp; fun!</span>
+
+      <div class="companion-hero" id="companionHero">
+        <div class="hero-sprite-wrap">
+          <img
+            class="hero-sprite"
+            id="heroSprite"
+            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png"
+            alt="Pikachu"
+            width="120"
+            height="120"
+          >
+        </div>
+        <p class="hero-name" id="heroName">Pikachu</p>
+        <p class="hero-id" id="heroId">#025</p>
+      </div>
+
+      <div class="browser-controls">
+        <label class="search-wrap">
+          <span class="visually-hidden">Search Pokémon by name</span>
+          <input
+            type="search"
+            class="pokemon-search"
+            id="pokemonSearch"
+            placeholder="🔍 Search Pokémon…"
+            autocomplete="off"
+          >
+        </label>
+        <button type="button" class="shiny-toggle" id="shinyToggle" aria-pressed="false">
+          ✨ Shiny
         </button>
-        <button type="button" class="companion-card" data-companion="bulbasaur" data-name="Bulbasaur" data-emoji="🌿" data-theme="green">
-          <span class="companion-emoji">🌿</span>
-          <span class="companion-name">Bulbasaur</span>
-          <span class="companion-tag">Calm &amp; patient</span>
-        </button>
-        <button type="button" class="companion-card" data-companion="mewtwo" data-name="Mewtwo" data-emoji="🔮" data-theme="purple">
-          <span class="companion-emoji">🔮</span>
-          <span class="companion-name">Mewtwo</span>
-          <span class="companion-tag">Super smart!</span>
-        </button>
+      </div>
+
+      <p class="browser-status" id="browserStatus">Loading Pokémon…</p>
+      <div class="pokemon-grid-scroll" id="pokemonGridScroll">
+        <div class="pokemon-grid" id="pokemonGrid" role="listbox" aria-label="Pokémon list"></div>
       </div>
     </section>
 
     <main class="chat-area">
       <div class="speech-bubble" id="speechBubble">
         <p class="bubble-label" id="bubbleLabel">Pikachu says:</p>
-        <p class="bubble-text" id="bubbleText">Hi trainer! Tap the mic and ask me anything about Science. Pika pika! ⚡</p>
+        <p class="bubble-text" id="bubbleText">Hi trainer! I'm Pikachu! Tap the mic and ask me anything about Science.</p>
       </div>
 
       <div class="transcript-box" id="transcriptBox" aria-live="polite">
