@@ -559,12 +559,17 @@ body {
   transform: scale(1.05);
 }
 
-.mic-btn:active,
-.mic-btn.listening {
-  animation: none;
+.mic-btn:active:not(.recording) {
   transform: scale(0.95);
+}
+
+.mic-btn.recording {
   background: linear-gradient(145deg, var(--mic-active), #d63031);
-  box-shadow: 0 4px 0 #922b21, 0 8px 20px rgba(214, 48, 49, 0.5);
+  animation: mic-recording-pulse 0.85s ease-in-out infinite;
+}
+
+.mic-btn.recording:hover {
+  transform: scale(1.06);
 }
 
 @keyframes mic-pulse {
@@ -574,6 +579,18 @@ body {
   }
   50% {
     box-shadow: 0 8px 0 #c0392b, 0 12px 32px rgba(238, 90, 36, 0.45), 0 0 0 18px rgba(255, 107, 107, 0);
+  }
+}
+
+@keyframes mic-recording-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 0 #922b21, 0 12px 28px rgba(214, 48, 49, 0.55), 0 0 0 0 rgba(255, 107, 107, 0.65);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 8px 0 #922b21, 0 14px 36px rgba(214, 48, 49, 0.6), 0 0 0 24px rgba(255, 107, 107, 0);
   }
 }
 
