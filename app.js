@@ -113,6 +113,88 @@ const EMOTION_KEYWORDS = {
   ],
 };
 
+// Content safety ----------------------------------------------------------------
+
+const NSFW_WORDS = [
+  // profanity
+  "fuck", "fucking", "fucker", "fucks", "fucked",
+  "shit", "shits", "shitting", "bullshit",
+  "bitch", "bitches", "bitchy",
+  "cunt", "cunts",
+  "asshole", "assholes",
+  "bastard", "bastards",
+  "damn", "goddamn",
+  // sexual
+  "cock", "cocks", "dick", "dicks", "penis",
+  "pussy", "vagina",
+  "boob", "boobs", "tit", "tits", "breast",
+  "porn", "porno", "pornography",
+  "sex", "sexual", "sexy",
+  "nude", "nudes", "naked",
+  "condom", "masturbate", "masturbation",
+  "orgasm", "erection",
+  // slurs
+  "nigger", "niggers", "nigga", "niggas",
+  "faggot", "faggots", "fag",
+  "retard", "retards", "retarded",
+  // self-harm / violence
+  "suicide", "suicidal",
+  "rape", "raping", "raped", "rapist",
+  "kill yourself", "kys",
+  // hard drugs
+  "heroin", "cocaine", "meth", "methamphetamine", "crack",
+];
+
+const NSFW_PATTERNS = [
+  /\bf+[u*@#]+c+k/i,       // f*ck, f**k, fuuuck
+  /\bs+h+[i!1*]+t/i,       // sh!t, sh*t, shiiit
+  /\bb+[i!1*]+t+c+h/i,     // b!tch, b*tch
+  /\ba+s+\s*h+o+l+e/i,     // a s s h o l e (spaced)
+  /\bn+[i*!1]+g+[gae]+/i,  // n-word obfuscations
+];
+
+function containsNSFW(text) {
+  const lower = (text || "").toLowerCase();
+  for (const word of NSFW_WORDS) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(lower)) return true;
+  }
+  for (const pattern of NSFW_PATTERNS) {
+    if (pattern.test(lower)) return true;
+  }
+  return false;
+}
+
+function censorText(text) {
+  let result = text;
+  for (const word of NSFW_WORDS) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "***");
+  }
+  return result;
+}
+
+function getBlockedResponse() {
+  const name = state.companionName;
+  if (state.companionId === 25) {
+    const pikaLines = [
+      "Pika pika! That is not something I can help with! Ask me about science or math instead! Pika!",
+      "Pika! Pika! Let's zap into something fun like space or animals! Pika pika!",
+      "Pikaaa! Nope, not that one! Ask me how lightning works or about cool history! Pika!",
+    ];
+    return pikaLines[Math.floor(Math.random() * pikaLines.length)];
+  }
+  const redirects = [
+    `Whoa, trainer! That's not something ${name} can explore. Let's use that energy for something awesome — ask me about science, space, history, or nature! ⚡`,
+    `Hmm, ${name} can't go there! But there's a whole world of amazing things to discover together. What do you actually want to learn today? 🌟`,
+    `Oops! That question is out of bounds in our Pokémon classroom. ${name} knows SO many cool facts — ask me anything about the world around you!`,
+    `${name} says: nope, not that one! Let's keep our adventure fun and amazing. Try asking about animals, math, how stars work… the list goes on! ✨`,
+  ];
+  return redirects[Math.floor(Math.random() * redirects.length)];
+}
+
+// End content safety ----------------------------------------------------------
+
 const recorder = {
   mediaRecorder: null,
   mediaStream: null,
@@ -199,6 +281,7 @@ const transcriptTextEl = document.getElementById("transcriptText");
 const micBtnEl = document.getElementById("micBtn");
 const micContentEl = document.getElementById("micContent");
 const micHintEl = document.getElementById("micHint");
+const quizMeBtnEl = document.getElementById("quizMeBtn");
 const subjectBadgeEl = document.getElementById("subjectBadge");
 
 const heroSpriteEl = document.getElementById("heroSprite");
@@ -288,6 +371,10 @@ function detectSubjectFromQuestion(text) {
 
 function updateSubjectBadge(subject) {
   if (!subjectBadgeEl) return;
+  if (!subject || subject === "general") {
+    subjectBadgeEl.hidden = true;
+    return;
+  }
   const label = SUBJECT_BADGE_LABELS[subject] || SUBJECT_BADGE_LABELS.general;
   subjectBadgeEl.textContent = label;
   subjectBadgeEl.hidden = false;
@@ -391,8 +478,14 @@ function greeting(name) {
   return `Hi trainer! I'm ${name}! Tap the mic or use 💬 to ask me anything!`;
 }
 
+function updateBubbleLabel() {
+  bubbleLabelEl.textContent = state.shiny
+    ? `✨ Shiny ${state.companionName} says:`
+    : `${state.companionName} says:`;
+}
+
 function updateBubble() {
-  bubbleLabelEl.textContent = `${state.companionName} says:`;
+  updateBubbleLabel();
   bubbleTextEl.textContent = greeting(state.companionName);
 }
 
@@ -596,8 +689,11 @@ const SUBJECT_PROMPT_HINTS = {
   technology: " If the question is about technology, explain it like a friendly invention demo a kid can imagine.",
 };
 
+const CHILD_SAFETY_INSTRUCTION =
+  " You are talking to a child aged 6-14. Never discuss violence, adult content, inappropriate topics, or anything unsuitable for children. If asked about anything inappropriate, deflect in character and redirect to learning topics.";
+
 function buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz) {
-  let prompt = `${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
+  let prompt = `SAFETY RULE (highest priority): You are speaking exclusively to children aged 6–14. If any question is inappropriate, sexual, violent, or harmful, do NOT engage with it — stay in character and cheerfully redirect the child to ask something they can learn.${CHILD_SAFETY_INSTRUCTION} ${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
   prompt += buildRecentQuestionsContext();
 
   if (state.language && state.language !== "english") {
@@ -704,11 +800,18 @@ async function fetchOpenAIReply(transcript, emotion, personality, detectedSubjec
 
 function parseQuizFromReply(reply) {
   if (!reply) return { answerText: reply || "", quiz: null };
-  const idx = reply.indexOf("QUIZ:");
-  if (idx < 0) return { answerText: reply.trim(), quiz: null };
+  const trimmedReply = reply.trim();
+  const idx = trimmedReply.lastIndexOf("QUIZ:");
+  if (idx < 0) return { answerText: trimmedReply, quiz: null };
 
-  const answerText = reply.slice(0, idx).trim();
-  const jsonPart = reply.slice(idx + 5).trim();
+  const answerText = trimmedReply.slice(0, idx).trim();
+  let jsonPart = trimmedReply.slice(idx + 5);
+  jsonPart = jsonPart
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+  console.log("[quiz] raw quiz JSON string before parsing:", jsonPart);
 
   let quiz = null;
   try {
@@ -727,13 +830,18 @@ function parseQuizFromReply(reply) {
           options: parsed.options.map((o) => String(o).trim()),
           answer,
         };
+      } else {
+        console.error("[quiz] parse failed — invalid answer letter. Full reply:", reply);
       }
+    } else {
+      console.error("[quiz] parse failed — shape mismatch. Full reply:", reply);
     }
   } catch (err) {
     console.warn("Failed to parse QUIZ JSON", err, jsonPart);
+    console.error("[quiz] parse failed — JSON.parse threw. Full reply:", reply);
   }
 
-  return { answerText: answerText || reply.trim(), quiz };
+  return { answerText: answerText || trimmedReply, quiz };
 }
 
 function pushConversationTurn(userText, assistantText) {
@@ -752,6 +860,14 @@ function clearConversationHistory() {
 }
 
 async function respondToFinalTranscript(transcript) {
+  if (containsNSFW(transcript)) {
+    transcriptTextEl.textContent = censorText(transcript);
+    bubbleTextEl.textContent = getBlockedResponse();
+    updateBubbleLabel();
+    setMicUI("idle");
+    return;
+  }
+
   const detectedSubject = detectSubjectFromQuestion(transcript);
   state.subject = detectedSubject;
   state.subjectLabel = SUBJECT_LABELS[detectedSubject] || SUBJECT_LABELS.general;
@@ -765,7 +881,6 @@ async function respondToFinalTranscript(transcript) {
   }
 
   const emotion = deriveEmotionState(transcript, sentiment);
-  console.log("Detected emotion:", emotion, "sentiment:", sentiment);
 
   const shouldQuiz = state.questionsSinceQuiz >= QUIZ_TRIGGER_EVERY - 1 && !state.quizActive;
   const personality = await getCompanionPersonality();
@@ -777,6 +892,8 @@ async function respondToFinalTranscript(transcript) {
     detectedSubject,
     shouldQuiz
   );
+
+  console.log("Detected emotion:", emotion, "sentiment:", sentiment);
 
   const { answerText, quiz } = parseQuizFromReply(rawReply);
   bubbleTextEl.textContent = answerText;
@@ -993,7 +1110,9 @@ function updateHero() {
   heroSpriteEl.src = spriteUrl(state.companionId);
   heroSpriteEl.alt = state.companionName;
   heroNameEl.textContent = state.companionName;
-  heroIdEl.textContent = formatPokemonId(state.companionId);
+  heroIdEl.textContent = state.shiny
+    ? `${formatPokemonId(state.companionId)} ✨`
+    : formatPokemonId(state.companionId);
   triggerHeroBounce();
 }
 
@@ -1133,6 +1252,7 @@ function toggleShiny() {
   shinyToggleEl.classList.toggle("active", state.shiny);
   shinyToggleEl.setAttribute("aria-pressed", String(state.shiny));
   shinyToggleEl.textContent = state.shiny ? "✨ Shiny ON" : "✨ Shiny";
+  document.body.classList.toggle("shiny-mode", state.shiny);
 
   pokemonGridEl.querySelectorAll("img[data-id]").forEach((img) => {
     if (img.dataset.loaded === "true") {
@@ -1140,6 +1260,10 @@ function toggleShiny() {
     }
   });
   heroSpriteEl.src = spriteUrl(state.companionId);
+  heroIdEl.textContent = state.shiny
+    ? `${formatPokemonId(state.companionId)} ✨`
+    : formatPokemonId(state.companionId);
+  updateBubbleLabel();
 }
 
 async function fetchAllPokemon() {
@@ -1171,13 +1295,69 @@ async function fetchAllPokemon() {
   }
 }
 
+function getLastDiscussedTopic() {
+  for (let i = state.conversationHistory.length - 1; i >= 0; i--) {
+    if (state.conversationHistory[i].role === "user") {
+      return state.conversationHistory[i].content;
+    }
+  }
+  return "";
+}
+
+async function triggerManualQuiz() {
+  if (state.listening || state.processing || state.quizActive) return;
+
+  const topic = getLastDiscussedTopic();
+  if (!topic) {
+    transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
+    return;
+  }
+
+  if (containsNSFW(topic)) {
+    transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
+    return;
+  }
+
+  if (quizMeBtnEl) quizMeBtnEl.disabled = true;
+  bubbleTextEl.textContent = "Thinking up a quiz for you…";
+
+  try {
+    const detectedSubject = state.subject || detectSubjectFromQuestion(topic);
+    let sentiment = "neutral";
+    try {
+      sentiment = await fetchSentiment(topic);
+    } catch (err) {
+      console.warn("Sentiment fetch failed, using text-only emotion analysis", err);
+    }
+    const emotion = deriveEmotionState(topic, sentiment);
+    const personality = await getCompanionPersonality();
+    const rawReply = await fetchOpenAIReply(topic, emotion, personality, detectedSubject, true);
+    const { answerText, quiz } = parseQuizFromReply(rawReply);
+
+    if (quiz) {
+      state.questionsSinceQuiz = 0;
+      showQuizCard(quiz);
+      bubbleTextEl.textContent = answerText || "Quick quiz time! 🎯";
+    } else {
+      bubbleTextEl.textContent = answerText || "Hmm, I couldn't whip up a quiz right now. Try again!";
+    }
+  } catch (err) {
+    showBrainError(err);
+  } finally {
+    if (quizMeBtnEl) quizMeBtnEl.disabled = false;
+  }
+}
+
 function hideQuizCard() {
   if (!quizCardEl) return;
   state.quizActive = false;
   state.pendingQuiz = null;
   quizCardEl.hidden = true;
   if (quizOptionsEl) quizOptionsEl.replaceChildren();
-  if (quizFeedbackEl) quizFeedbackEl.textContent = "";
+  if (quizFeedbackEl) {
+    quizFeedbackEl.textContent = "";
+    quizFeedbackEl.classList.remove("feedback-reveal");
+  }
 }
 
 function showQuizCard(quiz) {
@@ -1230,6 +1410,9 @@ async function handleQuizAnswer(btn) {
   } else {
     quizFeedbackEl.textContent = "Let's hear it from your buddy…";
   }
+  quizFeedbackEl.classList.remove("feedback-reveal");
+  void quizFeedbackEl.offsetWidth;
+  quizFeedbackEl.classList.add("feedback-reveal");
 
   state.quizActive = false;
   try {
@@ -1250,7 +1433,7 @@ async function fetchQuizReaction(quiz, chosen, isCorrect) {
     ? "The child just got the quiz question CORRECT. Celebrate IN CHARACTER with one short excited line and one tiny bonus fact. Do not include any QUIZ block."
     : `The child answered ${chosen} but the correct answer was ${quiz.answer}. Gently explain why ${quiz.answer} is right IN CHARACTER, kind and encouraging in 2-3 sentences. Do not include any QUIZ block.`;
 
-  const systemPrompt = `${CHARACTER_RULES} ${personality} Always stay fully in character. ${reactionInstruction}`;
+  const systemPrompt = `${CHARACTER_RULES} ${personality} Always stay fully in character. ${reactionInstruction}${CHILD_SAFETY_INSTRUCTION}`;
 
   const userContent = `Quiz question: ${quiz.question}\nOptions: ${quiz.options.join(" | ")}\nMy answer: ${chosen}\nCorrect answer: ${quiz.answer}`;
 
@@ -1329,6 +1512,84 @@ async function handleTextChatSubmit(event) {
 }
 
 micBtnEl.addEventListener("click", toggleMic);
+if (quizMeBtnEl) {
+  quizMeBtnEl.addEventListener("click", async () => {
+    if (state.listening || state.processing || state.quizActive) return;
+
+    const progressHistory = getHistory();
+    const hasConversation = state.conversationHistory.some((m) => m.role === "user");
+    const hasProgress = progressHistory.length > 0;
+
+    if (!hasConversation && !hasProgress) {
+      transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
+      return;
+    }
+
+    let topic = "";
+    let detectedSubject = state.subject;
+
+    if (hasConversation) {
+      for (let i = state.conversationHistory.length - 1; i >= 0; i--) {
+        if (state.conversationHistory[i].role === "user") {
+          topic = state.conversationHistory[i].content;
+          break;
+        }
+      }
+    }
+    if (!topic && hasProgress) {
+      const last = progressHistory[progressHistory.length - 1];
+      if (last?.question) {
+        topic = last.question;
+        detectedSubject = last.subject || detectedSubject;
+      }
+    }
+
+    if (!topic) {
+      transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
+      return;
+    }
+
+    if (containsNSFW(topic)) {
+      transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
+      return;
+    }
+
+    quizMeBtnEl.disabled = true;
+    bubbleTextEl.textContent = "Making a quiz for you…";
+
+    try {
+      const strictSystem =
+        'You are a quiz generator. You MUST end your response with a quiz in this EXACT format on the very last line, no exceptions: QUIZ:{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A"}. The answer field must be exactly A, B, C, or D. Do not add anything after the QUIZ: line. Do not wrap in markdown or code blocks.' +
+        CHILD_SAFETY_INSTRUCTION;
+      const userMsg = `Create one short, fun, age-appropriate multiple-choice quiz question for a child aged 6-14 about this topic: "${topic}". Output ONLY the QUIZ: line in the exact format described.`;
+
+      const rawReply = await callOpenAIChat(
+        [
+          { role: "system", content: strictSystem },
+          { role: "user", content: userMsg },
+        ],
+        "openai-quiz-manual"
+      );
+      console.log("[quiz-manual] full OpenAI reply:", rawReply);
+
+      const { quiz } = parseQuizFromReply(rawReply);
+
+      if (quiz) {
+        state.questionsSinceQuiz = 0;
+        showQuizCard(quiz);
+        console.log("Quiz card shown");
+        bubbleTextEl.textContent = "Quick quiz time! 🎯";
+      } else {
+        console.error("[quiz-manual] parse returned no quiz. Full reply was:", rawReply);
+        bubbleTextEl.textContent = "Hmm, I couldn't whip up a quiz right now. Try again!";
+      }
+    } catch (err) {
+      showBrainError(err);
+    } finally {
+      quizMeBtnEl.disabled = false;
+    }
+  });
+}
 
 pokemonSearchEl.addEventListener("input", (e) => {
   searchQuery = e.target.value;

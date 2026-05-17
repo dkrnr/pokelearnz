@@ -99,16 +99,22 @@
         <p class="quiz-feedback" id="quizFeedback" aria-live="polite"></p>
       </div>
 
-      <div class="lang-toggle" id="langToggle" role="group" aria-label="Choose your language">
-        <button type="button" class="lang-btn active" data-lang="english" aria-pressed="true">🇬🇧 English</button>
-        <button type="button" class="lang-btn" data-lang="sinhala" aria-pressed="false">🇱🇰 Sinhala</button>
-        <button type="button" class="lang-btn" data-lang="tamil" aria-pressed="false">🇮🇳 Tamil</button>
+      <div class="lang-toggle" id="langToggle" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="english" aria-pressed="true">🌏 English · SEA Accent ✓</button>
       </div>
 
       <div class="mic-wrap">
-        <button type="button" class="mic-btn" id="micBtn" aria-label="Tap to talk">
-          <span class="mic-content" id="micContent">🎤</span>
-        </button>
+        <div style="display:flex;align-items:center;gap:0.75rem;justify-content:center;">
+          <button type="button" class="mic-btn" id="micBtn" aria-label="Tap to talk">
+            <span class="mic-content" id="micContent">🎤</span>
+          </button>
+          <button
+            type="button"
+            id="quizMeBtn"
+            aria-label="Quiz me on what we discussed"
+            style="font-family:inherit;font-size:0.85rem;font-weight:700;padding:0.65rem 1rem;border-radius:999px;border:3px solid #fff;background:linear-gradient(140deg,#a29bfe,#6c5ce7);color:#fff;cursor:pointer;box-shadow:0 4px 0 #4834d4;white-space:nowrap;"
+          >🧠 Quiz Me</button>
+        </div>
         <p class="mic-hint" id="micHint">Tap the microphone to talk!</p>
       </div>
     </main>
