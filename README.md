@@ -130,8 +130,9 @@ Find **Vespiquen** and ask who is it's trainer and more.
 
 | Name | Role |
 |---|---|
-| **Ibaad** | Lead Developer — VALSEA integration, OpenAI prompt system, quiz engine, deployment |
-| **Dunith** | Frontend & Product — Pokémon selector, UI/UX, personality system, progress tracking |
+| **Dunith** | Lead Developer — VALSEA integration, OpenAI prompt system, quiz engine, deployment |
+| **Ibaad** | Frontend & Product — Pokémon selector, UI/UX, personality system, progress tracking, API integration |
+| **Zahrah** | Lead Tester — QA Engineer, Analyst, Advisor, Editor, Feedback   |
 
 Built at the **Cursor Colombo Buildathon 2026** in 24 hours at Royal MAS Arena, Colombo, Sri Lanka.
 
