@@ -7,8 +7,6 @@ const POKEAPI_LIST =
 const SPRITE_BASE =
   "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
 
-const VALSEA_TRANSCRIBE_URL = "https://api.valsea.ai/v1/audio/transcriptions";
-
 const DEFAULT_POKEMON_ID = 25;
 const MIN_RECORDING_MS = 1500;
 
@@ -713,26 +711,16 @@ function buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz) {
 }
 
 async function fetchSentiment(transcript) {
-  const res = await fetch("https://api.valsea.ai/v1/sentiment", {
+  const res = await fetch("/.netlify/functions/sentiment", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${CONFIG.VALSEA_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "valsea-sentiment",
-      transcript,
-    }),
+    body: JSON.stringify({ transcript }),
   });
   if (!res.ok) throw new Error("Sentiment request failed");
   const data = await res.json();
   return data.sentiment;
-}
-
-function maskedOpenAIKey() {
-  const key = (typeof CONFIG !== "undefined" && CONFIG && CONFIG.OPENAI_KEY) || "";
-  if (!key) return "<EMPTY>";
-  return `${key.slice(0, 8)}…(len=${key.length})`;
 }
 
 function buildChatMessages(transcript, emotion, personality, detectedSubject, includeQuiz) {
@@ -745,31 +733,21 @@ function buildChatMessages(transcript, emotion, personality, detectedSubject, in
 }
 
 async function callOpenAIChat(messages, label = "openai") {
-  const key = (typeof CONFIG !== "undefined" && CONFIG && CONFIG.OPENAI_KEY) || "";
-  console.log(`[${label}] OpenAI key check:`, maskedOpenAIKey());
-  if (!key) {
-    throw new Error("CONFIG.OPENAI_KEY is missing or empty. Add it to config.js.");
-  }
-
   let res;
   try {
-    res = await fetch("https://api.openai.com/v1/chat/completions", {
+    res = await fetch("/.netlify/functions/chat", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + key,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-      }),
+      body: JSON.stringify({ messages }),
     });
   } catch (networkErr) {
-    console.error(`[${label}] Network error before reaching OpenAI:`, networkErr);
+    console.error(`[${label}] Network error before reaching OpenRouter:`, networkErr);
     throw new Error(`Network error: ${networkErr.message || networkErr}`);
   }
 
-  console.log(`[${label}] OpenAI status:`, res.status, res.statusText);
+  console.log(`[${label}] OpenRouter status:`, res.status, res.statusText);
 
   if (!res.ok) {
     let bodyText = "";
@@ -778,23 +756,23 @@ async function callOpenAIChat(messages, label = "openai") {
     } catch {
       bodyText = "<could not read body>";
     }
-    console.error(`[${label}] OpenAI error body:`, bodyText);
-    throw new Error(`OpenAI ${res.status} ${res.statusText}: ${bodyText.slice(0, 200)}`);
+    console.error(`[${label}] OpenRouter error body:`, bodyText);
+    throw new Error(`OpenRouter ${res.status} ${res.statusText}: ${bodyText.slice(0, 200)}`);
   }
 
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content;
-  console.log(`[${label}] OpenAI raw response text:`, content);
+  console.log(`[${label}] OpenRouter raw response text:`, content);
   if (!content) {
-    console.error(`[${label}] OpenAI returned no content. Full body:`, data);
-    throw new Error("OpenAI returned an empty response.");
+    console.error(`[${label}] OpenRouter returned no content. Full body:`, data);
+    throw new Error("OpenRouter returned an empty response.");
   }
   return content;
 }
 
 async function fetchOpenAIReply(transcript, emotion, personality, detectedSubject, includeQuiz) {
   const messages = buildChatMessages(transcript, emotion, personality, detectedSubject, includeQuiz);
-  console.log("[openai] Messages going to gpt-4o-mini:", messages);
+  console.log("[openai] Messages going to OpenRouter:", messages);
   return callOpenAIChat(messages, "openai");
 }
 
@@ -947,9 +925,8 @@ async function transcribeWithValsea(blob) {
   form.append("model", "valsea-transcribe");
   form.append("language", getValseaLanguageCode());
   form.append("hint_text", VALSEA_HINT_TEXT);
-  const res = await fetch(VALSEA_TRANSCRIBE_URL, {
+  const res = await fetch("/.netlify/functions/transcribe", {
     method: "POST",
-    headers: { Authorization: `Bearer ${CONFIG.VALSEA_KEY}` },
     body: form,
   });
   if (!res.ok) {

@@ -32,7 +32,7 @@ VALSEA transcribes with accent awareness
         ↓
 VALSEA sentiment detects emotion (confused? confident? frustrated?)
         ↓
-OpenAI responds in character as the chosen Pokémon
+OpenRouter responds in character as the chosen Pokémon
 adapted to the child's emotional state
         ↓
 Every 3 questions → auto MCQ quiz with star rewards
@@ -51,8 +51,8 @@ Every 3 questions → auto MCQ quiz with star rewards
 | 📚 8 Subject Categories | Science, Math, English, Geography, History, Nature, Art, Technology — auto-detected |
 | ♿ Text Chat Fallback | Full accessibility for deaf users or noisy environments |
 | ⭐ Progress Tracking | Daily questions, stars, and streaks via localStorage |
-| 🛡️ Content Safety | All inputs filtered before reaching OpenAI. Child-safe on every call |
-| 🔐 Secure Deployment | API keys injected at Netlify build time via shell script — never in the repo |
+| 🛡️ Content Safety | All inputs filtered before reaching the chat model. Child-safe on every call |
+| 🔐 Secure Deployment | API keys stay on the server — OpenRouter and VALSEA calls go through Netlify functions |
 
 ---
 
@@ -62,44 +62,46 @@ Every 3 questions → auto MCQ quiz with star rewards
 |---|---|---|
 | Voice Transcription | VALSEA `/v1/audio/transcriptions` | Only API that handles South Asian accented English accurately |
 | Sentiment Analysis | VALSEA `/v1/sentiment` | Drives emotional adaptation in every Pokémon response |
-| AI Responses | OpenAI `gpt-4o-mini` | Fast, cost-efficient, strong character instruction following |
+| AI Responses | OpenRouter (`google/gemma-4-31b-it:free`) | Free, strong character instruction following, no OpenAI billing |
 | Pokémon Data | PokéAPI | Free, open, all 1025 Pokémon with sprites and types |
 | Frontend | HTML, CSS, Vanilla JS | No framework — zero build complexity, maximum speed |
-| Hosting | Netlify | Free tier, automatic GitHub deploys, environment variable support |
-| Secret Management | `generate-config.sh` | Writes API keys from Netlify env vars at build time |
+| Hosting | Netlify | Free tier, automatic GitHub deploys, serverless functions |
+| Secret Management | Netlify env vars | `OPENROUTER_KEY` / `VALSEA_KEY` used only inside serverless functions |
 
 ---
 
-## 🚀 Running Locally
+## 🚀 Local development
+
+API keys never ship to the browser. Locally, Netlify Functions need a `.env` file (gitignored) and `netlify dev` — a static server like `python3 -m http.server` will not proxy `/.netlify/functions/*`.
 
 ```bash
 git clone https://github.com/dkrnr/pokelearn
 cd pokelearn
 
-# Create your config file (never commit this)
-cp config.example.js config.js
-# Edit config.js and add your API keys:
-# CONFIG.VALSEA_KEY = "your_valsea_key"
-# CONFIG.OPENAI_KEY = "your_openai_key"
+# Create .env (never commit this)
+cat > .env << EOF
+VALSEA_KEY=your_valsea_key
+OPENROUTER_KEY=your_openrouter_key
+EOF
 
-# Serve locally
-python3 -m http.server 8080
-# Open http://localhost:8080
+# Requires the Netlify CLI: npm install -g netlify-cli
+netlify dev
+# Open the URL it prints (usually http://localhost:8888)
 ```
 
 **API keys needed:**
 - [VALSEA](https://valsea.ai) — for voice transcription and sentiment
-- [OpenAI](https://platform.openai.com) — for Pokémon character responses
+- [OpenRouter](https://openrouter.ai) — for Pokémon character responses (free models, no card required)
 
 ---
 
 ## 🔐 Security
 
-- API keys stored in Netlify environment variables
-- `generate-config.sh` writes keys to `config.js` at build time
-- `config.js` is `.gitignore`d — never committed
+- API keys stored in Netlify environment variables (`OPENROUTER_KEY`, `VALSEA_KEY`)
+- Browser calls only `/.netlify/functions/chat`, `/transcribe`, and `/sentiment` — keys never leave the server
+- `.env` is `.gitignore`d — never committed
 - No user data collected or stored beyond anonymous localStorage progress
-- Content safety filter on all inputs before any OpenAI call
+- Content safety filter on all inputs before any chat-model call
 
 ---
 
@@ -111,9 +113,11 @@ pokelearn/
 ├── style.css                     # Pokémon-themed UI
 ├── app.js                        # All app logic
 ├── pokemonPersonalities.json     # 1025 Pokémon personality prompts
-├── config.example.js             # Safe template (no real keys)
-├── generate-config.sh            # Netlify build script for key injection
-├── netlify.toml                  # Netlify build config
+├── netlify.toml                  # Publish dir + functions path
+├── netlify/functions/            # OpenRouter + VALSEA proxies (keys stay here)
+│   ├── chat.js
+│   ├── transcribe.js
+│   └── sentiment.js
 └── README.md
 ```
 
