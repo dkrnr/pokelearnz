@@ -24,7 +24,6 @@ Pokémon search, selection, switching, shiny toggle, and personality behaviour w
 
 ---
 
-## 2. Voice Interaction
 
 ## 2. Voice Interaction
 
@@ -45,7 +44,6 @@ Pokémon search, selection, switching, shiny toggle, and personality behaviour w
 Observations: Voice input started successfully, but the spoken question was not transcribed. The application displayed the error message “Could not transcribe audio, please try again,” and no AI response was generated.
 ---
 
-## 3. Text Chat
 
 ## 3. Text Chat
 
