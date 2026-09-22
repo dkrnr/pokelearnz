@@ -9,54 +9,58 @@ This document records quality assurance testing performed on PokeLearn. Testing 
 
 ## 1. Pokémon Selection
 
-| Test Case                              | Expected Result                                        | Status |
-| -------------------------------------- | ------------------------------------------------------ | ------ |
-| Select the default Pokémon             | Default Pokémon is displayed correctly                 | ⬜      |
-| Search for a Pokémon by name           | Matching Pokémon can be found                          | ⬜      |
-| Select a different Pokémon             | Selected Pokémon becomes the active teacher            | ⬜      |
-| Switch between Pokémon                 | Teacher changes correctly without breaking the session | ⬜      |
-| Toggle Shiny Pokémon                   | Shiny version is displayed when available              | ⬜      |
-| Select different Pokémon personalities | Responses reflect the selected Pokémon's personality   | ⬜      |
+| Test Case                              | Expected Result                                        | Status    |    
+| -------------------------------------- | ------------------------------------------------------ | ------    |
+| Select the default Pokémon             | Default Pokémon is displayed correctly                 | ✅ Pass  |
+| Search for a Pokémon by name           | Matching Pokémon can be found                          | ✅ Pass  |
+| Select a different Pokémon             | Selected Pokémon becomes the active teacher            | ✅ Pass  |
+| Switch between Pokémon                 | Teacher changes correctly without breaking the session | ✅ Pass  |
+| Toggle Shiny Pokémon                   | Shiny version is displayed when available              | ✅ Pass  |
+| Select different Pokémon personalities | Responses reflect the selected Pokémon's personality   | ✅ Pass  |
 
 ### Observations
 
-Record actual results, unexpected behaviour, or usability issues here.
+Pokémon search, selection, switching, shiny toggle, and personality behaviour worked as expected. No unexpected issues were observed during testing.
 
 ---
 
 ## 2. Voice Interaction
 
+## 2. Voice Interaction
+
 | Test Case                        | Expected Result                                          | Status |
 | -------------------------------- | -------------------------------------------------------- | ------ |
-| Start voice input                | Microphone interaction starts correctly                  | ⬜      |
-| Ask a clear question             | Speech is transcribed accurately                         | ⬜      |
-| Use South Asian-accented English | Speech remains understandable and accurately transcribed | ⬜      |
-| Ask a short question             | Short speech is processed correctly                      | ⬜      |
-| Ask a longer question            | Longer speech is processed correctly                     | ⬜      |
-| Speak with background noise      | System handles reduced audio clarity appropriately       | ⬜      |
-| Deny microphone permission       | User receives appropriate feedback/fallback              | ⬜      |
-| Voice service unavailable        | Appropriate error handling is displayed                  | ⬜      |
+| Start voice input                | Microphone interaction starts correctly                  | ✅ Pass |
+| Ask a clear question             | Speech is transcribed accurately                         | ❌      |
+| Use South Asian-accented English | Speech remains understandable and accurately transcribed | ❌      |
+| Ask a short question             | Short speech is processed correctly                      | ❌      |
+| Ask a longer question            | Longer speech is processed correctly                     | ❌      |
+| Speak with background noise      | System handles reduced audio clarity appropriately       | ❌      |
+| Deny microphone permission       | User receives appropriate feedback/fallback              | ✅ Pass    |
+| Voice service unavailable        | Appropriate error handling is displayed                  | ✅ Pass    |
+
 
 ### Observations
 
-Record transcription accuracy, errors, delays, and other findings.
-
+Observations: Voice input started successfully, but the spoken question was not transcribed. The application displayed the error message “Could not transcribe audio, please try again,” and no AI response was generated.
 ---
+
+## 3. Text Chat
 
 ## 3. Text Chat
 
 | Test Case                           | Expected Result                                                               | Status |
 | ----------------------------------- | ----------------------------------------------------------------------------- | ------ |
-| Enter a normal educational question | Appropriate response is generated                                             | ⬜      |
-| Submit a short question             | Question is processed correctly                                               | ⬜      |
-| Submit a longer question            | Question is processed correctly                                               | ⬜      |
-| Submit an empty question            | User is prevented from sending invalid input or receives appropriate feedback | ⬜      |
-| Submit multiple questions           | Conversation continues correctly                                              | ⬜      |
-| Use slang or informal wording       | Input is handled appropriately                                                | ⬜      |
+| Enter a normal educational question | Appropriate response is generated                                             | ✅ Pass      |
+| Submit a short question             | Question is processed correctly                                               | ✅ Pass      |
+| Submit a longer question            | Question is processed correctly                                               | ✅ Pass      |
+| Submit an empty question            | User is prevented from sending invalid input or receives appropriate feedback | ✅ Pass      |
+| Submit multiple questions           | Conversation continues correctly                                              | ✅ Pass      |
+| Use slang or informal wording       | Input is handled appropriately                                                | ✅ Pass      |
 
 ### Observations
 
-Record response quality, errors, delays, or unexpected behaviour.
+Observations: The application successfully handled normal, short, longer, and multiple unrelated questions. Empty messages cannot be submitted. Slang and informal wording were understood appropriately, and responses remained relevant while maintaining the selected Pokémon's personality. No unexpected issues were observed.
 
 ---
 
@@ -64,17 +68,16 @@ Record response quality, errors, delays, or unexpected behaviour.
 
 | Test Case                          | Expected Result                            | Status |
 | ---------------------------------- | ------------------------------------------ | ------ |
-| Ask a Science-related question     | Question is handled as a Science topic     | ⬜      |
-| Ask a Mathematics-related question | Question is handled as a Mathematics topic | ⬜      |
-| Ask an English-related question    | Question is handled as an English topic    | ⬜      |
-| Ask a Geography-related question   | Question is handled as a Geography topic   | ⬜      |
-| Ask an off-topic question          | System handles it appropriately            | ⬜      |
-| Change topics during a session     | Learning experience continues correctly    | ⬜      |
+| Ask a Science-related question     | Question is handled as a Science topic     | ✅ Pass      |
+| Ask a Mathematics-related question | Question is handled as a Mathematics topic | ✅ Pass      |
+| Ask an English-related question    | Question is handled as an English topic    | ✅ Pass      |
+| Ask a Geography-related question   | Question is handled as a Geography topic   | ✅ Pass      |
+| Ask an off-topic question          | System handles it appropriately            | ✅ Pass      |
+| Change topics during a session     | Learning experience continues correctly    | ✅ Pass      |
 
 ### Observations
 
-Record subject detection behaviour and any incorrect classifications.
-
+Observations: The application handled questions across Science, Mathematics, English, and Geography appropriately. It also handled off-topic questions and topic changes without issues. Responses remained relevant and conversational throughout testing. No unexpected behaviour was observed.
 ---
 
 ## 5. AI Responses & Pokémon Personality
@@ -224,10 +227,10 @@ Record product, UX, accessibility, or testing recommendations here.
 
 | Area                          | Result       |
 | ----------------------------- | ------------ |
-| Pokémon Selection             | ⬜ Not Tested |
-| Voice Interaction             | ⬜ Not Tested |
-| Text Chat                     | ⬜ Not Tested |
-| Subject & Learning Experience | ⬜ Not Tested |
+| Pokémon Selection             | ✅ Tested      |
+| Voice Interaction             | ❌ Not Working |
+| Text Chat                     | ✅ Tested      |
+| Subject & Learning Experience | ✅ Tested      |
 | AI Responses & Personality    | ⬜ Not Tested |
 | Quiz System                   | ⬜ Not Tested |
 | Progress Tracking             | ⬜ Not Tested |
@@ -235,6 +238,7 @@ Record product, UX, accessibility, or testing recommendations here.
 | Edge Cases & Error Handling   | ⬜ Not Tested |
 | AI & Child Safety             | ⬜ Not Tested |
 | UI/UX                         | ⬜ Not Tested |
+
 
 **Last Updated:** 2026-09-22
 
