@@ -1,0 +1,14 @@
+{
+  "name": "pokelearn-discovery-camp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests/server.test.mjs",
+    "test:ui": "node tests/browser.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
