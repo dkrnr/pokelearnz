@@ -14,10 +14,11 @@ export function createTranscribe({fetcher=fetch,reserve=reserveAttempt,timeoutMs
   const buffer=Buffer.from(await file.arrayBuffer());const audio=await validateAudio(buffer,file.type);
   if(!process.env.VALSEA_KEY)throw new ApiError('TYPE_INSTEAD',503);
   await reserve(request,context);
-  const upload=new FormData();upload.append('file',new Blob([buffer],{type:audio.kind}),audio.filename);upload.append('model','valsea-transcribe');upload.append('language',language);
+  const upload=new FormData();upload.append('file',new Blob([buffer],{type:audio.kind}),audio.filename);upload.append('model','valsea-transcribe');upload.append('language',language);upload.append('response_format','verbose_json');
   // Voice is uploaded ONCE. A retry could duplicate sensitive audio; failure offers Type.
   const response=await fetcher('https://api.valsea.ai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:`Bearer ${process.env.VALSEA_KEY}`},body:upload,signal:AbortSignal.any([request.signal,AbortSignal.timeout(timeoutMs)])});
   const data=await providerJson(response);
+  if(data.segments?.some(segment=>typeof segment.no_speech_prob==='number'&&segment.no_speech_prob>.6||typeof segment.avg_logprob==='number'&&segment.avg_logprob < -1))throw new ApiError('TYPE_INSTEAD',422);
   if(typeof data.text!=='string'||data.text.length>300)throw new ApiError('TYPE_INSTEAD',422);
   if(data.text.trim().length<2){log('NO_SPEECH',performance.now()-began,'valsea-transcribe');return reply({code:'TYPE_INSTEAD',reason:'NO_SPEECH'},422);}
   const decision=inputDecision(data.text);if(decision){log(decision.code,performance.now()-began,'valsea-transcribe');return reply({code:decision.code,answer:decision.content});}

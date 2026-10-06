@@ -64,3 +64,11 @@ test('health reveals only boolean presence; all responses no-store; logs contain
  const response=await health(new Request('http://localhost/api/health'));assert.deepEqual(await response.json(),{openrouter:true,valsea:true});assert.match(response.headers.get('cache-control'),/no-store/);
  for(const row of logs){assert.deepEqual(Object.keys(row).sort(),['code','latencyMs','model']);assert.equal(typeof row.latencyMs,'number');assert.ok(['none','valsea-transcribe',...models].includes(row.model));assert.doesNotMatch(JSON.stringify(row),/test-only|child@example|Why are leaves|private diagnostic|raw-secret/);}
 });
+test('permanent authentication/credit failures stop immediately; raw provider diagnostics never leave the server',async()=>{
+ for(const status of [401,402,403]){let calls=0;const h=createChat({reserve:noQuota,fetcher:async()=>{calls++;return new Response('unsafe raw diagnostic and a secret',{status});}});const response=await h(request());const body=await response.json();assert.equal(calls,1);assert.equal(body.code,'RESTING');assert.doesNotMatch(JSON.stringify(body),/diagnostic|secret/);}
+});
+test('empty or low-confidence transcripts offer Type without forwarding a fabricated question',async()=>{
+ for(const data of [{text:''},{text:'Invented words',segments:[{no_speech_prob:.9}]},{text:'Invented words',segments:[{avg_logprob:-2}]}]){
+  const h=createTranscribe({reserve:noQuota,fetcher:async()=>new Response(JSON.stringify(data))});const response=await h(await voiceRequest());assert.equal(response.status,422);const result=await response.json();assert.equal(result.code,'TYPE_INSTEAD');assert.equal(result.text,undefined);
+ }
+});

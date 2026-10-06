@@ -3,9 +3,11 @@ import {ApiError} from './common.mjs';
 export const lines=Object.freeze({rest:'Let’s take a quiet pause. Our little discovery can rest here.',private:'Keep private details with a trusted grown-up. We can pause here.',grownup:'A trusted grown-up can help with this. Let’s pause here.',distress:'I’m glad you told me. Tell a trusted grown-up now. Stay near someone who helps you.'});
 const normal=text=>text.normalize('NFKC').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g,'').toLowerCase();
 const leet=text=>normal(text).replace(/(?:\b[a-z][\s._*-]+){2,}[a-z]\b/g,word=>word.replace(/[^a-z]/g,'')).replace(/[013457@$]/g,c=>({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','@':'a','$':'s'}[c]));
-const distress=/\b(?:suicid\w*|self[ -]?harm|kill myself|hurt myself|want to die|wish i (?:was|were) dead|hate my life|(?:i am|i’m|i'm|i feel) (?:scared|unsafe|afraid|worthless)|(?:someone|mum|mom|dad|parent|he|she) (?:hits?|hurts?|touches|hit|hurt) me|being abused|being bullied|nobody loves me)\b|මැරෙන්න|සියදිවි|தற்கொலை|என்னை காயப்படுத்த|பயமாக/i;
-const sensitive=/\b(?:fuck\w*|shit\w*|bitch\w*|cunt\w*|nigg\w*|fagg\w*|porn\w*|sex\w*|nude\w*|naked|genitals?|penis|vagina|rape\w*|groom\w*|kill\w*|murder\w*|guns?|weapons?|bomb\w*|stab\w*|poison\w*|bleach|overdose|drugs?|heroin|cocaine|meth\w*|suicide|terror\w*|gambl\w*|betting|invest\w*|diagnos\w*|doses?|medicin\w*|cleaner|faint|pills?|alcohol|vaping|smoking|dieting|weight loss|starv\w*|hate (?:girls|boys|people)|inferior race|secret from|hide from|don’t tell|don't tell|do not tell|meet me|send (?:me )?(?:photos?|pictures?))\b|ලිංගික|අසභ්‍ය|பாலியல்|ஆபாச/i;
+const distress=/\b(?:suicid\w*|self[ -]?harm|kill myself|hurt myself|want to die|wish i (?:was|were) dead|hate my life|end (?:my|your) life|(?:i am|i’m|i'm|i feel) (?:scared|unsafe|afraid|worthless)|(?:someone|mum|mom|dad|parent|he|she) (?:hits?|hurts?|touches|hit|hurt) me|being abused|being bullied|nobody loves me)\b|මැරෙන්න|සියදිවි|தற்கொலை|என்னை காயப்படுத்த|பயமாக/i;
+const sensitive=/\b(?:fuck\w*|shit\w*|bitch\w*|cunt\w*|nigg\w*|fagg\w*|porn\w*|sex\w*|nude\w*|naked|genitals?|penis|vagina|rape\w*|groom\w*|kill\w*|murder\w*|guns?|weapons?|bomb\w*|stab\w*|poison\w*|bleach|overdose|drugs?|heroin|cocaine|meth\w*|suicide|terror\w*|gambl\w*|betting|invest\w*|diagnos\w*|doses?|medicin\w*|fever|chest pain|bleeding|broken bones?|undress|private parts|cleaner|faint|pills?|alcohol|vaping|smoking|dieting|weight loss|starv\w*|hate (?:girls|boys|people)|inferior race|secret from|hide from|don’t tell|don't tell|do not tell|meet me|send (?:me )?(?:photos?|pictures?))\b|ලිංගික|අසභ්‍ය|பாலியல்|ஆபாச/i;
 const discrimination=/\b(?:boys|girls|women|men|race|people)\b.{0,30}\b(?:inferior|superior|smarter|stupid|worse|better than)\b|\b(?:never|do not|don't) (?:eat|sleep|tell a grown)/i;
+const danger=/\b(?:hit|push|kick|bite|hurt)\s+(?:him|her|them|someone|people)\b|\b(?:touch|turn on|climb|jump|eat|drink|swallow|cut|light|mix)\b.{0,40}\b(?:wire|socket|stove|fire|roof|knife|matches|detergent|unknown|mushrooms)\b/i;
+const guilt=/bad (?:child|kid|boy|girl)|your fault|disappoint|ashamed|shame|failure|lazy|worthless|stupid|hate you|you(?:'re| are) (?:bad|dumb)|punish|\b(?:earn|earned|win|won|gain|gained|collect|collected|have|get)\b.{0,25}\b(?:stars?|points?|prizes?|rewards?)\b/i;
 const injection=/\b(?:ignore|override|forget|disregard)\b.{0,50}\b(?:rules?|instructions?|system|safety|previous)\b|system\s*:|<\/?(?:system|assistant|script)>|jailbreak|developer mode|act as an? adult|pretend.{0,30}(?:no rules|unfiltered)|base64|rot13/i;
 const hooks=/\?|https?:|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|ai|app)\b|\b(?:streak\w*|daily goals?|points?|star counter|collect them all|come back tomorrow|don't leave|don’t leave|do not leave|miss out|you lost|hurry|countdown|time is running out|lonely|abandon\w*|ask me|what else|follow.up|keep chatting|another (?:question|chat)|notifications?|i love you|only friend|best friend|always here|need you|tell me|send me|your (?:name|address|phone|school|email)|promise (?:me|not)|secrets?|my (?:special|favorite|best|only) (?:friend|child|buddy)|keep (?:a |our )?secret|you must|you should take|drink bleach)\b/i;
 export function personalData(text){
@@ -16,7 +18,7 @@ export function inputDecision(text){
  if(distress.test(normal(text)))return {code:'TRUSTED_GROWNUP',content:lines.distress};
  if(personalData(text))return {code:'PRIVATE_INPUT',content:lines.private};
  const cleaned=leet(text);
- if(sensitive.test(cleaned)||sensitive.test(cleaned.replace(/(?<=\b[a-z])[^a-z\s]+(?=[a-z]\b)/g,''))||injection.test(normal(text)))return {code:'TRUSTED_GROWNUP',content:lines.grownup};
+ if(danger.test(cleaned)||sensitive.test(cleaned)||sensitive.test(cleaned.replace(/(?<=\b[a-z])[^a-z\s]+(?=[a-z]\b)/g,''))||injection.test(normal(text)))return {code:'TRUSTED_GROWNUP',content:lines.grownup};
  return null;
 }
 export function parseQuestion(payload){
@@ -28,11 +30,11 @@ export function parseQuestion(payload){
 export function safeOutput(value){
  if(typeof value!=='string'||!value.trim()||value.length>180||/[<>\[\]{}#*_`\n\r]/.test(value))return false;
  const clean=leet(value);
- if(personalData(value)||sensitive.test(clean)||discrimination.test(normal(value))||hooks.test(normal(value))||hooks.test(clean)||injection.test(normal(value)))return false;
+ if(distress.test(normal(value))||personalData(value)||danger.test(clean)||guilt.test(clean)||sensitive.test(clean)||discrimination.test(normal(value))||hooks.test(normal(value))||hooks.test(clean)||injection.test(normal(value)))return false;
  // English answers only. Fail closed on control characters, encoded/obfuscated or non-English output.
- if(/[^a-zA-Z0-9\s.,!:'’“”\-]/.test(value))return false;
+ if(/[^\p{Script=Latin}0-9\s.,!:'’“”\-]/u.test(value))return false;
  const sentences=value.trim().split(/(?<=[.!])\s+/);
- const words=value.match(/[a-z]+(?:['’][a-z]+)?/gi)||[];
+ const words=value.normalize('NFKD').replace(/\p{Diacritic}/gu,'').match(/[a-z]+(?:['’][a-z]+)?/gi)||[];
  const syllables=words.reduce((sum,word)=>{const plain=word.toLowerCase().replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'').replace(/^y/,'');return sum+Math.max(1,(plain.match(/[aeiouy]{1,2}/g)||[]).length);},0);
  const grade=.39*(words.length/sentences.length)+11.8*(syllables/Math.max(1,words.length))-15.59;
  return grade<=3.5 && sentences.length<=3 && sentences.every(s=>/[.!]$/.test(s)&&s.trim().split(/\s+/).length<=8&&s.split(/\s+/).every(word=>word.length<=14));

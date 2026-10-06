@@ -1,4 +1,4 @@
-import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyPersonality, buddyGreeting, spriteHosts, generations, typeMarks, animatedUrl, fitPixel } from './buddy.js';
+import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyGreeting, spriteHosts, generations, typeMarks, animatedUrl, fitPixel } from './buddy.js';
 import { art } from './art.js';
 import { createChooser } from './chooser.js';
 import { translate } from './locales.js';
@@ -342,7 +342,7 @@ async function post(path, payload, controller) {
     const response = await fetch(`/.netlify/functions/${path}`, { method: 'POST', headers:{'X-PokeLearn-Consent':'1',...(payload instanceof FormData?{}:{'Content-Type':'application/json'})}, body: payload instanceof FormData ? payload : JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
     let result;try{result=await response.json();}catch{throw Object.assign(Error('provider'),{code:response.status===429?'RATE_LIMITED':'RESTING'});}
     if(!response.ok || ['RESTING','OFFLINE','RATE_LIMITED','TYPE_INSTEAD'].includes(result.code))throw Object.assign(Error('provider'),{code:result.code||'RESTING'});return result;
-  } finally { clearTimeout(timeout); }
+  } catch(error){if(error instanceof TypeError && !error.code)error.code='OFFLINE';throw error;} finally { clearTimeout(timeout); }
 }
 function showProviderState(error,voice=false){
   const states={OFFLINE:['offline','offline'],RATE_LIMITED:['rateLimited','rate-limited'],TYPE_INSTEAD:['tryTyping','type-instead'],PRIVATE_INPUT:['trustedAdult','resting'],CONSENT_REQUIRED:['answerRest','resting']};
@@ -469,7 +469,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { cancelPending(); clearTimeout(idleTimer);updateBuddy(false); if (state.mode !== 'asleep') { setMode('idle'); caption(t('takeTime')); } }
   else {updateBuddy(false);scheduleIdle();}
 });
-addEventListener('offline', () => { if (!MOCK && ['permission', 'listening', 'thinking'].includes(state.mode)) friendlyError('offline'); });
+addEventListener('offline', () => { if (!MOCK && ['permission', 'listening', 'thinking'].includes(state.mode)) friendlyError('offline','offline'); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { /* Captions remain available without offline setup. */ });
 restore(); updateLanguage(); scheduleIdle();
 $('micButton').disabled = true; $('changeBuddy').disabled = true;

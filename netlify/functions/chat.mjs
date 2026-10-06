@@ -25,6 +25,7 @@ export function createChat({fetcher=fetch,reserve=reserveAttempt,timeoutMs=model
      if(request.signal.aborted)throw new ApiError('CANCELLED',499);
      last=error instanceof ApiError?error.code:signal.aborted?'PROVIDER_TIMEOUT':'OFFLINE';
      log(last,performance.now()-started,model);
+     if(['PROVIDER_AUTH','PROVIDER_CREDIT'].includes(last))return brainReply(lines.rest,'RESTING');
      if(deadline.aborted)break;
     }
    }
