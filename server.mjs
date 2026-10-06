@@ -13,6 +13,7 @@ const MIME = {
   ".webmanifest": "application/manifest+json",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".ttf": "font/ttf",
 };
 const handlers = Object.fromEntries(
   ["chat", "transcribe", "sentiment"].map((name) => [

@@ -1,0 +1,36 @@
+/** Authored, finite, offline lessons. No provider content enters this catalog. */
+export const activities = [
+  {id:'plants', title:'Help a plant', subject:'Science', icon:'🌱', color:'green', type:'build-plant', duration:'3–5 minutes',
+    intro:'Build a happy plant home.', observe:'Look closely. What could help this plant?',
+    steps:[
+      {prompt:'Give the leaves some light.', target:'light', fact:'Leaves use light to make food.'},
+      {prompt:'Give the roots some water.', target:'water', fact:'Roots take in water.'},
+      {prompt:'Let air reach the leaves.', target:'air', fact:'Plants use air to make food.'},
+    ], recap:'Plants need light, water, air, and nutrients.', note:'Real plants also need time. Too much water can hurt roots.', outside:'Find a leaf with a grown-up.'},
+  {id:'homes', title:'Animal homes', subject:'Science', icon:'🐟', color:'blue', type:'sort', duration:'3–5 minutes',
+    intro:'Help each animal find its home.', observe:'Look at each picture. Move like each animal.',
+    prompt:'Tap an animal. Then tap its home.',
+    bins:[{id:'land',label:'Land',icon:'🌳'}, {id:'water',label:'Water',icon:'🌊'}],
+    items:[{label:'Cat',icon:'🐈',target:'land'},{label:'Fish',icon:'🐟',target:'water'},{label:'Horse',icon:'🐎',target:'land'},{label:'Octopus',icon:'🐙',target:'water'},{label:'Butterfly',icon:'🦋',target:'land'},{label:'Whale',icon:'🐋',target:'water'}],
+    fact:'These animals need different homes.', recap:'A habitat gives animals what they need.', note:'Whales live in water. They breathe air. Some animals use land and water.', outside:'Watch an animal with a grown-up.'},
+  {id:'numbers',title:'Build a number',subject:'Maths',icon:'🧱',color:'orange',type:'build-number',duration:'3–5 minutes',
+    intro:'Make little groups of blocks.',observe:'Count slowly. Touch each block as you count.',
+    steps:[{target:3,prompt:'Build a group of three.'},{target:5,prompt:'Build a group of five.'},{target:4,prompt:'Build a group of four.'}],
+    fact:'Each block adds one to your group.',recap:'Counting tells us how many there are.',note:'Move the blocks around. The number stays the same.',outside:'Find four small things nearby.'},
+  {id:'shapes',title:'Shape match',subject:'Maths',icon:'🔺',color:'purple',type:'match',duration:'3–5 minutes',
+    intro:'Find shapes hiding in pictures.',observe:'Trace each outline with your finger.',prompt:'Tap the matching shape.',
+    choices:[{id:'circle',label:'Circle',icon:'●'},{id:'triangle',label:'Triangle',icon:'▲'},{id:'square',label:'Square',icon:'■'}],
+    items:[{label:'Round wheel',icon:'🛞',target:'circle'},{label:'Triangle sign',icon:'△',target:'triangle'},{label:'Square window',icon:'▦',target:'square'},{label:'Round clock',icon:'🕒',target:'circle'}],
+    fact:'Look at the outline, then match.',recap:'Shapes can be big or small.',note:'Triangles have three straight sides. Squares have four equal sides. Their four corners are square.',outside:'Find a circle in your room.'},
+  {id:'sounds',title:'First sounds',subject:'Words',icon:'🐝',color:'yellow',type:'match',duration:'3–5 minutes',
+    intro:'Listen to the first sound.',observe:'Say each picture name slowly with a grown-up.',prompt:'Tap its first letter.',
+    choices:[{id:'a',label:'A',icon:'🔤'},{id:'b',label:'B',icon:'🔤'},{id:'c',label:'C',icon:'🔤'},{id:'d',label:'D',icon:'🔤'}],
+    items:[{label:'Apple',icon:'🍎',target:'a'},{label:'Bee',icon:'🐝',target:'b'},{label:'Cat',icon:'🐈',target:'c'},{label:'Dog',icon:'🐕',target:'d'}],
+    fact:'Listen to the beginning of the word.',recap:'Letters can help us write sounds.',note:'These picture names are English. Listen to their first sounds.',outside:'Say your name with a grown-up.'},
+  {id:'story',title:'Make a story',subject:'Words',icon:'📖',color:'pink',type:'order',duration:'3–5 minutes',
+    intro:'Put pictures in story order.',observe:'Tell the story aloud. Add your own details.',prompt:'Tap what happens first, next, then last.',
+    steps:[{items:[{label:'Plant a seed',icon:'🫘'},{label:'Water the seed',icon:'💧'},{label:'A sprout grows',icon:'🌱'}]}, {items:[{label:'Muddy hands',icon:'🤲'},{label:'Wash hands',icon:'🧼'},{label:'Dry hands',icon:'🧻'}]}],
+    fact:'Stories have a beginning, middle, and end.',recap:'Picture order helps us tell a story.',note:'These are two possible stories. You can invent different stories.',outside:'Tell a tiny story to a grown-up.'},
+];
+export const plantTools = [{id:'water',label:'Water',icon:'💧'},{id:'air',label:'Air',icon:'💨'},{id:'light',label:'Light',icon:'☀️'}];
+export function activityById(id) { return activities.find(a => a.id === id); }

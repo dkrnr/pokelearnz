@@ -1,23 +1,11 @@
 /* Public app resources only. No questions, recordings, API responses or background uploads. */
 const CACHE = "pokelearn-shell-__BUILD__";
 const SHELL = [
-  "/",
-  "/index.html",
-  "/style.css",
-  "/app.js",
-  "/locales.js",
-  "/safety.js",
-  "/manifest.webmanifest",
-  "/pokemonPersonalities.json",
-  "/assets/mark.svg",
-  "/assets/pokemon-index.json",
-  "/assets/icons/icon-192.png",
-  "/assets/icons/icon-512.png",
-  "/assets/icons/maskable-512.png",
-  "/assets/icons/apple-touch-icon.png",
-  ...["25", "1", "4", "7", "133", "143", "25-shiny"].map(
-    (id) => `/assets/buddies/${id}.png`,
-  ),
+  "/", "/index.html", "/style.css", "/app.js", "/activities.js", "/art.js", "/buddy.js", "/locales.js", "/safety.js",
+  "/manifest.webmanifest", "/assets/mark.svg",
+  "/assets/fonts/ReadexPro-Regular.ttf", "/assets/fonts/ReadexPro-Bold.ttf",
+  "/assets/icons/icon-192.png", "/assets/icons/icon-512.png", "/assets/icons/maskable-512.png", "/assets/icons/apple-touch-icon.png",
+  ...__BUDDY_ASSETS__,
 ];
 self.addEventListener("install", (event) =>
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL))),

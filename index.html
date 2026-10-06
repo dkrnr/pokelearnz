@@ -1,468 +1,51 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#eaf4ee" />
-    <meta
-      name="description"
-      content="A little curiosity. A friendly Pokémon. Explore, ask, and learn at your own pace in PokeLearn Discovery Camp."
-    />
-    <title>PokeLearn · Discovery Camp</title>
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <a class="skip-link" href="#notebook" data-i18n="skip"
-      >Go to your notebook</a
-    >
-    <div class="app-shell">
-      <header class="masthead">
-        <a class="brand" href="/" aria-label="PokeLearn home"
-          ><img
-            id="brandMark"
-            src="/assets/mark.svg"
-            alt=""
-            width="38"
-            height="38"
-          />Poke<span>Learn</span></a
-        >
-        <nav class="header-tools" aria-label="Camp controls">
-          <button class="quiet-button" id="grownupOpen" data-i18n="grownups">
-            For grown-ups</button
-          ><button class="finish-button" id="finish" data-i18n="done">
-            Done for now
-          </button>
-        </nav>
-      </header>
-      <div class="welcome-line">
-        <div>
-          <p class="eyebrow" data-i18n="camp">DISCOVERY CAMP</p>
-          <h1 data-i18n="welcome">Big wonders.<br />Little discoveries.</h1>
-        </div>
-        <p class="welcome-note" data-i18n="pace">
-          A place to wonder, try things,<br />and learn at your own pace.
-        </p>
-      </div>
-      <div
-        class="connection-banner"
-        id="connectionBanner"
-        role="status"
-        hidden
-        data-i18n="offline"
-      >
-        You're offline. Our plant activity still works. Questions need a
-        connection.
-      </div>
-      <form class="question-desk" id="questionForm">
-        <div class="composer-heading">
-          <label for="questionInput" data-i18n="ownQuestion"
-            >Or, follow your own curiosity.</label
-          ><span class="composer-note" data-i18n="askNote"
-            >Your buddy can help with a question.</span
-          >
-        </div>
-        <div class="composer-row">
-          <textarea
-            id="questionInput"
-            rows="1"
-            maxlength="500"
-            placeholder="Why is the sky blue?"
-            aria-describedby="questionHint"
-          ></textarea
-          ><button
-            type="button"
-            class="mic-button"
-            id="micBtn"
-            aria-label="Talk to your buddy"
-          >
-            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-              <rect x="8" y="2" width="8" height="13" rx="4" />
-              <path
-                d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              /></svg
-            ><span id="micLabel" data-i18n="talk">Talk</span></button
-          ><button
-            type="submit"
-            class="primary-button"
-            id="askButton"
-            data-i18n="ask"
-          >
-            Ask buddy <span aria-hidden="true">↗</span></button
-          ><button
-            type="button"
-            class="quiet-button"
-            id="cancelQuestion"
-            hidden
-            data-i18n="stop"
-          >
-            Stop
-          </button>
-        </div>
-        <div class="composer-foot">
-          <p id="questionHint" data-i18n="privacy">
-            Questions stay in this session. Replies use an online AI service.
-          </p>
-          <label class="language-label"
-            ><span data-i18n="language">Language</span
-            ><select id="language">
-              <option value="en">English</option>
-              <option value="si">සිංහල</option>
-              <option value="ta">தமிழ்</option>
-            </select></label
-          >
-        </div>
-        <p id="questionStatus" class="question-status" role="status"></p>
-        <div class="answer" id="answer" hidden>
-          <p class="answer-label" id="answerLabel">Pikachu's answer</p>
-          <p id="answerText"></p>
-          <p class="answer-note" data-i18n="aiNote">
-            An AI answer can make mistakes. Check important things with a
-            grown-up.
-          </p>
-        </div>
-      </form>
-      <section
-        class="discovery"
-        id="discovery"
-        aria-label="Discovery activity"
-        data-phase="welcome"
-      >
-        <div class="camp-side">
-          <div class="buddy-toolbar">
-            <span id="buddyTitle">YOUR LEARNING BUDDY</span
-            ><button id="buddyOpen" class="text-button" data-i18n="change">
-              Change buddy
-            </button>
-          </div>
-          <div class="camp-scene" id="campScene">
-            <svg
-              class="landscape"
-              viewBox="0 0 620 430"
-              preserveAspectRatio="xMidYMid slice"
-              aria-hidden="true"
-            >
-              <rect width="620" height="430" fill="#d8ecee" />
-              <circle cx="505" cy="74" r="37" fill="#f6d774" />
-              <g fill="#f6fbf8">
-                <path d="M73 93c-5-26 35-42 52-17 19-8 39 5 37 23H73z" />
-                <path d="M295 58c-3-18 23-32 37-13 18-6 30 3 29 16h-66z" />
-              </g>
-              <path
-                d="M0 230Q110 140 225 215T450 205T620 217V430H0z"
-                fill="#aec9b6"
-              />
-              <path d="M0 288Q190 173 349 281T620 254V430H0z" fill="#7d9e81" />
-              <path d="M0 362Q190 294 367 350T620 319V430H0z" fill="#bfd5a8" />
-              <path
-                d="M315 430Q290 360 428 317Q393 357 433 430z"
-                fill="#e8d5ad"
-              />
-              <g fill="#50765a">
-                <path d="M35 300l40-148 40 148z" />
-                <path d="M506 296l45-169 46 169z" />
-              </g>
-              <g fill="#41664d">
-                <path d="M65 332l45-171 44 171z" />
-                <path d="M563 330l38-141 39 141z" />
-              </g>
-              <g stroke="#7a6447" stroke-width="9">
-                <path d="M75 304v33M109 327v24M552 294v35M601 324v26" />
-              </g>
-              <g
-                fill="none"
-                stroke="#50765a"
-                stroke-width="3"
-                stroke-linecap="round"
-              >
-                <path
-                  d="M231 93q9-10 18 0q9-10 18 0M379 125q6-7 12 0q6-7 12 0"
-                />
-              </g>
-              <g fill="#68885c">
-                <ellipse cx="29" cy="416" rx="46" ry="24" />
-                <ellipse cx="566" cy="426" rx="65" ry="23" />
-              </g>
-              <g fill="#f6d774">
-                <circle cx="63" cy="399" r="4" />
-                <circle cx="51" cy="410" r="4" />
-                <circle cx="555" cy="403" r="4" />
-              </g>
-            </svg>
-            <div class="scene-status" id="sceneStatus" role="status">
-              Ready to explore
-            </div>
-            <div class="buddy-stage" id="buddyStage" data-state="ready">
-              <div class="buddy-shadow"></div>
-              <img
-                id="heroSprite"
-                src="/assets/buddies/25.png"
-                alt="Pikachu"
-                width="250"
-                height="250"
-                loading="lazy"
-                fetchpriority="high"
-              />
-              <div class="buddy-fallback" id="buddyFallback" hidden>
-                Pikachu
-              </div>
-            </div>
-            <div
-              class="specimen"
-              id="specimen"
-              data-light="false"
-              data-water="false"
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 180 210" class="plant-art">
-                <ellipse
-                  cx="90"
-                  cy="186"
-                  rx="65"
-                  ry="12"
-                  fill="#758c67"
-                  opacity=".24"
-                />
-                <path
-                  d="M48 133h84l-13 47H61z"
-                  fill="#ce7751"
-                  stroke="#8a4c36"
-                  stroke-width="3"
-                />
-                <path
-                  d="M45 127h90v15H45z"
-                  fill="#eda17b"
-                  stroke="#8a4c36"
-                  stroke-width="3"
-                />
-                <path
-                  d="M90 129V77"
-                  fill="none"
-                  stroke="#38664c"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M90 105Q46 109 47 75Q86 70 90 105"
-                  fill="#649766"
-                  stroke="#38664c"
-                  stroke-width="3"
-                />
-                <path
-                  d="M90 91q0-40 39-38q9 36-39 38"
-                  fill="#82ab63"
-                  stroke="#38664c"
-                  stroke-width="3"
-                />
-                <g class="new-leaf">
-                  <path
-                    d="M90 80q-40-2-29-34q33 2 29 34"
-                    fill="#82ab63"
-                    stroke="#38664c"
-                    stroke-width="3"
-                  />
-                  <path
-                    d="M90 78q3-31 25-31q4 24-25 31"
-                    fill="#649766"
-                    stroke="#38664c"
-                    stroke-width="3"
-                  />
-                </g>
-                <g class="water-drops" fill="#31708c">
-                  <path
-                    d="M36 24q-10 17 0 17q10 0 0-17M143 35q-10 17 0 17q10 0 0-17M135 9q-9 15 0 15q9 0 0-15"
-                  />
-                </g>
-                <g
-                  class="light-rays"
-                  stroke="#d49c35"
-                  stroke-width="4"
-                  stroke-linecap="round"
-                >
-                  <path d="M72 22l8 15M109 10v17M137 22l-8 15" />
-                </g>
-              </svg>
-            </div>
-            <div class="camp-sign">
-              <span id="heroName">Pikachu</span
-              ><span data-i18n="buddyTag">your curious companion</span>
-            </div>
-          </div>
-          <div class="buddy-message">
-            <span class="message-mark" aria-hidden="true">“</span>
-            <p id="buddyMessage">
-              A tiny seed has a big story. Shall we take a closer look?
-            </p>
-          </div>
-        </div>
-        <div class="notebook" id="notebook" tabindex="-1">
-          <div class="notebook-heading">
-            <span class="notebook-label" data-i18n="notebook"
-              >YOUR FIELD NOTEBOOK</span
-            ><span class="page-number" id="pageNumber">01 / 03</span>
-          </div>
-          <div
-            id="activityContent"
-            class="activity-content"
-            aria-live="polite"
-          ></div>
-          <nav
-            id="activityNav"
-            class="activity-nav"
-            aria-label="Notebook controls"
-          ></nav>
-        </div>
-      </section>
-
-      <footer class="camp-footer">
-        <p data-i18n="footer">
-          Wonder a little. Learn a little. Then go explore.
-        </p>
-        <button class="text-button" id="installOpen" data-i18n="install">
-          Add to your device
-        </button>
-      </footer>
-      <div class="update-banner" id="updateBanner" hidden>
-        <p data-i18n="update">A fresh version is ready when you finish.</p>
-        <button id="updateButton" class="quiet-button" data-i18n="refresh">
-          Refresh camp
-        </button>
-      </div>
-      <noscript
-        ><style>
-          .discovery,
-          .question-desk,
-          .header-tools,
-          #installOpen {
-            display: none !important;
-          }
-        </style>
-        <div class="noscript-note">
-          <h2>A plant's little helpers</h2>
-          <p>
-            Plants use light, water and air to make food. Their roots take in
-            water. Their leaves collect light. Look at a plant near you: which
-            way do its leaves face?
-          </p>
-          <p>
-            Enable JavaScript to try the interactive activity or ask your buddy
-            a question.
-          </p>
-        </div></noscript
-      >
-    </div>
-    <dialog id="buddyDialog" aria-labelledby="buddyDialogTitle">
-      <div class="dialog-heading">
-        <h2 id="buddyDialogTitle" data-i18n="pickBuddy">
-          Meet your learning buddy.
-        </h2>
-        <button class="dialog-close" data-close aria-label="Close">×</button>
-      </div>
-      <p data-i18n="allBuddies">
-        Every buddy is available. Pick someone you like.
-      </p>
-      <form id="buddySearchForm" class="buddy-search">
-        <label for="pokemonSearch" data-i18n="search">Find a Pokémon</label
-        ><input
-          id="pokemonSearch"
-          type="search"
-          placeholder="Name or number"
-          autocomplete="off"
-        /><label class="checkbox-label"
-          ><input id="shinyToggle" type="checkbox" /><span data-i18n="shiny"
-            >Shiny appearance</span
-          ></label
-        >
-      </form>
-      <div id="pokemonGrid" class="pokemon-grid"></div>
-      <nav class="pagination" aria-label="Buddy pages">
-        <button id="previousBuddies" class="quiet-button" data-i18n="previous">
-          Previous
-        </button>
-        <p id="browserStatus" role="status"></p>
-        <button id="nextBuddies" class="quiet-button" data-i18n="next">
-          Next
-        </button>
-      </nav>
-      <p class="small-note" data-i18n="buddyOffline">
-        Six familiar buddies work offline. Other pictures need a connection.
-      </p>
-    </dialog>
-    <dialog id="grownupDialog" aria-labelledby="grownupTitle">
-      <div class="dialog-heading">
-        <h2 id="grownupTitle" data-i18n="grownups">For grown-ups</h2>
-        <button class="dialog-close" data-close aria-label="Close">×</button>
-      </div>
-      <p data-i18n="grownupIntro">
-        A calm space for curiosity. No streaks, leaderboards, locked buddies or
-        reminders to return.
-      </p>
-      <details name="grownup-info" id="saveSettings" open>
-        <summary data-i18n="deviceSave">Save on this device?</summary>
-        <p data-i18n="saveDescription">
-          Optional saving remembers the buddy and completed plant activity. It
-          never saves questions or recordings. Choose session only on shared
-          devices.
-        </p>
-        <div class="settings-actions">
-          <button id="saveAccept" class="primary-button" data-i18n="save">
-            Allow device saving</button
-          ><button id="saveReject" class="quiet-button" data-i18n="sessionOnly">
-            Session only
-          </button>
-        </div>
-        <p id="storageStatus" role="status"></p>
-        <button id="clearData" class="text-button" data-i18n="clear">
-          Withdraw saving & clear old data
-        </button>
-      </details>
-      <details name="grownup-info" id="aboutSettings">
-        <summary data-i18n="aboutAI">About online questions</summary>
-        <p data-i18n="providerNote">
-          Questions go to the configured AI provider. Voice recordings also go
-          to the transcription provider. AI replies may be inaccurate. A
-          grown-up's guidance matters.
-        </p>
-        <p data-i18n="aboutBuddy">
-          Pokémon are fictional learning companions. They don't need care or
-          feel lonely when a child leaves.
-        </p>
-      </details>
-    </dialog>
-    <dialog id="installDialog" aria-labelledby="installTitle">
-      <div class="dialog-heading">
-        <h2 id="installTitle" data-i18n="installTitle">
-          A little camp on your device.
-        </h2>
-        <button class="dialog-close" data-close aria-label="Close">×</button>
-      </div>
-      <p id="installInstructions" data-i18n="installInstructions">
-        On iPhone or iPad, open this page in Safari, tap Share, then Add to Home
-        Screen. On Android or desktop, look for Install app in your browser
-        menu.
-      </p>
-      <button
-        id="nativeInstall"
-        class="primary-button"
-        hidden
-        data-i18n="install"
-      >
-        Add to your device
-      </button>
-      <h3 data-i18n="offlineTitle">What works offline?</h3>
-      <p data-i18n="offlineDescription">
-        After your first online visit, the camp and plant activity work offline.
-        New questions and voice replies need internet access.
-      </p>
-    </dialog>
-    <script type="module" src="/app.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#fff7e8"><meta name="description" content="Little hands. Big discoveries. Six playful offline learning activities for children.">
+  <title>PokeLearn · Let's play and learn</title>
+  <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png"><link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to play</a>
+<div class="app-shell">
+<header class="topbar">
+  <a class="brand" href="/" aria-label="PokeLearn home"><span class="brand-mark" aria-hidden="true">✿</span><span>Poke<span class="brand-learn">Learn</span></span></a>
+  <div class="top-actions"><button id="soundButton" aria-pressed="false"><span aria-hidden="true">♬</span><span>Sound off</span></button><button id="grownupOpen"><span aria-hidden="true">⚙</span><span>Grown-ups</span></button></div>
+</header>
+<nav class="play-nav" aria-label="Explore"><button id="playNav" aria-current="page"><span aria-hidden="true">▦</span><span>Play</span></button><button id="askNav"><span aria-hidden="true">☁</span><span>Ask</span></button><button id="finish"><span aria-hidden="true">☀</span><span>Done for now</span></button></nav>
+<p id="connectionBanner" class="notice" hidden>☁ Offline. Our activities still work.</p>
+<div id="updateBanner" class="notice" hidden><span>A fresh version is ready.</span><button id="updateButton"><span aria-hidden="true">↻</span><span>Update</span></button><p id="updateStatus" role="status"></p></div>
+<main id="main" tabindex="-1">
+<section class="buddy-hello" aria-label="Your learning buddy">
+  <div class="hello-copy"><span class="eyebrow">LITTLE HANDS. BIG DISCOVERIES.</span><h1 id="heroTitle">Let's play and learn!</h1><p id="heroMessage">Pick something. We'll try it together.</p><button id="heroListen"><span aria-hidden="true">◖))</span><span>Listen</span></button></div>
+  <div id="buddyStage" class="buddy-stage" data-state="idle"><div class="buddy-bubble"><span id="buddyName">Pip</span> <span id="buddyMood">is ready!</span></div><div id="buddyCharacter" role="img" aria-label="Pip"></div><span class="buddy-shadow" aria-hidden="true"></span><span class="scene-flower" aria-hidden="true">✿</span><span class="scene-spark" aria-hidden="true">✦</span></div>
+</section>
+<div id="speechNotice" class="notice" hidden><p id="speechStatus" role="status"></p><button id="speechRetry"><span aria-hidden="true">↻</span><span>Try voice again</span></button></div>
+<div id="screen"></div>
+</main>
+<footer><span>Made for little discoveries.</span><span>Activities work offline after first visit.</span></footer>
+</div>
+<dialog id="grownupDialog" aria-labelledby="grownupTitle">
+<div class="dialog-head"><h2 id="grownupTitle">For grown-ups</h2><button data-close><span aria-hidden="true">×</span><span>Close</span></button></div>
+<p>Six authored activities for ages 6–9. No timers, reward counters, notifications or chat continuation prompts. A child can stop at any time. AI answers are optional and can be inaccurate; explore them together.</p>
+<h3>Questions, recordings and providers</h3>
+<p>Hosting and function requests go to <strong>Netlify</strong>. Typed questions and transcribed voice text go to <strong>OpenRouter</strong>, which routes them to an inference provider. The configured models are Google Gemma, NVIDIA Nemotron and InclusionAI Ling, with an OpenRouter free-router fallback. The frontend cannot identify the actual downstream inference host; OpenRouter selects it. Provider retention is outside this app's control.</p>
+<p>Voice recordings go to <strong>Valsea</strong> (api.valsea.ai) for transcription. Recording starts only after a tap and microphone permission. The transcript is shown for review; sending it to OpenRouter takes another tap. No sentiment requests are sent. Local read-aloud uses only installed browser voices marked local; recordings, questions and answers are never cached or saved by this app.</p>
+<label class="consent-check"><input id="onlineConsent" type="checkbox">Allow online questions and voice this session.</label>
+<h3>Optional device saving</h3>
+<p>Saving is off by default. You can save only the buddy choice and one completed-activity flag. No names, questions, transcripts, answers or audio are stored. App files are cached separately for offline use.</p>
+<p id="storageStatus" role="status"></p>
+<div class="button-row"><button id="saveAccept"><span aria-hidden="true">▣</span><span>Allow saving</span></button><button id="saveReject"><span aria-hidden="true">○</span><span>Keep temporary</span></button><button id="clearData"><span aria-hidden="true">⌫</span><span>Clear saved data</span></button></div>
+<h3>Buddy</h3><p>The default buddy is an original character. Fan artwork can be replaced through one buddy module.</p><div id="buddyChoices" class="button-row"></div>
+<p>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</p>
+<h3>Language</h3><label for="language">Voice transcription language</label><select id="language"><option value="en">English</option><option value="si">සිංහල · draft</option><option value="ta">தமிழ் · draft</option></select>
+<p id="languageNotice">Lessons and read-aloud are in English. Sinhala and Tamil drafts need human review. They are not presented as reviewed learning content.</p>
+<h3>Read-aloud and sounds</h3><p>Listen uses speechSynthesis with a locally installed English voice. If none is available, instructions remain visible and a grown-up can read them. Sound effects start off each visit. The child can turn them on or off.</p>
+<h3>Install and updates</h3><p>Use your browser's “Add to Home Screen” or “Install app” menu. Activities work offline after the first successful visit. Questions and transcription need internet. Updates wait until the child leaves an activity.</p><button id="nativeInstall" hidden><span aria-hidden="true">↓</span><span>Install app</span></button><p id="installStatus" role="status"></p>
+</dialog>
+<noscript><p class="noscript-note">Ask a grown-up to turn on JavaScript. You can still find four things nearby, trace a circle, or look at a leaf together.</p></noscript>
+</body>
 </html>
