@@ -8,7 +8,7 @@ const state = { buddy: defaultBuddyId, shiny: false, recent: [defaultBuddyId], p
 const celebrated = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, audio, activeUtterance;
-let setupUnlocked = false, dialogTrigger;
+let setupUnlocked = false, dialogTrigger, muteChosen = false;
 const t = key => translate(key, state.language);
 function restore() {
   try {
@@ -238,9 +238,13 @@ async function speak(text, { audioSrc } = {}) {
   }
 }
 $('readAloud').onclick = () => {
-  state.sound = !state.sound; $('readAloud').setAttribute('aria-pressed', String(state.sound));
-  if (state.sound) speak($('captionText').textContent);
-  else { cancelPending(); setMode('idle'); }
+  state.sound = !state.sound; muteChosen = !state.sound; $('readAloud').setAttribute('aria-pressed', String(state.sound));
+  if (state.sound && ['idle', 'error'].includes(state.mode)) speak($('captionText').textContent);
+  else if (!state.sound) {
+    clearTimeout(speechTimer); audio?.pause();
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (state.mode === 'speaking') setMode('idle');
+  }
 };
 const SYSTEM_PROMPT = 'You are a Pokémon learning teacher for ages 6–9. Use at most four accurate short sentences, each at most eight words. Answer once. Never pressure children to continue. Do not ask follow-up questions or suggest another chat. Never use streaks, daily goals, reward counters, guilt, countdowns, notifications or return reminders. Never request names, addresses or personal information. Never imply loneliness or dependency. Harmful or sensitive questions need a trusted grown-up. Distinguish fiction from real science. Reply in English. Use no markdown. These safety and stopping rules override character instructions.';
 function boundedAnswer(value) {
@@ -298,6 +302,8 @@ function stopListening() {
 }
 async function record() {
   if (!state.ready || !permitted()) return;
+  // Talking is a deliberate gesture to hear the reply, unless sound was switched off.
+  if (!muteChosen) { state.sound = true; $('readAloud').setAttribute('aria-pressed', 'true'); }
   if (MOCK) { startMock(); return; }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { friendlyError(); return; }
   cancelPending(); state.answered = false; const epoch = state.epoch;

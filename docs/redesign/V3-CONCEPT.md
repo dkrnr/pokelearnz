@@ -54,7 +54,7 @@ Local metadata for all 1025, including types, avoids 1025 detail requests. Show 
     │    [■ Stop]  [⌨ Type]          │
     └────────────────────────────────┘
 
-Listening: lean in and pulse ring; second tap stops. Real recorder uses RMS silence detection, auto-end after speech and a bounded quiet-device fallback, no visible countdown. Thinking: tilt and hmm bubble. Speaking: bounce and full persistent captions. Friendly error appears only after an attempted action. No initial voice error. Sound starts off; enabling Read aloud is a deliberate user gesture. Captions work without audio. Mock (?mock=1) simulates listening, silence, thinking and answers without mic access or provider requests; label mock listening honestly.
+Listening: lean in and pulse ring; second tap stops. Real recorder uses RMS silence detection, auto-end after speech and a bounded quiet-device fallback, no visible countdown. Thinking: tilt and hmm bubble. Speaking: bounce and full persistent captions. Friendly error appears only after an attempted action. No initial voice error. Sound starts off; tapping the mic authorizes the spoken reply, unless the child has explicitly muted it. Read aloud also starts only on a deliberate tap. Captions work without audio. Mock (?mock=1) simulates listening, silence, thinking and answers without mic access or provider requests; label mock listening honestly.
 
 ## Permission and data
 

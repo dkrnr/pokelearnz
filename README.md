@@ -1,12 +1,12 @@
 # PokeLearn
 
-A playful learning web app for children aged 6–9, with six authored offline activities: plant helpers, animal homes, number building, shape matching, first sounds and picture stories. Each is designed for approximately 3–5 minutes of child-paced exploration and talking with a grown-up. Actual pacing and usability still need testing with children.
+A voice-first game for children aged 6–9: choose any of 1,025 Pokémon as your teacher, then tap the microphone and talk. The buddy lives in a full-screen meadow, listens, thinks, speaks with persistent captions, and can take a calm rest. A small keyboard button provides the text fallback.
 
-The original leaf buddy is the default. `buddy.js` owns character names, optional fan artwork, asset paths and fallback rendering. Swap that module to replace the fan characters; the activity and question code uses a neutral buddy contract. Original vector lesson pictures are in `art.js`.
+This branch is the **v3 Stage 1 checkpoint**: main scene, Pokédex chooser and mock voice loop. Six authored activities remain in `activities.js`; scene props and activity integration wait for Stage 2. See [the concept](docs/redesign/V3-CONCEPT.md), [checkpoint report](docs/redesign/V3-STAGE-1-REPORT.md) and [visual review](docs/redesign/V3-VISUAL-REVIEW.md).
 
 ## Run locally
 
-Use Node 22 or later:
+Node 22 or later:
 
 ```sh
 npm ci
@@ -14,34 +14,33 @@ npm run build
 npm start
 ```
 
-Open http://127.0.0.1:4178. For a labeled development answer fixture with no AI request, open http://127.0.0.1:4178/?mock=1. Mock mode works only on localhost and loopback addresses.
+Open `http://127.0.0.1:4178/?mock=1` for a labelled pretend voice conversation with no microphone or provider requests. Tap the mic again to stop, or let the simulated silence end the turn. Without `mock=1`, live transcription/questions use the unchanged Netlify functions and require configured server keys and one-time grown-up consent.
 
-The public build is an allowlist in `scripts/build.mjs`. Source files, documentation, credentials and QA artifacts are not served. After changing source, rebuild before refreshing the preview. `npm start` serves `dist/`, not the repository root.
+Rebuild after source edits. The local server serves only the allowlisted `dist/` build, not private repository files. An older installed service worker can wait until its existing tabs close before taking control.
 
-## Verification
+## Stage 1 verification
+
+With the local server running:
 
 ```sh
 npx playwright install chromium
 npm test
-npm run test:ui
-npm run test:pwa
-REVIEW_ROUND=final npm run screenshots
+npm run test:v3
+REVIEW_ROUND=v3-review npm run screenshots:v3
 ```
 
-Keep `npm start` running for UI tests and screenshots. The PWA update test starts its own controlled fixture on port 4181. `POKELEARN_TEST_URL` can select another local test server. `POKELEARN_QA_MODULE` and `POKELEARN_AXE_PATH` can select preinstalled Playwright and axe modules.
+The original six server/content/policy tests remain unchanged. Stage 1 browser checks cover voice states, silence/stop, cancellation, the complete selector, shiny/recent choices, one-time consent, draft languages, reduced motion, offline shell/visited sprites, WCAG A/AA scans, large touch targets and no automatic microphone/audio/provider requests. Recorder integration uses a generated tone/silence stream and mocked provider responses.
 
-Server tests check public/private file boundaries and unchanged backend method/missing-key responses. Policy tests and browser checks guard against pressure, reward counters, notifications, autoplay and chat continuation. Browser fixtures test all six lesson completions, mistakes, keyboard focus, 56px buttons, axe WCAG A/AA checks, offline reload, consent/withdrawal, local-only speech, voice review, provider failures, request cancellation, reduced motion and character replacement. They do not prove suitability for children.
+The older `test:ui`, `test:pwa` and `screenshots` scripts describe the v2 card/tab/activity UI and are preserved for Stage 2 adaptation. They are not v3 verification claims. Final captures for 390×844, 820×1180 and 1180×820 are under `docs/redesign/screens/v3-final/`, with two review rounds alongside them.
 
-Screenshots and two review-and-fix rounds: [docs/redesign/VISUAL-REVIEW.md](docs/redesign/VISUAL-REVIEW.md). Final QA and known limitations: [docs/redesign/REPORT.md](docs/redesign/REPORT.md). Older `qa/` reports describe the preceding Discovery Camp and do not validate this redesign.
+## Voice, buddies and device data
 
-## Parent controls and data
+One-time voice/online consent lives behind a simple grown-up gate and is remembered on this device. Remembering buddy/recent choices is a separate optional setting. Questions, recordings, transcripts and answers are not saved or cached. Sound starts off on load; a mic tap authorizes a spoken reply unless explicitly muted. Missing local speech voices degrade silently to captions. Authored-line playback supports local prerecorded audio before speechSynthesis; authored recordings are Stage 2 work.
 
-Saving is off by default. Explicit grown-up consent saves only the buddy choice and a completed-activity flag, preserving the previous `pokelearn_camp_v1` schema. Withdrawal clears PokeLearn storage, including legacy question history. Questions, transcripts, recordings and answers are never saved or cached by the frontend. Static public resources are cached separately for offline use. Sound effects start off every visit.
+Netlify hosts/proxies requests. Valsea receives recordings; OpenRouter receives questions and transcribed voice text, routing to its selected inference provider. Configured model families are Google Gemma, NVIDIA Nemotron, InclusionAI Ling and OpenRouter's free-router fallback. Actual downstream hosting cannot be identified by the frontend. No sentiment requests are sent. Netlify functions and settings were not changed in this pass.
 
-Optional questions and microphone use require a grown-up's session opt-in. Netlify receives function requests. Questions and reviewed transcripts go to OpenRouter and its selected inference provider. Voice recordings go to Valsea. The configured model families are Google Gemma, NVIDIA Nemotron and InclusionAI Ling with a free-router fallback; the actual downstream inference host cannot be identified from the frontend. Local read-aloud uses only browser voices marked `localService`. No remote font or sprite requests are made by child screens.
+`buddy.js` isolates identities, types, personalities, sprite URLs and search. The catalog is local public metadata; images come from `cdn.jsdelivr.net`, with animated-to-still fallback, lazy paginated thumbnails and a bounded visited-sprite service-worker cache. No full sprite collection is bundled and no raw GitHub images are hotlinked. See [sprite sourcing](docs/redesign/V3-SPRITES.md). Unvisited offline pictures may need internet.
 
-The existing `netlify/functions` are unchanged. Real AI answers can be wrong; a prompt, length limit and basic input/output checks are not a complete child-safety system. Factual lessons come exclusively from `activities.js`, never from an AI answer. Online failures do not block offline lessons.
+EN/SI/TA remain available. New Sinhala/Tamil interface strings are machine-translated drafts; remaining English controls and review needs are recorded in [the translation review](docs/redesign/V3-TRANSLATION-REVIEW.md). Self-hosted Readex Pro includes its SIL Open Font License in `assets/fonts/OFL.txt`.
 
-EN/SI/TA scaffolding remains. Unreviewed machine translations are listed in [docs/redesign/TRANSLATION-REVIEW.md](docs/redesign/TRANSLATION-REVIEW.md) and withheld from lesson UI and read-aloud. Sinhala/Tamil currently select optional transcription language only. English phonics remains explicitly English.
-
-Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company. Original buddy and vector artwork are repository-native. Optional static fan sprites retain their source attribution in `assets/sprite-source.json`; no claim of licensed animated fan artwork is made. Self-hosted Readex Pro includes its SIL Open Font License in `assets/fonts/OFL.txt`.
+Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.

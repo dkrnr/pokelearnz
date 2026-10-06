@@ -2,7 +2,7 @@
 
 The sole identity/sprite boundary is `buddy.js`. The scene asks it for IDs, display names, types, greeting, personality, image and search results. Replacing that module and its catalog can replace the character collection without changing the scene controller.
 
-Catalog: 1,025 default Pokémon, IDs 1–1025, from PokeAPI's `pokemon.csv`, `pokemon_types.csv` and `types.csv`, accessed at `cdn.jsdelivr.net/gh/PokeAPI/pokeapi@master/data/v2/csv/`. The local JSON is about 66 KB and holds only public ID/name/type data. This avoids one API call per tile and makes the complete search available offline. Personalities are the unchanged repository file used by main, read through the module.
+Catalog: 1,025 default Pokémon, IDs 1–1025, from PokeAPI's `pokemon.csv`, `pokemon_types.csv` and `types.csv`, accessed at `cdn.jsdelivr.net/gh/PokeAPI/pokeapi@master/data/v2/csv/`. The local JSON is about 53 KB and holds only public ID/name/type data. This avoids one API call per tile and makes the complete search available offline. Personalities are the unchanged repository file used by main, read through the module.
 
 Options evaluated:
 
