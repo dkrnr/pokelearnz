@@ -62,3 +62,12 @@ test('authored activity player cannot upload child questions or use background e
   recordings.test='/assets/audio/narration.mp3';assert.equal(recordingFor('test'),recordings.test);
   for(const path of ['/uploads/child.wav','https://example.com/voice.mp3','/assets/audio/../private.wav']){recordings.test=path;assert.equal(recordingFor('test'),undefined);}delete recordings.test;
 });
+test('complete catalog search accepts official punctuation, accents, gender symbols and padded numbers',async()=>{
+  const {loadBuddies,searchBuddies,buddyCount}=await import('../buddy.js');
+  const catalog=JSON.parse(await fs.readFile(new URL('../buddy-catalog.json',import.meta.url),'utf8')),originalFetch=globalThis.fetch;
+  globalThis.fetch=async()=>({ok:true,json:async()=>catalog});
+  try{await loadBuddies();}finally{globalThis.fetch=originalFetch;}
+  assert.equal(buddyCount(),1025);
+  assert.deepEqual(searchBuddies('2').map(b=>b.id),[2]);
+  for(const [query,id] of [['Mr. Mime',122],['ho-oh',250],['Flabébé',669],['Sirfetch’d',865],['Type: Null',772],['Nidoran♀',29],['Nidoran♂',32],['#025',25],['1025',1025]])assert.equal(searchBuddies(query).some(b=>b.id===id),true,query);
+});

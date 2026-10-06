@@ -10,11 +10,12 @@ if (typeof document !== 'undefined') {
   connection.rel = 'preconnect'; connection.href = new URL(BASE).origin; connection.crossOrigin = 'anonymous';
   document.head.append(connection);
 }
+const searchKey = value => String(value).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replaceAll('♀','f').replaceAll('♂','m').replace(/[^a-z0-9]/g,'');
 export const formatName = name => name.split('-').map(s => s[0].toUpperCase() + s.slice(1)).join(' ');
 export async function loadBuddies() {
   const response = await fetch('/buddy-catalog.json');
   if (!response.ok) throw Error('catalog');
-  catalog = (await response.json()).map(b => ({ ...b, displayName:formatName(b.name), searchName:b.name.replaceAll('-', ' ') }));
+  catalog = (await response.json()).map(b => ({ ...b, displayName:formatName(b.name), searchName:searchKey(b.name) }));
   index = new Map(catalog.map(b => [b.id, b]));
   return catalog;
 }
@@ -27,9 +28,9 @@ export const generations = [
   [1,151], [152,251], [252,386], [387,493], [494,649], [650,721], [722,809], [810,905], [906,1025],
 ].map(([start,end], index) => ({id:String(index+1), start, end, label:`Gen ${index+1}`}));
 export function searchBuddies(query, {generation='all', type=''} = {}) {
-  const text = query.toLowerCase().trim().replace(/^#/, '');
+  const text = searchKey(query), number = /^\d+$/.test(text) ? Number(text) : null;
   const range = generations.find(g => g.id === generation);
-  return catalog.filter(b => (!range || (b.id >= range.start && b.id <= range.end)) && (!type || b.types.includes(type)) && (String(b.id) === text || b.searchName.includes(text)));
+  return catalog.filter(b => (!range || (b.id >= range.start && b.id <= range.end)) && (!type || b.types.includes(type)) && (number === null ? b.searchName.includes(text) : b.id === number));
 }
 export const buddyCount = () => catalog.length;
 export async function buddyPersonality(id) {
