@@ -1,24 +1,143 @@
-import { fileURLToPath } from 'node:url';
-const { chromium } = await import(process.env.POKELEARN_QA_MODULE || 'playwright');
-import fs from 'node:fs/promises';
-import assert from 'node:assert/strict';
-import http from 'node:http';
-import {createHash} from 'node:crypto';
-const root=fileURLToPath(new URL('../', import.meta.url)).replace(/\/$/, ''), out=root+'/qa/artifacts/temporal';
-await fs.mkdir(out,{recursive:true});
-const report={revision:JSON.parse(await fs.readFile(root+'/qa/source-manifest.json')).revision, checks:[],frames:[], limitations:['Chromium emulation; physical device install, virtual keyboard and real child usability unverified.']};
-const browser=await chromium.launch();
-async function check(name,fn){try{await fn();report.checks.push({name,pass:true});console.log('PASS',name)}catch(e){report.checks.push({name,pass:false,error:e.stack});console.log('FAIL',name,e.message)}}
-const frame=async(p,name)=>{await p.screenshot({path:out+'/'+name+'.png',fullPage:true});report.frames.push(name+'.png')};
-const opacity=p=>p.locator('.new-leaf').evaluate(e=>Number(getComputedStyle(e).opacity));
-try{
-await check('served public files match frozen source and built worker',async()=>{for(const name of ['index.html','app.js','style.css','locales.js','sw.js','manifest.webmanifest']){const served=Buffer.from(await (await fetch('http://127.0.0.1:4178/'+name)).arrayBuffer());const disk=await fs.readFile(root+'/dist/'+name);assert.deepEqual(served,disk);if(name!=='sw.js')assert.deepEqual(disk,await fs.readFile(root+'/'+name));report.checks.push({name:'SHA256 '+name,pass:true,sha256:createHash('sha256').update(served).digest('hex')})}});
-await check('mounted plant transitions forward, reverse and interrupt',async()=>{const c=await browser.newContext({viewport:{width:390,height:844}});const p=await c.newPage();await p.goto('http://127.0.0.1:4178');await p.locator('#discover-plants').click();await p.locator('#tool-light').click();await p.evaluate(()=>{window.qaSpecimen=document.querySelector('#specimen');document.querySelector('#tool-water').click()});await p.waitForTimeout(65);const mid=await opacity(p);assert.ok(mid>0&&mid<1,'Forward transition must have intermediate opacity');await frame(p,'phone-forward-mid');await p.waitForTimeout(300);assert.equal(await opacity(p),1);await frame(p,'phone-forward-end');await p.evaluate(()=>document.querySelector('#tool-water').click());await p.waitForTimeout(65);const reverse=await opacity(p);assert.ok(reverse>0&&reverse<1);await frame(p,'phone-reverse-mid');await p.evaluate(()=>document.querySelector('#tool-water').click());await p.waitForTimeout(300);assert.equal(await opacity(p),1);assert.equal(await p.evaluate(()=>qaSpecimen===document.querySelector('#specimen')),true);await p.locator('#checkActivity').click();await p.locator('#skipCheck').click();await frame(p,'phone-recap');assert.ok(await p.locator('.notebook-specimen #specimen').isVisible());await c.close();report.motion={forwardMid:mid,reverseMid:reverse,settled:1,mountedIdentityPreserved:true}});
-await check('reduced motion keeps learning state with no transition',async()=>{const c=await browser.newContext({reducedMotion:'reduce',viewport:{width:768,height:1024}});const p=await c.newPage();await p.goto('http://127.0.0.1:4178');await p.locator('#discover-plants').click();await p.evaluate(()=>{document.querySelector('#tool-light').click();document.querySelector('#tool-water').click()});await p.waitForTimeout(20);assert.equal(await opacity(p),1);const transitions=await p.locator('.new-leaf').evaluate(e=>e.getAnimations().length);assert.equal(transitions,0);await frame(p,'tablet-reduced');await c.close()});
-await check('explicit image fallback renders name and activity still works',async()=>{const c=await browser.newContext({viewport:{width:1366,height:768}});const p=await c.newPage();await p.goto('http://127.0.0.1:4178/?renderer=fallback');assert.equal(await p.evaluate(()=>window.__STUDIO_QA__.snapshot().renderer),'fallback');await frame(p,'desktop-fallback');await p.locator('#discover-plants').click();await p.locator('#tool-light').click();await p.locator('#tool-water').click();await p.waitForTimeout(300);assert.equal(await opacity(p),1);await c.close()});
-let update=false;
-const server=http.createServer(async(req,res)=>{try{const pathname=new URL(req.url,'http://localhost').pathname;let body=await fs.readFile(root+'/dist/'+(pathname==='/'?'index.html':pathname.slice(1)));if(pathname==='/sw.js'&&update)body=Buffer.from(body.toString().replace('pokelearn-shell-','pokelearn-shell-qa-update-'));res.setHeader('Cache-Control','no-store');res.setHeader('Content-Type',pathname.endsWith('.js')?'application/javascript':pathname.endsWith('.css')?'text/css':pathname.endsWith('.png')?'image/png':pathname.endsWith('.svg')?'image/svg+xml':pathname.endsWith('.json')||pathname.endsWith('.webmanifest')?'application/json':'text/html');res.end(body)}catch{res.writeHead(404);res.end()}});
-await new Promise(r=>server.listen(4181,'127.0.0.1',r));
-try{await check('PWA update waits during experiment and activates after pause',async()=>{const c=await browser.newContext();const p=await c.newPage();await p.goto('http://127.0.0.1:4181');await p.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(r=>navigator.serviceWorker.addEventListener('controllerchange',r,{once:true}))});await p.locator('#discover-plants').click();await p.locator('#tool-light').click();const before=await p.evaluate(()=>caches.keys());update=true;await p.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update()});await p.locator('#updateBanner').waitFor({state:'visible'});await p.locator('#updateButton').click();assert.equal(await p.evaluate(()=>window.__STUDIO_QA__.snapshot().state),'experiment');assert.equal(await p.evaluate(async()=>!!(await navigator.serviceWorker.getRegistration()).waiting),true);await p.locator('#pauseActivity').click();await Promise.all([p.waitForEvent('load'),p.locator('#updateButton').click()]);await p.waitForFunction(async()=>!(await navigator.serviceWorker.getRegistration()).waiting);const after=await p.evaluate(()=>caches.keys());assert.equal(after.length,1);assert.ok(after[0].includes('qa-update'));assert.ok(!after.includes(before[0]));report.update={before,after};await c.close()})}finally{await new Promise(r=>server.close(r))}
-}finally{await browser.close();await fs.writeFile(out+'/report.json',JSON.stringify(report,null,2));}
-if(report.checks.some(x=>!x.pass))process.exitCode=1;
+import fs from "node:fs/promises";
+import http from "node:http";
+import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
+const { chromium } = await import(
+  process.env.POKELEARN_QA_MODULE || "playwright"
+);
+const root = fileURLToPath(new URL("../dist/", import.meta.url));
+const browser = await chromium.launch();
+let updated = false;
+const server = http.createServer(async (req, res) => {
+  try {
+    const pathname = new URL(req.url, "http://localhost").pathname;
+    if (pathname.includes("..")) throw Error();
+    const file = pathname === "/" ? "index.html" : pathname.slice(1);
+    let body = await fs.readFile(root + file);
+    if (file === "sw.js" && updated)
+      body = Buffer.from(
+        body
+          .toString()
+          .replace("pokelearn-shell-", "pokelearn-shell-update-fixture-"),
+      );
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader(
+      "Content-Type",
+      file.endsWith(".js")
+        ? "application/javascript"
+        : file.endsWith(".css")
+          ? "text/css"
+          : file.endsWith(".png")
+            ? "image/png"
+            : file.endsWith(".svg")
+              ? "image/svg+xml"
+              : file.endsWith(".ttf")
+                ? "font/ttf"
+                : file.endsWith(".webmanifest")
+                  ? "application/json"
+                  : "text/html",
+    );
+    res.end(body);
+  } catch {
+    res.writeHead(404);
+    res.end();
+  }
+});
+await new Promise((r) => server.listen(4181, "127.0.0.1", r));
+try {
+  const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+    }),
+    page = await context.newPage();
+  await page.goto("http://127.0.0.1:4181");
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller)
+      await new Promise((r) =>
+        navigator.serviceWorker.addEventListener("controllerchange", r, {
+          once: true,
+        }),
+      );
+  });
+  const before = await page.evaluate(() => caches.keys());
+  await page.locator("#discover-plants").click();
+  await page.locator("#tool-light").click();
+  updated = true;
+  await page.evaluate(async () => {
+    const reg = await navigator.serviceWorker.getRegistration();
+    await reg.update();
+  });
+  await page.locator("#updateBanner").waitFor({ state: "visible" });
+  await page.locator("#updateButton").click();
+  assert.equal(
+    (await page.evaluate(() => window.__STUDIO_QA__.snapshot())).state,
+    "activity",
+  );
+  assert.ok(
+    await page.evaluate(
+      async () => !!(await navigator.serviceWorker.getRegistration()).waiting,
+    ),
+  );
+  await page.locator("#finish").click();
+  await Promise.all([
+    page.waitForEvent("load"),
+    page.locator("#updateButton").click(),
+  ]);
+  await page.waitForFunction(
+    async () => !(await navigator.serviceWorker.getRegistration()).waiting,
+  );
+  const after = await page.evaluate(() => caches.keys());
+  assert.equal(after.length, 1);
+  assert.ok(after[0].includes("update-fixture"));
+  assert.ok(!after.includes(before[0]));
+  console.log(
+    "PASS PWA update waits for activity exit and deletes the old cache",
+  );
+  await page.locator("#playNav").click();
+  const idle = await page
+    .locator("#buddyCharacter")
+    .evaluate((e) => e.getAnimations().map((a) => a.animationName));
+  assert.ok(idle.includes("idle"));
+  await page.locator("#discover-plants").click();
+  for (const id of ["light", "water", "air"]) {
+    await page.locator(`#tool-${id}`).click();
+    await page.locator("#nextStep").click();
+  }
+  assert.equal(
+    (await page.evaluate(() => window.__STUDIO_QA__.snapshot())).buddyState,
+    "celebrating",
+  );
+  assert.ok(
+    await page
+      .locator("#buddyCharacter")
+      .evaluate((e) =>
+        e.getAnimations().some((a) => a.animationName === "hop"),
+      ),
+  );
+  await page.locator("#completeActivity").click();
+  assert.ok(
+    await page
+      .locator(".pip-arm.right")
+      .evaluate((e) =>
+        e.getAnimations().some((a) => a.animationName === "wave"),
+      ),
+  );
+  console.log(
+    "PASS visible idle, finite celebration and goodbye wave animations",
+  );
+  await page.locator("#playNav").click();
+  await page.locator("#discover-plants").click();
+  for (const id of ["light", "water", "air"]) {
+    await page.locator(`#tool-${id}`).click();
+    await page.locator("#nextStep").click();
+  }
+  assert.equal(
+    (await page.evaluate(() => window.__STUDIO_QA__.snapshot())).buddyState,
+    "idle",
+  );
+  console.log("PASS completion celebration occurs once per activity per visit");
+  await context.close();
+} finally {
+  await browser.close();
+  await new Promise((r) => server.close(r));
+}

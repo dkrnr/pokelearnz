@@ -12,7 +12,7 @@ after(() => new Promise((resolve) => server.close(resolve)));
 test("production serves public shell and valid install metadata", async () => {
   const r = await fetch(base);
   assert.equal(r.status, 200);
-  assert.match(await r.text(), /Discovery Camp/);
+  assert.match(await r.text(), /PokeLearn/);
   const m = await (await fetch(base + "/manifest.webmanifest")).json();
   assert.equal(m.display, "standalone");
   for (const icon of m.icons) {
