@@ -40,7 +40,9 @@ function save() {
 function caption(text, speaker = true) {
   currentAudioSrc=undefined;
   $('captionSpeaker').textContent = speaker ? `${buddyById(state.buddy).name} ${t('says')}` : t('littleNote');
-  $('captionText').textContent = text;
+  const paragraph=$('captionText');paragraph.textContent=text;paragraph.style.fontSize='';paragraph.scrollTop=0;
+  let size=parseFloat(getComputedStyle(paragraph).fontSize);
+  while(paragraph.scrollHeight>paragraph.clientHeight && size>15){size=Math.max(15,size-.5);paragraph.style.fontSize=size+'px';}
 }
 function setMode(mode) {
   state.mode = mode;
@@ -211,7 +213,9 @@ for(const [id,key] of [['plants','plantProp'],['homes','fishProp'],['numbers','b
   prop.onclick=async()=>{
     openDialog('activityDialog'); $('activityCaption').textContent=t('takeTime');
     $('activityBuddyName').textContent=buddyById(state.buddy).name+' '+t('says');
-    $('activityBuddy').src=$('buddyCharacter img')?.src || '/assets/buddies/25-official.webp';
+    const hero=$('buddyCharacter img'),portrait=$('activityBuddy');
+    portrait.style.visibility=hero?'visible':'hidden';portrait.onerror=()=>{portrait.style.visibility='hidden';};
+    if(hero)portrait.src=hero.src;else portrait.removeAttribute('src');
     const epoch=state.epoch;
     try {
       activityLoading ||= import('./activity-player.js');
@@ -303,7 +307,9 @@ function boundedAnswer(value) {
   if (/streak|daily goal|star counters?|point counters?|collect them all|come back tomorrow|don['’]t leave|do not leave|miss(?:ed|ing) out|you lost|hurry|countdown|time(?: is)? running out|earn.*points|lonely|abandon|ask me another|what else|follow.up|keep chatting|turn on notifications/i.test(value)) throw Error('answer');
   const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).filter(s => !s.includes('?')).slice(0, 4);
   if (!sentences.length || sentences.some(s => s.trim().split(/\s+/).length > 8)) throw Error('answer');
-  return sentences.join(' ').trim();
+  const answer=sentences.join(' ').trim();
+  if(answer.length>220)throw Error('answer');
+  return answer;
 }
 function mockAnswer(text) {
   const prefix = buddyGreeting(state.buddy);

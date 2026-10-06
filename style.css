@@ -1383,3 +1383,10 @@ body {
 /* Review 2: keep the exit visible while a short-screen lesson scrolls. */
 .activity-dialog .dialog-head{position:sticky;top:-25px;z-index:3;background:#edf7d9;padding:6px 0}
 @media(max-width:600px){.activity-dialog .dialog-head{top:-16px}.activity-dialog:has(#animal-0) .activity-figure,.activity-dialog:has(#animal-0) .activity-figure .lesson-art{height:70px}.activity-dialog:has(#animal-0) .activity-figure .lesson-art{width:70px}}
+/* Reserve space for a complete answer so delayed captions cannot move the dock. */
+.caption{height:160px;min-height:160px;display:flex;flex-direction:column}
+.caption-speaker{flex-shrink:0}
+.caption p{flex:1;min-height:0;line-height:1.4;overflow-wrap:anywhere;overflow-y:auto;scrollbar-width:thin}
+@media(max-width:600px){.caption{height:180px;min-height:180px}.buddy-space{height:42svh}.scene-props{bottom:40%}}
+@media(min-width:900px) and (max-height:900px){.buddy-space{height:43svh}.scene-props{bottom:37%}}
+@media(min-width:900px) and (max-height:900px){.scene-props{top:25%;bottom:39%}}
