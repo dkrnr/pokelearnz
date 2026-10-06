@@ -58,6 +58,14 @@ await page.mouse.move(500,850);
 for(let i=0;i<30;i++){await page.mouse.wheel(0,260);await page.waitForTimeout(40);}
 const scroll=await page.evaluate(start=>({ maxTaskMs:Math.max(0,...window.__profileTasks.filter(e=>e.start>=start).map(e=>e.duration)), tasksOver100ms:window.__profileTasks.filter(e=>e.start>=start&&e.duration>100).length, mounted:document.querySelectorAll('#buddyGrid button').length, scrollTop:document.querySelector('#buddyViewport')?.scrollTop||0, cls:window.__profileShifts.reduce((sum,n)=>sum+n,0) }),start);
 console.log(label,'chooser',JSON.stringify({openMs,...scroll}));
+const movingHero=[];
+if(label.startsWith('stage3'))for(let i=0;i<3;i++){
+  const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),p=await context.newPage(),cdp=await context.newCDPSession(p);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});await cdp.send('Network.enable');await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:1638.4*1024/8,uploadThroughput:675*1024/8});
+  await p.goto(`${base}/?mock=1`,{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>{const img=document.querySelector('#buddyCharacter img');return img?.dataset.kind==='pixel' && img.naturalWidth && img.style.visibility!=='hidden';});
+  movingHero.push(await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(performance.now()))))));await context.close();
+}
+console.log(label,'moving hero ready',JSON.stringify(movingHero));
 const cached=[];
 for(let i=0;i<3;i++){
   const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
@@ -73,9 +81,9 @@ for(let i=0;i<3;i++){
 }
 console.log(label,'cached',JSON.stringify(cached));
 const median=key=>[...runs.map(r=>r[key])].sort((a,b)=>a-b)[1];
-const summary={label,base,settings:configuration.settings,runs,median:{score:median('score'),lcpMs:median('lcpMs'),fcpMs:median('fcpMs'),cls:median('cls'),tbtMs:median('tbtMs')},chooser:{openMs,...scroll},cached,cachedMedianLcpMs:[...cached.map(r=>r.lcpMs)].sort((a,b)=>a-b)[1],budget:{lcpMs:2500,maxScrollTaskMs:100}};
+const summary={label,base,settings:configuration.settings,runs,median:{score:median('score'),lcpMs:median('lcpMs'),fcpMs:median('fcpMs'),cls:median('cls'),tbtMs:median('tbtMs')},chooser:{openMs,...scroll},movingHeroReadyMs:movingHero,cached,cachedMedianLcpMs:[...cached.map(r=>r.lcpMs)].sort((a,b)=>a-b)[1],budget:{lcpMs:2500,maxScrollTaskMs:100}};
 await fs.writeFile(path.join(output,`${label}-summary.json`),JSON.stringify(summary,null,2));
 console.log('SUMMARY',JSON.stringify(summary));
 await browser.close();
 
-if(label==='final' && (summary.median.lcpMs>=2500 || scroll.tasksOver100ms>0 || scroll.scrollTop<=0 || summary.median.cls!==0 || runs.some(r=>r.warnings.length)))throw Error('Performance budget failed or incomplete profile');
+if((label==='final'||label.endsWith('-final')) && (summary.median.lcpMs>=2500 || scroll.tasksOver100ms>0 || scroll.scrollTop<=0 || summary.median.cls!==0 || runs.some(r=>r.warnings.length)))throw Error('Performance budget failed or incomplete profile');
