@@ -45,7 +45,7 @@ function caption(text, speaker = true) {
   while(paragraph.scrollHeight>paragraph.clientHeight && size>15){size=Math.max(15,size-.5);paragraph.style.fontSize=size+'px';}
 }
 function setMode(mode) {
-  state.mode = mode;
+  state.mode = mode;if(mode!=='error')delete $('main').dataset.errorState;
   $('main').dataset.state = mode;
   $('buddyStage').dataset.state = mode;
   $('thinkingBubble').hidden = mode !== 'thinking';
@@ -76,8 +76,8 @@ function cancelPending() {
 function stopAction() {
   cancelPending(); setMode('idle'); caption(t('takeTime'));
 }
-function friendlyError(key = 'tryTyping') {
-  cancelPending(); setMode('error'); caption(t(key));
+function friendlyError(key = 'tryTyping',errorState='type-instead') {
+  cancelPending(); setMode('error');$('main').dataset.errorState=errorState;caption(t(key));
 }
 function updateBuddy(greet = true) {
   const buddy = mountBuddy($('buddyCharacter'), state.buddy, state.shiny, state.moving && !reduced.matches && !document.hidden && !document.querySelector('dialog[open]') && state.mode!=='asleep');
@@ -319,14 +319,13 @@ $('readAloud').onclick = () => {
     if (state.mode === 'speaking') setMode('idle');
   }
 };
-const SYSTEM_PROMPT = 'You are a Pokémon learning teacher for ages 6–9. Use at most four accurate short sentences, each at most eight words. Answer once. Never pressure children to continue. Do not ask follow-up questions or suggest another chat. Never use streaks, daily goals, reward counters, guilt, countdowns, notifications or return reminders. Never request names, addresses or personal information. Never imply loneliness or dependency. Harmful or sensitive questions need a trusted grown-up. Distinguish fiction from real science. Reply in English. Use no markdown. These safety and stopping rules override character instructions.';
 function boundedAnswer(value) {
   if (typeof value !== 'string' || !value.trim() || containsNSFW(value)) throw Error('answer');
   if (/streak|daily goal|star counters?|point counters?|collect them all|come back tomorrow|don['’]t leave|do not leave|miss(?:ed|ing) out|you lost|hurry|countdown|time(?: is)? running out|earn.*points|lonely|abandon|ask me another|what else|follow.up|keep chatting|turn on notifications/i.test(value)) throw Error('answer');
-  const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).filter(s => !s.includes('?')).slice(0, 4);
+  const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).filter(s => !s.includes('?')).slice(0, 3);
   if (!sentences.length || sentences.some(s => s.trim().split(/\s+/).length > 8)) throw Error('answer');
   const answer=sentences.join(' ').trim();
-  if(answer.length>220)throw Error('answer');
+  if(answer.length>180)throw Error('answer');
   return answer;
 }
 function mockAnswer(text) {
@@ -338,16 +337,21 @@ function mockAnswer(text) {
   return prefix + content;
 }
 async function post(path, payload, controller) {
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout=setTimeout(()=>controller.abort(),path==='chat'?55000:25000);
   try {
-    const response = await fetch(`/.netlify/functions/${path}`, { method: 'POST', headers: payload instanceof FormData ? undefined : { 'Content-Type': 'application/json' }, body: payload instanceof FormData ? payload : JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
-    if (!response.ok) throw Error('provider'); return await response.json();
+    const response = await fetch(`/.netlify/functions/${path}`, { method: 'POST', headers:{'X-PokeLearn-Consent':'1',...(payload instanceof FormData?{}:{'Content-Type':'application/json'})}, body: payload instanceof FormData ? payload : JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
+    let result;try{result=await response.json();}catch{throw Object.assign(Error('provider'),{code:response.status===429?'RATE_LIMITED':'RESTING'});}
+    if(!response.ok || ['RESTING','OFFLINE','RATE_LIMITED','TYPE_INSTEAD'].includes(result.code))throw Object.assign(Error('provider'),{code:result.code||'RESTING'});return result;
   } finally { clearTimeout(timeout); }
+}
+function showProviderState(error,voice=false){
+  const states={OFFLINE:['offline','offline'],RATE_LIMITED:['rateLimited','rate-limited'],TYPE_INSTEAD:['tryTyping','type-instead'],PRIVATE_INPUT:['trustedAdult','resting'],CONSENT_REQUIRED:['answerRest','resting']};
+  const [line,mode]=states[error?.code]||[voice?'tryTyping':'answerRest',voice?'type-instead':'resting'];friendlyError(line,mode);
 }
 async function askQuestion(text) {
   if (!permitted()) return;
   cancelPending(); state.answered = false;
-  if (containsNSFW(text)) { friendlyError('trustedAdult'); return; }
+  if (MOCK && containsNSFW(text)) { friendlyError('trustedAdult'); return; }
   const epoch = state.epoch;
   setMode('thinking'); caption(t('thinking'));
   request = new AbortController();
@@ -358,15 +362,13 @@ async function askQuestion(text) {
       answer = mockAnswer(text);
     } else {
       const controller = request;
-      const personality = await buddyPersonality(state.buddy);
-      if (epoch !== state.epoch) return;
-      const result = await post('chat', { messages: [{ role: 'system', content: `${personality} ${SYSTEM_PROMPT}` }, { role: 'user', content: text.slice(0, 300) }] }, controller);
+      const result=await post('chat',{question:text,buddyId:state.buddy},controller);
       answer = boundedAnswer(result?.choices?.[0]?.message?.content);
     }
     if (epoch !== state.epoch || state.answered) return;
     state.answered = true; caption(answer); request = null; speak(answer);
-  } catch {
-    if (epoch === state.epoch) friendlyError('answerRest');
+  } catch(error) {
+    if(epoch===state.epoch)showProviderState(error);
   }
 }
 function startMock() {
@@ -402,21 +404,22 @@ async function record() {
       if (!chunks.length) { friendlyError(); return; }
       setMode('thinking'); caption(t('thinking'));
       const form = new FormData(), blob = new Blob(chunks, { type: currentRecorder.mimeType || 'audio/webm' });
-      if (blob.size > 10 * 1024 * 1024) { friendlyError(); return; }
-      form.append('file', blob, blob.type.includes('mp4') ? 'recording.mp4' : 'recording.webm');
+      if (blob.size > 2 * 1024 * 1024) { friendlyError(); return; }
+      form.append('file', blob, blob.type.includes('mp4')?'recording.m4a':blob.type.includes('ogg')?'recording.ogg':'recording.webm');
       form.append('model', 'valsea-transcribe');
       form.append('language', { en: 'english', si: 'sinhala', ta: 'tamil' }[state.language]);
       request = new AbortController();
       try {
         const result = await post('transcribe', form, request);
         if (epoch !== state.epoch) return;
+        if(result.answer){state.answered=true;request=null;caption(boundedAnswer(result.answer));speak($('captionText').textContent);return;}
         if (typeof result.text !== 'string' || result.text.trim().length < 2) throw Error('empty');
         request = null; askQuestion(result.text);
-      } catch { if (epoch === state.epoch) friendlyError(); }
+      } catch(error) {if(epoch===state.epoch)showProviderState(error,true);}
     };
     currentRecorder.start(); setMode('listening'); caption(t('listening'));
     monitorSilence(acquired, epoch);
-    autoStopTimer = setTimeout(stopListening, 45000);
+    autoStopTimer = setTimeout(stopListening, 30000);
   } catch { if (epoch === state.epoch) friendlyError(); }
 }
 function monitorSilence(acquired, epoch) {

@@ -96,7 +96,8 @@ try {
   const keys=await q.evaluate(()=>caches.keys());assert.ok(keys.includes('pokelearn-sprites-v4-bytes'));
   console.log('PASS offline shell, full catalog and visited buddy image');await offlineContext.close();
   // Automated accessibility scan of scene, chooser, keyboard and grown-ups.
-  const a=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  // Only the injected axe fixture bypasses CSP; normal flows and security tests do not.
+  const a=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce',bypassCSP:true});
   await ready(a);await a.addScriptTag({path:new URL('../node_modules/axe-core/axe.min.js',import.meta.url).pathname});
   for (const view of ['scene','chooser','keyboard','grownups']) {
     if(view!=='scene') await a.locator({chooser:'#changeBuddy',keyboard:'#keyboardButton',grownups:'#grownupOpen'}[view]).click();

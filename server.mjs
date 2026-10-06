@@ -2,8 +2,7 @@ import http from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
+
 const ROOT = path.resolve(fileURLToPath(new URL("./dist/", import.meta.url)));
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -21,51 +20,23 @@ const MIME = {
   ".wav": "audio/wav",
   ".ogg": "audio/ogg",
 };
-const handlers = Object.fromEntries(
-  ["chat", "transcribe", "sentiment"].map((name) => [
-    name,
-    require(`./netlify/functions/${name}.js`).handler,
-  ]),
-);
+const handlers = Object.fromEntries(await Promise.all(['chat','transcribe','health'].map(async name=>[name,(await import(`./netlify/functions/${name}.mjs`)).default])));
+const securityHeaders=Object.fromEntries((await readFile(new URL('./_headers',import.meta.url),'utf8')).split('\n').filter(line=>/^  [\w-]+:/.test(line)).map(line=>{const split=line.indexOf(':');return [line.slice(2,split),line.slice(split+1).trim()];}));
 export function createServer() {
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
-      const functionName = url.pathname.match(
-        /^\/\.netlify\/functions\/(chat|transcribe|sentiment)$/,
-      )?.[1];
-      if (functionName) {
-        if (req.method !== "POST") {
-          res.writeHead(405, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Method not allowed" }));
-          return;
-        }
-        const chunks = [];
-        let size = 0;
-        for await (const chunk of req) {
-          size += chunk.length;
-          if (size > 12 * 1024 * 1024) {
-            res.writeHead(413);
-            res.end();
-            return;
-          }
-          chunks.push(chunk);
-        }
-        const body = Buffer.concat(chunks);
-        const binary = functionName === "transcribe";
-        const result = await handlers[functionName]({
-          httpMethod: req.method,
-          headers: req.headers,
-          body: body.toString(binary ? "base64" : "utf8"),
-          isBase64Encoded: binary,
-        });
-        res.writeHead(result.statusCode, {
-          ...result.headers,
-          "Cache-Control": "no-store",
-        });
-        res.end(result.body);
-        return;
+      const functionName=url.pathname.match(/^\/(?:\.netlify\/functions|api)\/(chat|transcribe|health)$/)?.[1];
+      if(functionName){
+        const cancellation=new AbortController();req.on('aborted',()=>cancellation.abort());res.on('close',()=>{if(!res.writableEnded)cancellation.abort();});
+        const chunks=[];let size=0;
+        for await(const chunk of req){size+=chunk.length;if(size>2*1024*1024+8192){res.writeHead(413,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({code:'REQUEST_TOO_LARGE'}));return;}chunks.push(chunk);}
+        const origin=`http://${req.headers.host||'127.0.0.1'}`;
+        const request=new Request(new URL(req.url,origin),{method:req.method,headers:req.headers,signal:cancellation.signal,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});
+        const response=await handlers[functionName](request,{ip:req.socket.remoteAddress});
+        res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());return;
       }
+      if(url.pathname.startsWith("/api/")||url.pathname.startsWith("/.netlify/functions/")){res.writeHead(404,{"Content-Type":"application/json","Cache-Control":"no-store"});res.end(JSON.stringify({code:"NOT_FOUND"}));return;}
       if (!["GET", "HEAD"].includes(req.method)) {
         res.writeHead(405);
         res.end();
@@ -88,6 +59,7 @@ export function createServer() {
       if (!info.isFile()) throw new Error("not-file");
       const extension = path.extname(requested);
       res.writeHead(200, {
+        ...securityHeaders,
         "Content-Type": MIME[extension] || "application/octet-stream",
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",

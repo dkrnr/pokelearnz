@@ -1,0 +1,35 @@
+export class ApiError extends Error {constructor(code,status=503){super(code);this.code=code;this.status=status;}}
+export function reply(body,status=200){return new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, private','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'}});}
+export function guard(request){
+ if(request.method!=='POST')throw new ApiError('METHOD_NOT_ALLOWED',405);
+ const origin=request.headers.get('origin'),url=new URL(request.url);
+ const configured=[process.env.URL,process.env.DEPLOY_PRIME_URL,...(process.env.ALLOWED_ORIGINS||'https://pokelearnz.netlify.app').split(',')].filter(Boolean);
+ const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+ if(!origin || !(configured.includes(origin)||(local&&origin===url.origin)))throw new ApiError('FORBIDDEN',403);
+ if(request.headers.get('sec-fetch-site')==='cross-site')throw new ApiError('FORBIDDEN',403);
+ if(request.headers.get('x-pokelearn-consent')!=='1')throw new ApiError('CONSENT_REQUIRED',403);
+ if(/^(1|true|yes)$/i.test(process.env.PAUSE_AI||''))throw new ApiError('RESTING');
+ if(request.signal.aborted)throw new ApiError('CANCELLED',499);
+}
+export async function readLimited(request,limit){
+ const declared=request.headers.get('content-length');if(declared && (!/^\d+$/.test(declared)||Number(declared)>limit))throw new ApiError('REQUEST_TOO_LARGE',413);
+ const reader=request.body?.getReader();if(!reader)return Buffer.alloc(0);
+ const chunks=[];let total=0;
+ try{while(true){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>limit){await reader.cancel();throw new ApiError('REQUEST_TOO_LARGE',413);}chunks.push(Buffer.from(value));}}
+ finally{reader.releaseLock();}
+ return Buffer.concat(chunks,total);
+}
+export async function readJson(request,limit=8192){
+ if(request.headers.get('content-type')?.split(';')[0]!=='application/json')throw new ApiError('BAD_INPUT',400);
+ try{return JSON.parse((await readLimited(request,limit)).toString('utf8'));}catch(error){if(error instanceof ApiError)throw error;throw new ApiError('BAD_INPUT',400);}
+}
+export function log(code,latencyMs,model='none'){
+ // Deliberately never include exception messages, URLs, request bodies, headers, audio, IP or response text.
+ console.info(JSON.stringify({code,latencyMs:Math.round(latencyMs),model}));
+}
+export function failure(error){return reply({code:error instanceof ApiError?error.code:'RESTING'},error instanceof ApiError?error.status:503);}
+export async function providerJson(response,limit=65536){
+ if(!response.ok){await response.body?.cancel();throw new ApiError(response.status===429?'RATE_LIMITED':'PROVIDER_FAILED',response.status===429?429:502);}
+ try{return JSON.parse((await readLimited(response,limit)).toString('utf8'));}catch(error){if(error instanceof ApiError)throw error;throw new ApiError('PROVIDER_FAILED',502);}
+}
+export const brainReply=(content,code='OK')=>reply({code,choices:[{message:{role:'assistant',content}}]});
