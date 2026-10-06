@@ -14,6 +14,8 @@ const MIME = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".ttf": "font/ttf",
+  ".woff": "font/woff",
+  ".webp": "image/webp",
 };
 const handlers = Object.fromEntries(
   ["chat", "transcribe", "sentiment"].map((name) => [

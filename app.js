@@ -95,11 +95,12 @@ function updateLanguage() {
 function openDialog(id) {
   cancelPending(); setMode('idle');
   dialogTrigger = document.activeElement;
+  $('main').dataset.paused = 'true'; clearTimeout(idleTimer);
   $(id).showModal();
 }
 for (const dialog of document.querySelectorAll('dialog')) {
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
-  dialog.addEventListener('close', () => { dialogTrigger?.focus(); scheduleIdle(); });
+  dialog.addEventListener('close', () => { $('main').dataset.paused = 'false'; dialogTrigger?.focus(); scheduleIdle(); });
 }
 function openGrownups() {
   openDialog('grownupDialog');
@@ -206,7 +207,7 @@ function scheduleIdle() {
   clearTimeout(idleTimer);
   if (document.hidden || reduced.matches) return;
   idleTimer = setTimeout(() => {
-    if (state.mode === 'idle' && !document.querySelector('dialog[open]')) trick(['blink', 'peek', 'yawn'][Math.floor(Math.random() * 3)]);
+    if (state.mode === 'idle' && !document.querySelector('dialog[open]')) trick(['blink', 'bob', 'yawn'][Math.floor(Math.random() * 3)]);
     scheduleIdle();
   }, 6000 + Math.random() * 8000);
 }
@@ -282,7 +283,10 @@ async function askQuestion(text) {
       await new Promise(resolve => { actionTimer = setTimeout(resolve, 1400); });
       answer = mockAnswer(text);
     } else {
-      const result = await post('chat', { messages: [{ role: 'system', content: `${buddyPersonality(state.buddy)} ${SYSTEM_PROMPT}` }, { role: 'user', content: text.slice(0, 300) }] }, request);
+      const controller = request;
+      const personality = await buddyPersonality(state.buddy);
+      if (epoch !== state.epoch) return;
+      const result = await post('chat', { messages: [{ role: 'system', content: `${personality} ${SYSTEM_PROMPT}` }, { role: 'user', content: text.slice(0, 300) }] }, controller);
       answer = boundedAnswer(result?.choices?.[0]?.message?.content);
     }
     if (epoch !== state.epoch || state.answered) return;

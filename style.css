@@ -1,13 +1,13 @@
 @font-face {
   font-family:Readex;
-  src:url('/assets/fonts/ReadexPro-Regular.ttf') format('truetype');
-  font-display:swap;
+  src:url('/assets/fonts/ReadexPro-Regular.woff') format('woff');
+  font-display:optional;
   font-weight:400;
 }
 @font-face {
   font-family:Readex;
-  src:url('/assets/fonts/ReadexPro-Bold.ttf') format('truetype');
-  font-display:swap;
+  src:url('/assets/fonts/ReadexPro-Bold.woff') format('woff');
+  font-display:optional;
   font-weight:700;
 }
 :root {
@@ -273,7 +273,7 @@ svg {
   justify-content:center;
   padding:10px 16px;
   font-weight:700;
-  transition:transform .18s var(--bounce),box-shadow .18s;
+  transition:transform .18s var(--bounce);
 }
 .sticker:hover {
   transform:translateY(-3px) rotate(-1deg);
@@ -420,14 +420,14 @@ svg {
   align-items:center;
   justify-content:center;
   transform-origin:50% 85%;
-  animation:bob 4s ease-in-out infinite;
+  animation:none;
 }
 .buddy-character img {
   height:100%;
   width:100%;
   object-fit:contain;
   image-rendering:pixelated;
-  filter:drop-shadow(3px 5px 0 #24383d18);
+
 }
 .tap-label {
   position:absolute;
@@ -453,7 +453,7 @@ svg {
   height:26px;
   border-radius:50%;
   background:#64894b35;
-  filter:blur(3px);
+
 }
 .listening-ring {
   position:absolute;
@@ -672,7 +672,7 @@ dialog {
 }
 dialog::backdrop {
   background:#294958a8;
-  backdrop-filter:blur(5px);
+
 }
 .dialog-head {
   display:flex;
@@ -1318,3 +1318,11 @@ body {
   width:125%;
   height:125%;
 }
+
+/* Startup and chooser work remain bounded; only transform/opacity animate. */
+.buddy-character img{image-rendering:auto}
+.world[data-paused=true] .buddy-space *{animation-play-state:paused!important}
+.buddy-tap[data-trick] .buddy-character{animation:none}
+.buddy-tap[data-trick=bob]{animation:bob 1.5s ease-in-out}
+.buddy-cell{content-visibility:auto;contain-intrinsic-size:auto 196px}
+.sprite-frame{contain:layout paint}

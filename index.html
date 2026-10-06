@@ -9,6 +9,8 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+  <link rel="preload" as="image" href="/assets/buddies/25-official.webp" fetchpriority="high" crossorigin="anonymous" />
+  <link rel="preload" as="font" href="/assets/fonts/ReadexPro-Regular.woff" type="font/woff" crossorigin />
   <link rel="stylesheet" href="/style.css" />
   <script type="module" src="/app.js"></script>
 </head>
@@ -40,7 +42,7 @@
     <div class="buddy-space" id="buddyStage" data-state="idle">
       <span class="listening-ring" aria-hidden="true"></span><span class="buddy-shadow" aria-hidden="true"></span>
       <button id="buddyTap" class="buddy-tap" aria-label="Play with Pikachu">
-        <span id="buddyCharacter" class="buddy-character"></span>
+        <span id="buddyCharacter" class="buddy-character"><img src="/assets/buddies/25-official.webp" width="475" height="475" alt="Pikachu" fetchpriority="high" decoding="async" crossorigin="anonymous" /></span>
         <span class="tap-label"><span aria-hidden="true">♡</span><span id="tapWord">Tap me!</span></span>
       </button>
       <span id="thinkingBubble" class="thinking-bubble" hidden>hmm…</span>
