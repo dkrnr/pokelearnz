@@ -16,11 +16,21 @@ for (const name of [
   "safety.js",
   "sw.js",
   "manifest.webmanifest",
-  "assets",
 ])
   await cp(new URL(name, root), new URL(name, out), { recursive: true });
 await cp(new URL("../_headers", import.meta.url), new URL("_headers", out));
 const { buddyAssets } = await import(new URL("../buddy.js", import.meta.url));
+for (const name of [
+  "assets/mark.svg",
+  "assets/icons",
+  "assets/fonts",
+  ...buddyAssets.map((path) => path.slice(1)),
+]) {
+  await mkdir(new URL(name.slice(0, name.lastIndexOf("/") + 1), out), {
+    recursive: true,
+  });
+  await cp(new URL(name, root), new URL(name, out), { recursive: true });
+}
 const hash = createHash("sha256");
 async function digest(dir) {
   for (const entry of (await readdir(dir, { withFileTypes: true })).sort(
@@ -37,6 +47,8 @@ const stamp = hash.digest("hex").slice(0, 16);
 const worker = new URL("sw.js", out);
 await writeFile(
   worker,
-  (await readFile(worker, "utf8")).replace("__BUILD__", stamp).replace("__BUDDY_ASSETS__", JSON.stringify(buddyAssets)),
+  (await readFile(worker, "utf8"))
+    .replace("__BUILD__", stamp)
+    .replace("__BUDDY_ASSETS__", JSON.stringify(buddyAssets)),
 );
 console.log(`Built public files at ${fileURLToPath(out)}`);
