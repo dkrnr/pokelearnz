@@ -16,8 +16,8 @@
     "test:all": "node scripts/test-all.mjs",
     "check:models": "node --env-file-if-exists=.env scripts/check-models.mjs",
     "test:backend": "node --test tests/backend.test.mjs",
-    "smoke:live": "node --env-file-if-exists=.env scripts/smoke-live.mjs"
-    ,"audit:live": "node --env-file-if-exists=.env scripts/audit-live.mjs"
+    "smoke:live": "node --env-file-if-exists=.env scripts/smoke-live.mjs",
+    "audit:live": "node --env-file-if-exists=.env scripts/audit-live.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

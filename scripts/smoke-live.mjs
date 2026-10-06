@@ -27,6 +27,6 @@ if(chat&&health.openrouter){
 }else console.log('SKIP chat: local/function key is absent.');
 if(process.env.SMOKE_VOICE!=='0'&&voice&&health.valsea)for(const [name,mime] of [['chrome.webm','audio/webm'],['safari.m4a','audio/mp4']]){
  const form=new FormData();form.append('file',new Blob([await fs.readFile(new URL('../tests/fixtures/'+name,import.meta.url))],{type:mime}),name);form.append('model','valsea-transcribe');form.append('language','english');await check('transcribe',form);
-}else console.log('SKIP voice: local/function key is absent.');
+}else console.log(process.env.SMOKE_VOICE==='0'?'SKIP voice: explicitly disabled.':'SKIP voice: local/function key is absent.');
 // Pure tones may produce empty transcripts. TYPE_INSTEAD proves fallback, not live recognition quality.
 if(failed)process.exitCode=1;
