@@ -1,0 +1,137 @@
+{
+  "repository": "dkrnr/pokelearn",
+  "pullRequests": [
+    {
+      "base": "main",
+      "draft": true,
+      "head": "redesign/kid-friendly-v3",
+      "html_url": "https://github.com/dkrnr/pokelearn/pull/9",
+      "number": 9
+    },
+    {
+      "base": "redesign/kid-friendly-v3",
+      "draft": true,
+      "head": "backend/hardening",
+      "html_url": "https://github.com/dkrnr/pokelearn/pull/10",
+      "number": 10
+    }
+  ],
+  "issues": [
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/11",
+      "number": 11,
+      "title": "Test real tablets and mobile recording end to end"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/12",
+      "number": 12,
+      "title": "Run supervised kid usability testing"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/13",
+      "number": 13,
+      "title": "Human-review Sinhala and Tamil interface and safety"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/14",
+      "number": 14,
+      "title": "Record and review authored activity narration"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/15",
+      "number": 15,
+      "title": "Evaluate realtime or streaming voice"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/16",
+      "number": 16,
+      "title": "Add SEO and parent-facing privacy pages"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/17",
+      "number": 17,
+      "title": "Choose and verify a private or paid provider before public launch"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/18",
+      "number": 18,
+      "title": "Review Valsea policy and child-service suitability"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/19",
+      "number": 19,
+      "title": "Verify rate limits and quotas in production"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/20",
+      "number": 20,
+      "title": "Verify monitoring and cost caps"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/21",
+      "number": 21,
+      "title": "Verify deployed CSP and security headers"
+    },
+    {
+      "html_url": "https://github.com/dkrnr/pokelearn/issues/22",
+      "number": 22,
+      "title": "Close moderation, privacy-detection and science-quality gaps"
+    }
+  ],
+  "mainProtection": {
+    "allow_deletions": {
+      "enabled": false
+    },
+    "allow_force_pushes": {
+      "enabled": false
+    },
+    "enforce_admins": {
+      "enabled": false,
+      "url": "https://api.github.com/repos/dkrnr/pokelearn/branches/main/protection/enforce_admins"
+    },
+    "required_linear_history": {
+      "enabled": false
+    },
+    "required_pull_request_reviews": {
+      "dismiss_stale_reviews": false,
+      "require_code_owner_reviews": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "url": "https://api.github.com/repos/dkrnr/pokelearn/branches/main/protection/required_pull_request_reviews"
+    },
+    "required_status_checks": {
+      "checks": [
+        {
+          "app_id": 15368,
+          "context": "CI"
+        }
+      ],
+      "contexts": [
+        "CI"
+      ],
+      "contexts_url": "https://api.github.com/repos/dkrnr/pokelearn/branches/main/protection/required_status_checks/contexts",
+      "strict": true,
+      "url": "https://api.github.com/repos/dkrnr/pokelearn/branches/main/protection/required_status_checks"
+    }
+  },
+  "repositorySecurity": {
+    "full_name": "dkrnr/pokelearn",
+    "security_and_analysis": {
+      "dependabot_security_updates": {
+        "status": "disabled"
+      },
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_non_provider_patterns": {
+        "status": "disabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      },
+      "secret_scanning_validity_checks": {
+        "status": "disabled"
+      }
+    }
+  }
+}
