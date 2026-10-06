@@ -1,6 +1,6 @@
 /** Ports v2 privacy, bounded-answer and cancellation checks onto the voice-first UI. */
 import assert from 'node:assert/strict';import {chromium} from 'playwright';
-const base=process.env.POKELEARN_TEST_URL||'http://127.0.0.1:4187';const browser=await chromium.launch({headless:true});
+const base=process.env.POKELEARN_TEST_URL||'http://127.0.0.1:4178';const browser=await chromium.launch({headless:true});
 const snapshot=p=>p.evaluate(()=>window.__STUDIO_QA__.snapshot());
 async function fresh(init){const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',serviceWorkers:'block'});const p=await context.newPage();await p.addInitScript(()=>localStorage.setItem('pokelearn_voice_v3',JSON.stringify({consent:true})));if(init)await p.addInitScript(init);await p.goto(base,{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025);return {context,p};}
 async function type(p,text='Why do leaves need light?'){await p.locator('#keyboardButton').click();await p.locator('#questionInput').fill(text);await p.locator('#questionForm button').click();}

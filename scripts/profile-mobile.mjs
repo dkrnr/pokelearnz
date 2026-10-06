@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
-const base = process.env.POKELEARN_TEST_URL || 'http://127.0.0.1:4186';
+const base = process.env.POKELEARN_TEST_URL || 'http://127.0.0.1:4178';
 const label = process.env.PROFILE_LABEL || 'after';
 const output = process.env.PROFILE_OUTPUT || 'qa/artifacts/performance';
 await fs.mkdir(output, { recursive:true });
@@ -56,10 +56,26 @@ await page.waitForTimeout(500);
 const start=await page.evaluate(()=>performance.now());
 await page.mouse.move(500,850);
 for(let i=0;i<30;i++){await page.mouse.wheel(0,260);await page.waitForTimeout(40);}
-const scroll=await page.evaluate(start=>({ maxTaskMs:Math.max(0,...window.__profileTasks.filter(e=>e.start>=start).map(e=>e.duration)), tasksOver100ms:window.__profileTasks.filter(e=>e.start>=start&&e.duration>100).length, mounted:document.querySelectorAll('#buddyGrid button').length, cls:window.__profileShifts.reduce((sum,n)=>sum+n,0) }),start);
+const scroll=await page.evaluate(start=>({ maxTaskMs:Math.max(0,...window.__profileTasks.filter(e=>e.start>=start).map(e=>e.duration)), tasksOver100ms:window.__profileTasks.filter(e=>e.start>=start&&e.duration>100).length, mounted:document.querySelectorAll('#buddyGrid button').length, scrollTop:document.querySelector('#buddyViewport')?.scrollTop||0, cls:window.__profileShifts.reduce((sum,n)=>sum+n,0) }),start);
 console.log(label,'chooser',JSON.stringify({openMs,...scroll}));
+const cached=[];
+for(let i=0;i<3;i++){
+  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
+  const warmPage=await context.newPage(),cdp=await context.newCDPSession(warmPage);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:1638.4*1024/8,uploadThroughput:675*1024/8});
+  await warmPage.addInitScript(()=>{window.__warmLcp=0;new PerformanceObserver(list=>{for(const e of list.getEntries())window.__warmLcp=e.startTime;}).observe({type:'largest-contentful-paint',buffered:true});});
+  await warmPage.goto(`${base}/?mock=1`,{waitUntil:'load'});
+  await warmPage.evaluate(()=>navigator.serviceWorker.ready);await warmPage.waitForFunction(()=>navigator.serviceWorker.controller);
+  await warmPage.reload({waitUntil:'load'});await warmPage.locator('#buddyCharacter img').evaluate(img=>img.decode());await warmPage.waitForTimeout(300);
+  cached.push(await warmPage.evaluate(()=>({lcpMs:window.__warmLcp,observedAtMs:performance.now(),controlled:!!navigator.serviceWorker.controller})));await context.close();
+}
+console.log(label,'cached',JSON.stringify(cached));
 const median=key=>[...runs.map(r=>r[key])].sort((a,b)=>a-b)[1];
-const summary={label,base,settings:configuration.settings,runs,median:{score:median('score'),lcpMs:median('lcpMs'),fcpMs:median('fcpMs'),cls:median('cls'),tbtMs:median('tbtMs')},chooser:{openMs,...scroll},budget:{lcpMs:2500,maxScrollTaskMs:100}};
+const summary={label,base,settings:configuration.settings,runs,median:{score:median('score'),lcpMs:median('lcpMs'),fcpMs:median('fcpMs'),cls:median('cls'),tbtMs:median('tbtMs')},chooser:{openMs,...scroll},cached,cachedMedianLcpMs:[...cached.map(r=>r.lcpMs)].sort((a,b)=>a-b)[1],budget:{lcpMs:2500,maxScrollTaskMs:100}};
 await fs.writeFile(path.join(output,`${label}-summary.json`),JSON.stringify(summary,null,2));
 console.log('SUMMARY',JSON.stringify(summary));
 await browser.close();
+
+if(label==='final' && (summary.median.lcpMs>=2500 || scroll.tasksOver100ms>0 || scroll.scrollTop<=0 || summary.median.cls!==0 || runs.some(r=>r.warnings.length)))throw Error('Performance budget failed or incomplete profile');

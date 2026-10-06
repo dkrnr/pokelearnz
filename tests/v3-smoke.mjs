@@ -86,12 +86,13 @@ try {
   await q.reload({waitUntil:'domcontentloaded'});
   await q.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025);
   await q.locator('#buddyCharacter img').evaluate(img=>img.decode());
-  await q.locator('#changeBuddy').click(); await q.locator('#buddySearch').fill('bulbasaur');
+  await q.locator('#changeBuddy').click(); await q.locator('#buddySearch').fill('charmander');
   await q.locator('#buddyGrid img').evaluate(img=>img.decode()); await q.keyboard.press('Escape');
-  await q.waitForFunction(async()=>{const c=await caches.open('pokelearn-sprites-v3'); return (await c.keys()).length>0;});
+  await q.waitForFunction(async()=>{const c=await caches.open('pokelearn-sprites-v3'); return (await c.keys()).some(r=>r.url.endsWith('/4.png'));});
   await offlineContext.setOffline(true);await ready(q);await audit(q);
   await q.locator('#buddyCharacter img').evaluate(img=>img.decode());
-  await q.locator('#changeBuddy').click();await q.locator('#buddySearch').fill('1025');await q.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt'));assert.match(await q.locator('#buddyGrid').innerText(),/Pecharunt/);
+  await q.locator('#changeBuddy').click();await q.locator('#buddySearch').fill('charmander');await q.locator('#buddyGrid img').evaluate(img=>img.decode());assert.match(await q.locator('#buddyGrid img').getAttribute('src'),/cdn\.jsdelivr\.net.*\/4\.png$/);
+  await q.locator('#buddySearch').fill('1025');await q.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt'));assert.match(await q.locator('#buddyGrid').innerText(),/Pecharunt/);
   const keys=await q.evaluate(()=>caches.keys());assert.ok(keys.includes('pokelearn-sprites-v3'));
   console.log('PASS offline shell, full catalog and visited buddy image');await offlineContext.close();
   // Automated accessibility scan of scene, chooser, keyboard and grown-ups.

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {activities} from '../activities.js';
-const base=process.env.POKELEARN_TEST_URL||'http://127.0.0.1:4186';
+const base=process.env.POKELEARN_TEST_URL||'http://127.0.0.1:4178';
 const browser=await chromium.launch({headless:true});
 const forbidden=/\bstreaks?\b|daily goals?|star counters?|point counters?|collect them all|come back tomorrow|don't leave|miss(?:ed|ing) out|you lost|hurry|countdown|ask me another|what else would|keep chatting|turn on notifications|feel lonely|abandon/i;
 const snap=p=>p.evaluate(()=>window.__STUDIO_QA__.snapshot());

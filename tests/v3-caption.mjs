@@ -1,6 +1,6 @@
 /** A delayed, maximum-sentence answer must not shift the voice dock. */
 import assert from 'node:assert/strict';import {chromium} from 'playwright';
-const base=process.env.POKELEARN_TEST_URL||'http://127.0.0.1:4187';const browser=await chromium.launch({headless:true});
+const base=process.env.POKELEARN_TEST_URL||'http://127.0.0.1:4178';const browser=await chromium.launch({headless:true});
 try{for(const [label,width,height] of [['phone',390,844],['portrait',820,1180],['landscape',1180,820]]){
 const p=await browser.newPage({viewport:{width,height},serviceWorkers:'block'});
 await p.addInitScript(()=>{localStorage.setItem('pokelearn_voice_v3',JSON.stringify({consent:true}));window.shifts=[];new PerformanceObserver(list=>window.shifts.push(...list.getEntries().filter(e=>!e.hadRecentInput).map(e=>({value:e.value,sources:e.sources.map(s=>s.node?.id||s.node?.className)})))).observe({type:'layout-shift',buffered:true});});
