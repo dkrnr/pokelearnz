@@ -34,9 +34,17 @@ for(const [label,width,height] of [['phone',390,844],['portrait',820,1180],['lan
   assert.equal(await p.locator('#sceneProps button').count(),6);
   for(const a of activities){
     await p.locator('#discover-'+a.id).click();await p.locator('#activityWorkspace button').first().waitFor();
-    await audit(p,label+' '+a.id);await solve(p,a);await audit(p,label+' '+a.id+' recap');
+    await audit(p,label+' '+a.id);
+    assert.equal((await snap(p)).recording,false); assert.equal(await p.locator('#micLabel').innerText(),'Tap to talk');assert.equal(await p.locator('#micButton').isDisabled(),true);
+    if(a.type==='build-plant')await p.locator('#tool-water').click();
+    if(a.type==='build-number')await p.locator('#checkGroup').click();
+    if(a.type==='sort'){await p.locator('#animal-0').click();await p.locator('#bin-'+a.bins.find(b=>b.id!==a.items[0].target).id).click();}
+    if(a.type==='match')await p.locator('#choice-'+a.choices.find(c=>c.id!==a.items[0].target).id).click();
+    if(a.type==='order')await p.locator('#story-2').click();
+    assert.equal((await snap(p)).activity.solved,false);assert.ok(await p.locator('#activityFeedback').innerText());
+    await solve(p,a);await audit(p,label+' '+a.id+' recap');
     assert.equal(await p.locator('#activityNote').innerText(),a.note);
-    await p.locator('#completeActivity').click();await p.locator('#endScreen').waitFor({state:'visible'});await p.locator('#wakeButton').click();
+    await p.locator('#completeActivity').click();await p.locator('#endScreen').waitFor({state:'visible'});assert.equal(await p.locator('#main button:visible').count(),1);assert.equal((await snap(p)).recording,false);await p.locator('#wakeButton').click();
   }
   assert.equal(await p.evaluate(()=>window.__audioPlays+window.__speech),0,'no automatic narration');
   assert.deepEqual(calls,[],'authored activities never upload questions/voice');assert.deepEqual(errors,[]);

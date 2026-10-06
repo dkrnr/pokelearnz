@@ -1,8 +1,9 @@
 /* Only public shell and visited sprite GETs. Never cache questions, recorded child voice or API responses. */
 const CACHE = 'pokelearn-shell-__BUILD__';
-const SPRITES = 'pokelearn-sprites-v3';
+importScripts('/sprite-cache.js');
+const SPRITES = 'pokelearn-sprites-v4-bytes';
 const SHELL = [
-  '/', '/index.html', '/style.css', '/app.js', '/chooser.js', '/activity-player.js', '/authored-audio.js', '/activities.js', '/art.js', '/buddy.js', '/buddy-catalog.json',
+  '/', '/index.html', '/style.css', '/app.js', '/chooser.js', '/activity-player.js', '/authored-audio.js', '/activities.js', '/art.js', '/buddy.js', '/animated-coverage.js', '/sprite-cache.js', '/buddy-catalog.json',
   '/locales.js', '/safety.js', '/manifest.webmanifest', '/assets/mark.svg',
   '/assets/fonts/ReadexPro-Regular.woff', '/assets/fonts/ReadexPro-Bold.woff',
   '/assets/icons/icon-192.png', '/assets/icons/icon-512.png', '/assets/icons/maskable-512.png', '/assets/icons/apple-touch-icon.png',
@@ -10,7 +11,7 @@ const SHELL = [
 ];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))));
 self.addEventListener('activate', e => e.waitUntil(Promise.all([
-  caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('pokelearn-shell-') && key !== CACHE).map(key => caches.delete(key)))),
+  caches.keys().then(keys => Promise.all(keys.filter(key => key==='pokelearn-sprites-v3' || key.startsWith('pokelearn-shell-') && key !== CACHE).map(key => caches.delete(key)))),
   self.clients.claim(),
 ])));
 self.addEventListener('message', e => { if (e.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting(); });
@@ -22,15 +23,10 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.open(SPRITES).then(async cache => {
       const hit = await cache.match(e.request); if (hit) return hit;
       const response = await fetch(e.request);
-      // cors images expose status, opaque image requests expose status 0.
-      if (response.ok || response.type === 'opaque') {
-        const copy = response.clone();
-        spriteWrites = spriteWrites.catch(() => {}).then(async () => {
-          await cache.put(e.request, copy);
-          const keys = await cache.keys();
-          await Promise.all(keys.slice(0, Math.max(0, keys.length - 180)).map(key => cache.delete(key)));
-        });
-        e.waitUntil(spriteWrites.catch(() => {}));
+      if (response.ok && response.type!=='opaque') {
+        const copy=response.clone();
+        spriteWrites=spriteWrites.catch(()=>{}).then(()=>self.storeSprite(cache,e.request,copy));
+        e.waitUntil(spriteWrites.catch(()=>{}));
       }
       return response;
     })); return;

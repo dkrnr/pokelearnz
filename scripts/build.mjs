@@ -15,6 +15,8 @@ for (const name of [
   "activities.js",
   "art.js",
   "buddy.js",
+  "animated-coverage.js",
+  "sprite-cache.js",
   "buddy-catalog.json",
   "pokemonPersonalities.json",
   "locales.js",

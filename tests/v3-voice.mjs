@@ -47,5 +47,6 @@ try {
   await page.locator('#changeBuddy').click(); await page.waitForTimeout(1000);
   assert.equal(calls.length, 0);
   assert.equal(await page.evaluate(() => window.__tracks.every(t => t.readyState === 'ended')), true);
+  await page.locator('#buddyDialog [data-close]').click();await page.locator('#micButton').click();await page.waitForFunction(()=>window.__STUDIO_QA__.snapshot().state==='listening');await page.locator('#discover-plants').click();await page.locator('#tool-light').waitFor();assert.equal(await page.evaluate(()=>window.__tracks.every(t=>t.readyState==='ended')),true);assert.equal((await page.evaluate(()=>window.__STUDIO_QA__.snapshot())).recording,false);assert.equal(await page.locator('#micLabel').innerText(),'Tap to talk');assert.equal(calls.length,0);
   console.log('PASS browser MediaRecorder, RMS silence auto-end, transcription → answer contracts, track release and cancellation (generated stream, mocked providers)');
 } finally { await browser.close(); }

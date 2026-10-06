@@ -1,4 +1,4 @@
-import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyPersonality, buddyGreeting, spriteHosts, generations, typeMarks } from './buddy.js';
+import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyPersonality, buddyGreeting, spriteHosts, generations, typeMarks, animatedUrl, fitPixel } from './buddy.js';
 import { art } from './art.js';
 import { createChooser } from './chooser.js';
 import { translate } from './locales.js';
@@ -6,7 +6,7 @@ import { containsNSFW } from './safety.js';
 const $ = id => document.getElementById(id);
 const MOCK = new URL(location.href).searchParams.get('mock') === '1';
 const STORAGE = 'pokelearn_voice_v3';
-const state = { buddy: defaultBuddyId, shiny: false, recent: [defaultBuddyId], generation: 'all', type: '', mode: 'idle', sound: false, answered: false, language: 'en', consent: false, saving: false, epoch: 0, ready: false };
+const state = { buddy: defaultBuddyId, shiny: false, moving:true, recent: [defaultBuddyId], generation: 'all', type: '', mode: 'idle', sound: false, answered: false, language: 'en', consent: false, saving: false, epoch: 0, ready: false };
 const celebrated = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, trickTimer, audio, activeUtterance;
@@ -21,7 +21,7 @@ function restore() {
     if (['en', 'si', 'ta'].includes(saved.language)) state.language = saved.language;
     if (state.saving) {
       if (Number.isInteger(saved.buddy) && saved.buddy >= 1 && saved.buddy <= 1025) state.buddy = saved.buddy;
-      state.shiny = saved.shiny === true;
+      state.shiny = saved.shiny === true; state.moving = saved.moving !== false;
       if (Array.isArray(saved.recent)) state.recent = saved.recent.filter(id => Number.isInteger(id) && id >= 1 && id <= 1025).slice(0, 6);
     }
   } catch { /* A blocked storage API keeps the visit temporary. */ }
@@ -29,7 +29,7 @@ function restore() {
 function save() {
   try {
     localStorage.setItem(STORAGE, JSON.stringify({ consent: state.consent, saving: state.saving, language: state.language,
-      ...(state.saving ? { buddy: state.buddy, shiny: state.shiny, recent: state.recent } : {}) }));
+      ...(state.saving ? { buddy: state.buddy, shiny: state.shiny, moving:state.moving, recent: state.recent } : {}) }));
     $('storageStatus').textContent = state.saving ? 'Buddy choices are remembered on this device.' : 'Buddy choices stay temporary.';
     return true;
   } catch {
@@ -51,8 +51,9 @@ function setMode(mode) {
   $('thinkingBubble').hidden = mode !== 'thinking';
   $('micButton').setAttribute('aria-pressed', String(mode === 'listening'));
   $('micButton').setAttribute('aria-busy', String(mode === 'thinking'));
-  $('micLabel').textContent = t(mode === 'listening' ? 'stopTalking' : ['thinking', 'speaking'].includes(mode) ? 'stop' : 'talk');
-  $('micButton').disabled = ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
+  const activityOpen=$('activityDialog').open;
+  $('micLabel').textContent = t(activityOpen?'talk':mode === 'listening' ? 'stopTalking' : ['thinking', 'speaking'].includes(mode) ? 'stop' : 'talk');
+  $('micButton').disabled = activityOpen || ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
   $('keyboardButton').disabled = ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
 }
 function closeMic() {
@@ -79,7 +80,9 @@ function friendlyError(key = 'tryTyping') {
   cancelPending(); setMode('error'); caption(t(key));
 }
 function updateBuddy(greet = true) {
-  const buddy = mountBuddy($('buddyCharacter'), state.buddy, state.shiny, reduced.matches);
+  const buddy = mountBuddy($('buddyCharacter'), state.buddy, state.shiny, state.moving && !reduced.matches && !document.hidden && !document.querySelector('dialog[open]') && state.mode!=='asleep');
+  $('movingToggle').setAttribute('aria-pressed',String(state.moving));
+  $('movingToggle').lastElementChild.textContent=t(state.moving?'moving':'artwork');
   $('buddyName').textContent = buddy.name;
   $('buddyTypes').replaceChildren(typeChips(buddy.types));
   $('buddyTap').setAttribute('aria-label', `${t('playWith')} ${buddy.name}`);
@@ -104,13 +107,13 @@ function openDialog(id) {
   cancelPending(); setMode('idle');
   dialogTrigger = document.activeElement;
   $('main').dataset.paused = 'true'; clearTimeout(idleTimer);
-  $(id).showModal();
+  $(id).showModal(); updateBuddy(false); setMode('idle');
 }
 for (const dialog of document.querySelectorAll('dialog')) {
   const stopActivity=()=>{if(dialog.id==='activityDialog'){cancelPending();setMode('idle');}};
   dialog.querySelector('[data-close]').onclick = () => {stopActivity();dialog.close();};
   dialog.addEventListener('cancel',stopActivity);
-  dialog.addEventListener('close', () => { $('main').dataset.paused = 'false'; dialogTrigger?.focus(); scheduleIdle(); });
+  dialog.addEventListener('close', () => { $('main').dataset.paused = 'false'; dialogTrigger?.focus(); updateBuddy(false); scheduleIdle(); });
 }
 function randomGate() {
   const numbers = crypto.getRandomValues(new Uint32Array(3));
@@ -151,7 +154,7 @@ $('clearData').onclick = async () => {
   $('onlineConsent').checked = false; $('saveBuddies').checked = false;
   $('setupGate').hidden = false; $('setupSettings').hidden = true; randomGate();
   $('storageStatus').textContent = 'Saved choices and permission cleared. Clearing sprite cache…';
-  if ('caches' in window) await caches.delete('pokelearn-sprites-v3').catch(() => {});
+  if ('caches' in window) await Promise.all(['pokelearn-sprites-v3','pokelearn-sprites-v4-bytes'].map(name=>caches.delete(name))).catch(() => {});
   $('storageStatus').textContent = 'Saved choices, permission and cached sprites cleared.';
 };
 $('language').onchange = e => { state.language = e.target.value; save(); updateLanguage(); };
@@ -162,6 +165,9 @@ function selectBuddy(id) {
   setMode('idle'); updateBuddy(); if (state.saving) save();
   $('buddyDialog').close();
 }
+let activePreview;
+$('movingToggle').onclick=()=>{state.moving=!state.moving;updateBuddy(false);if(state.saving)save();};
+new ResizeObserver(()=>{const img=$('buddyCharacter').querySelector('[data-kind=pixel]');if(img)fitPixel(img);}).observe($('buddyCharacter'));
 function buddyCell(id, recent = false) {
   const buddy = buddyById(id), button = document.createElement('button');
   button.className = recent ? 'recent-buddy' : 'buddy-cell';
@@ -171,10 +177,16 @@ function buddyCell(id, recent = false) {
     const number = document.createElement('span'); number.className = 'buddy-number'; number.textContent = `#${String(id).padStart(3, '0')}`; button.append(number);
   }
   const img = buddyImage(id, { shiny: state.shiny, thumbnail: true }); img.setAttribute('aria-hidden', 'true');
-  const frame = document.createElement('span'); frame.className = 'sprite-frame'; frame.append(img);
+  const frame = document.createElement('span'); frame.className = 'sprite-frame loading-sprite'; frame.append(img);
+  img.loading='eager'; // Virtual overscan rows preload just beyond the viewport.
+  const placeholder=document.createElement('span');placeholder.className='sprite-placeholder';placeholder.setAttribute('aria-hidden','true');frame.prepend(placeholder);
   const name = document.createElement('span'); name.className = 'buddy-cell-name'; name.textContent = buddy.name;
   button.append(frame, name); if (!recent) button.append(typeChips(buddy.types));
-  button.onclick = () => selectBuddy(id); return button;
+  const staticSrc=img.src; let hoverEpoch=0;
+  const stopPreview=()=>{hoverEpoch++;if(activePreview===stopPreview)activePreview=null;img.src=staticSrc;button.classList.remove('previewing');};
+  const startPreview=()=>{if(reduced.matches)return;activePreview?.();activePreview=stopPreview;const animation=animatedUrl(id,state.shiny);button.classList.add('previewing');if(animation)img.src=animation;const epoch=++hoverEpoch;setTimeout(()=>{if(epoch===hoverEpoch)stopPreview();},1500);};
+  button.onpointerenter=startPreview;button.onpointerdown=startPreview;button.onpointerleave=stopPreview;button.onpointercancel=stopPreview;
+  button.onclick = () => {stopPreview();selectBuddy(id);}; return button;
 }
 const chooser = createChooser($('buddyViewport'), $('buddyGrid'), id => buddyCell(id));
 function renderChooser() {
@@ -185,6 +197,8 @@ function renderChooser() {
   $('chooserStatus').textContent = results.length ? `${results.length.toLocaleString()} ${t('buddiesAvailable')}` : t('noBuddies');
   $('surpriseBuddy').disabled = !results.length;
   for (const button of $('generationTabs').children) button.setAttribute('aria-pressed', String(button.dataset.generation === state.generation));
+  activePreview?.();
+  for(const button of $('typeFilters').children)button.setAttribute('aria-pressed',String(button.dataset.type===state.type));
   chooser.setItems(results);
 }
 for (const generation of [{id:'all', label:'All'}, ...generations]) {
@@ -194,12 +208,13 @@ for (const generation of [{id:'all', label:'All'}, ...generations]) {
   button.onclick = () => { state.generation = generation.id; renderChooser(); };
   $('generationTabs').append(button);
 }
-for (const [type, icon] of Object.entries(typeMarks)) {
-  const option = document.createElement('option'); option.value = type; option.textContent = `${icon} ${type}`; $('typeFilter').append(option);
+for(const [type,icon] of [['','◉'],...Object.entries(typeMarks)]){
+  const button=document.createElement('button');button.className=`type-filter-chip type-${type||'normal'}`;button.dataset.type=type;button.setAttribute('aria-pressed',String(!type));
+  const mark=document.createElement('span');mark.setAttribute('aria-hidden','true');mark.textContent=icon;const word=document.createElement('span');word.textContent=type||'All types';button.append(mark,word);
+  button.onclick=()=>{state.type=type;renderChooser();};$('typeFilters').append(button);
 }
 $('changeBuddy').onclick = () => { openDialog('buddyDialog'); $('buddySearch').value = ''; renderChooser(); };
 $('buddySearch').oninput = renderChooser;
-$('typeFilter').onchange = e => { state.type = e.target.value; renderChooser(); };
 $('shinyToggle').onclick = () => { state.shiny = !state.shiny; renderChooser(); updateBuddy(false); if (state.saving) save(); };
 $('surpriseBuddy').onclick = () => {
   const choices = searchBuddies($('buddySearch').value, {generation:state.generation, type:state.type});
@@ -236,11 +251,11 @@ $('questionForm').onsubmit = e => {
   if (text.length < 2) { $('questionInput').focus(); return; }
   $('keyboardDialog').close(); $('questionInput').value = ''; askQuestion(text);
 };
-function particles(root = $('particles')) {
+function particles(root = $('particles'),mark='♡') {
   if (reduced.matches) return;
   root.replaceChildren();
   for (let i = 0; i < 7; i++) {
-    const p = document.createElement('span'); p.className = 'particle'; p.textContent = i % 2 ? '✦' : '♡';
+    const p = document.createElement('span'); p.className = 'particle'; p.textContent = i % 2 ? '✦' : mark;
     p.style.setProperty('--x', `${Math.cos(i * .9) * 150}px`); p.style.setProperty('--y', `${Math.sin(i * .9) * 120 - 40}px`);
     root.append(p); p.onanimationend = () => p.remove();
   }
@@ -252,16 +267,19 @@ function trick(kind) {
   requestAnimationFrame(()=>{target.dataset.trick=kind;});
   trickTimer=setTimeout(() => { if (target.dataset.trick === kind) delete target.dataset.trick; }, 1500);
 }
-$('buddyTap').onclick = () => {
-  if (state.mode !== 'idle' && state.mode !== 'error') return;
-  trick('tap-hop'); particles(); caption(t('tapHello'));
-  if(reduced.matches) $('tapWord').textContent=t('tapHello');
+const reactions=[['tap-hop','♡','tapHello'],['giggle','♫','tapGiggle'],['peek','◉','tapPeek'],['spin','✧','tapSpin'],['wiggle','❀','tapWiggle'],['stretch','☀','tapStretch']];
+let lastReaction=-1;
+$('buddyTap').onclick=()=>{
+  if(!['idle','error'].includes(state.mode))return;
+  const offset=1+Math.floor(Math.random()*(reactions.length-1));lastReaction=(lastReaction+offset)%reactions.length;
+  const [animation,mark,line]=reactions[lastReaction];trick(animation);particles(undefined,mark);caption(t(line));
+  if(reduced.matches)$('tapWord').textContent=t(line);
 };
 function scheduleIdle() {
   clearTimeout(idleTimer);
-  if (document.hidden || reduced.matches) return;
+  if (document.hidden || reduced.matches || state.mode==='asleep') return;
   idleTimer = setTimeout(() => {
-    if (state.mode === 'idle' && !document.querySelector('dialog[open]')) trick(['blink', 'bob', 'yawn'][Math.floor(Math.random() * 3)]);
+    if (state.mode === 'idle' && !$('buddyTap').dataset.trick && !document.querySelector('dialog[open]')) trick(['blink', 'bob', 'breathe', 'tilt', 'yawn'][Math.floor(Math.random() * 3)]);
     scheduleIdle();
   }, 6000 + Math.random() * 8000);
 }
@@ -436,16 +454,17 @@ $('finish').onclick = () => {
     setMode('wave');
     actionTimer = setTimeout(() => {
       if (epoch !== state.epoch) return;
-      setMode('asleep'); $('endScreen').hidden = false;
+      setMode('asleep'); updateBuddy(false);$('sleepingBuddy').replaceChildren(buddyImage(state.buddy,{shiny:state.shiny,lazy:false})); $('endScreen').hidden = false;
+      for(const node of document.querySelectorAll('#main > header,#main > nav,.buddy-label,.buddy-space,.voice-dock')){node.inert=true;node.hidden=true;}document.querySelector('footer').hidden=true;
       $('endTitle').textContent = t('pauseTitle'); $('endCaption').textContent = t('goodbye'); $('wakeButton').focus();
     }, reduced.matches ? 0 : 1200);
   }, reduced.matches ? 0 : 1400);
 };
-$('wakeButton').onclick = () => { $('endScreen').hidden = true; celebrated.delete('pause'); setMode('idle'); updateBuddy(); $('micButton').focus(); };
+$('wakeButton').onclick = () => { for(const node of document.querySelectorAll('#main > header,#main > nav,.buddy-label,.buddy-space,.voice-dock')){node.inert=false;node.hidden=false;}document.querySelector('footer').hidden=false; $('endScreen').hidden = true; celebrated.delete('pause'); setMode('idle'); updateBuddy();scheduleIdle(); $('micButton').focus(); };
 addEventListener('pagehide', () => { cancelPending(); clearTimeout(idleTimer); });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { cancelPending(); clearTimeout(idleTimer); if (state.mode !== 'asleep') { setMode('idle'); caption(t('takeTime')); } }
-  else scheduleIdle();
+  if (document.hidden) { cancelPending(); clearTimeout(idleTimer);updateBuddy(false); if (state.mode !== 'asleep') { setMode('idle'); caption(t('takeTime')); } }
+  else {updateBuddy(false);scheduleIdle();}
 });
 addEventListener('offline', () => { if (!MOCK && ['permission', 'listening', 'thinking'].includes(state.mode)) friendlyError('offline'); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { /* Captions remain available without offline setup. */ });
@@ -453,4 +472,4 @@ restore(); updateLanguage(); scheduleIdle();
 $('micButton').disabled = true; $('changeBuddy').disabled = true;
 loadBuddies().then(() => { state.ready = true; updateBuddy(); setMode('idle'); $('changeBuddy').disabled = false; })
   .catch(() => { state.ready = false; $('changeBuddy').disabled = false; $('micButton').disabled = false; $('chooserStatus').textContent = 'Buddy pictures need another visit online.'; });
-window.__STUDIO_QA__ = { snapshot: () => ({ state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered, chooser: chooser.snapshot(), activity: activityPlayer?.snapshot(), celebrations:[...celebrated] }) };
+window.__STUDIO_QA__ = { snapshot: () => ({ state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, moving:state.moving, reaction:lastReaction, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered, chooser: chooser.snapshot(), activity: activityPlayer?.snapshot(), celebrations:[...celebrated] }) };

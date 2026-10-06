@@ -27,14 +27,14 @@ try {
   await ready(p); await audit(p);
   assert.equal((await snapshot(p)).sound,false); assert.equal(await p.evaluate(()=>window.__speechCalls),0);
   assert.equal(await p.locator('#keyboardDialog').isVisible(),false);
-  assert.match(await p.locator('#buddyCharacter img').getAttribute('src'),/\.webp$/);
+  assert.match(await p.locator('#buddyCharacter img').getAttribute('src'),/\.(gif|webp)$/);
   await p.locator('#changeBuddy').click(); await audit(p);
   assert.ok(await p.locator('#buddyGrid button').count()<40);
   await p.locator('#buddyGrid button').first().focus(); await p.keyboard.press('End');
   await p.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt')); assert.match(await p.locator('#buddyGrid').innerText(),/Pecharunt/);
   await p.locator('[data-generation="9"]').click(); assert.equal((await snapshot(p)).chooser.total,120);
-  await p.locator('#typeFilter').selectOption('grass'); assert.ok((await snapshot(p)).chooser.total<120);
-  await p.locator('[data-generation="all"]').click(); await p.locator('#typeFilter').selectOption('');
+  await p.locator('[data-type=grass]').click(); assert.ok((await snapshot(p)).chooser.total<120);
+  await p.locator('[data-generation="all"]').click(); await p.locator('#typeFilters [data-type=""]').click();
   await p.locator('#buddySearch').fill('#1025'); assert.equal(await p.locator('#buddyGrid button').count(),1);
   await p.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt')); assert.match(await p.locator('#buddyGrid').innerText(),/Pecharunt/);
   await p.locator('#shinyToggle').click(); assert.match(await p.locator('#buddyGrid img').getAttribute('src'),/\/shiny\//);
@@ -88,12 +88,12 @@ try {
   await q.locator('#buddyCharacter img').evaluate(img=>img.decode());
   await q.locator('#changeBuddy').click(); await q.locator('#buddySearch').fill('charmander');
   await q.locator('#buddyGrid img').evaluate(img=>img.decode()); await q.keyboard.press('Escape');
-  await q.waitForFunction(async()=>{const c=await caches.open('pokelearn-sprites-v3'); return (await c.keys()).some(r=>r.url.endsWith('/4.png'));});
+  await q.waitForFunction(async()=>{const c=await caches.open('pokelearn-sprites-v4-bytes'); return (await c.keys()).some(r=>r.url.endsWith('/4.png'));});
   await offlineContext.setOffline(true);await ready(q);await audit(q);
   await q.locator('#buddyCharacter img').evaluate(img=>img.decode());
   await q.locator('#changeBuddy').click();await q.locator('#buddySearch').fill('charmander');await q.locator('#buddyGrid img').evaluate(img=>img.decode());assert.match(await q.locator('#buddyGrid img').getAttribute('src'),/cdn\.jsdelivr\.net.*\/4\.png$/);
   await q.locator('#buddySearch').fill('1025');await q.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt'));assert.match(await q.locator('#buddyGrid').innerText(),/Pecharunt/);
-  const keys=await q.evaluate(()=>caches.keys());assert.ok(keys.includes('pokelearn-sprites-v3'));
+  const keys=await q.evaluate(()=>caches.keys());assert.ok(keys.includes('pokelearn-sprites-v4-bytes'));
   console.log('PASS offline shell, full catalog and visited buddy image');await offlineContext.close();
   // Automated accessibility scan of scene, chooser, keyboard and grown-ups.
   const a=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});

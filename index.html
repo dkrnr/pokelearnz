@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
-  <link rel="preload" as="image" href="/assets/buddies/25-official.webp" fetchpriority="high" crossorigin="anonymous" />
+  <link rel="preload" as="image" href="/assets/buddies/25-moving.gif" fetchpriority="high" media="(prefers-reduced-motion: no-preference)" crossorigin="anonymous" />
   <link rel="preload" as="font" href="/assets/fonts/ReadexPro-Regular.woff" type="font/woff" crossorigin />
   <link rel="stylesheet" href="/style.css" />
   <script type="module" src="/app.js"></script>
@@ -36,6 +36,7 @@
     </header>
     <nav class="scene-tools" aria-label="Buddy controls">
       <button id="changeBuddy" class="sticker yellow"><svg aria-hidden="true"><use href="#book-icon"/></svg><span>Change buddy</span></button>
+      <button id="movingToggle" class="sticker" aria-pressed="true"><span aria-hidden="true">↟</span><span>Moving</span></button>
       <button id="finish" class="sticker sleep"><svg aria-hidden="true"><use href="#moon-icon"/></svg><span>Sleep</span></button>
     </nav>
     <div class="buddy-label"><h1 id="buddyName">Pikachu</h1><div id="buddyTypes"></div></div>
@@ -58,7 +59,7 @@
       </div>
       <p id="voiceHint" class="voice-hint">Your voice. Your buddy. Little discoveries.</p>
     </div>
-    <section id="endScreen" class="end-screen" hidden aria-labelledby="endTitle"><span class="end-moon" aria-hidden="true">☾</span><h2 id="endTitle">A lovely place to pause.</h2><p id="endCaption">Rest well. Our little discovery is done.</p><button id="wakeButton" class="sticker yellow"><span aria-hidden="true">☀</span><span>Wake buddy</span></button></section>
+    <section id="endScreen" class="end-screen" hidden aria-labelledby="endTitle"><div id="sleepingBuddy" class="sleeping-buddy" aria-hidden="true"></div><h2 id="endTitle">A lovely place to pause.</h2><p id="endCaption">Rest well. Our little discovery is done.</p><button id="wakeButton" class="sticker yellow"><span aria-hidden="true">☀</span><span>Wake buddy</span></button></section>
   </main>
   <footer>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</footer>
   <dialog id="buddyDialog" class="pokedex" aria-labelledby="chooserTitle">
@@ -69,7 +70,7 @@
     <div id="recentSection"><h3>Recently met</h3><div id="recentBuddies" class="recent-buddies"></div></div>
     <p id="chooserStatus" role="status" class="chooser-status">All 1,025 buddies. Pick anyone.</p>
     <div id="generationTabs" class="generation-tabs" role="group" aria-label="Generation"></div>
-    <label class="type-filter" for="typeFilter">Type <select id="typeFilter"><option value="">◉ All types</option></select></label>
+    <div id="typeFilters" class="type-filters" role="group" aria-label="Pokémon type"></div>
     <div id="buddyViewport" class="buddy-viewport" tabindex="0" aria-label="Scroll to choose a buddy"><div id="buddyGrid" class="buddy-grid"></div></div>
   </dialog>
   <dialog id="activityDialog" class="activity-dialog" aria-labelledby="activityTitle">
@@ -91,7 +92,7 @@
     <h3>Questions, voice and actual providers</h3>
     <p><strong>Netlify</strong> hosts the app and proxies requests. Audio goes to <strong>Valsea (api.valsea.ai)</strong> for transcription. Questions and voice transcripts go to <strong>OpenRouter (openrouter.ai)</strong>. Configured models: Google Gemma, NVIDIA Nemotron, InclusionAI Ling, and the OpenRouter free-router fallback. OpenRouter chooses the downstream inference host; this app cannot identify that host or control provider retention. No sentiment requests are sent.</p>
     <p>Questions, transcripts, recordings and answers are never saved or cached by this app. No browser speech recognition service is used. Authored activities support prerecorded files served by this app (none recorded yet). Optional read-aloud falls back to local device speechSynthesis voices; if unavailable, captions continue silently.</p>
-    <h3>Sprite hosts and offline use</h3><p>Pokémon images load from <strong id="spriteHosts">cdn.jsdelivr.net</strong> (jsDelivr CDN for PokeAPI sprites). That host receives image requests and your IP address, never questions or recordings. Visited sprites are cached on this device, with a 180-image limit. All 1,025 names and types work offline after first load; unvisited pictures may need internet. No full image collection is bundled.</p>
+    <h3>Sprite hosts and offline use</h3><p>Pokémon images load from <strong id="spriteHosts">cdn.jsdelivr.net</strong> (jsDelivr CDN for PokeAPI sprites). That host receives image requests and your IP address, never questions or recordings. Visited sprites are cached on this device, within a 12 MiB byte budget (images over 1 MiB are not cached). All 1,025 names and types work offline after first load; unvisited pictures may need internet. No full image collection is bundled.</p>
     <h3>Optional device saving</h3><label class="check-row"><input id="saveBuddies" type="checkbox" />Remember buddy and recent choices.</label><p>Permission setup is saved separately so it is only needed once. Recent buddies stay temporary unless you enable saving. No rewards or progress counters.</p><button id="clearData" class="sticker"><span aria-hidden="true">⌫</span><span>Clear device data</span></button><p id="storageStatus" role="status"></p>
     <h3>Language</h3><label for="language">Interface and transcription language</label><select id="language"><option value="en">English</option><option value="si">සිංහල · draft</option><option value="ta">தமிழ் · draft</option></select><p>New Sinhala and Tamil interface strings are machine-translated drafts awaiting human review. Buddy names and scientific answers remain in English. Transcription follows the selected language.</p>
     <h3>About this project</h3><p>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</p>

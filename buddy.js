@@ -1,7 +1,8 @@
+import { animatedCoverage } from './animated-coverage.js';
 /** Swappable buddy boundary; keep identities, artwork sources and lookup indexes here. */
 const BASE = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon';
 export const spriteHosts = ['cdn.jsdelivr.net'];
-export const buddyAssets = ['/assets/buddies/25-official.webp', '/assets/buddies/25.png', '/assets/buddies/1.png'];
+export const buddyAssets = ['/assets/buddies/25-official.webp', '/assets/buddies/25-moving.gif', '/assets/buddies/25.png', '/assets/buddies/1.png'];
 export const defaultBuddyId = 25;
 export const defaultHero = '/assets/buddies/25-official.webp';
 let catalog = [], index = new Map(), personalitiesPromise;
@@ -54,15 +55,24 @@ export function spriteUrl(id, shiny = false, fallback = false) {
   if (Number(id) === defaultBuddyId && !shiny && !fallback) return defaultHero;
   return `${BASE}/other/${fallback ? 'home' : 'official-artwork'}/${shiny ? 'shiny/' : ''}${id}.png`;
 }
-export function buddyImage(id, {shiny = false, lazy = true, thumbnail = false} = {}) {
+export function animatedUrl(id, shiny=false) {
+  if (!animatedCoverage[shiny?'shiny':'normal'][id]) return null;
+  if(Number(id)===25 && !shiny) return '/assets/buddies/25-moving.gif';
+  return `${BASE}/versions/generation-v/black-white/animated/${shiny?'shiny/':''}${id}.gif`;
+}
+export function buddyImage(id, {shiny = false, lazy = true, thumbnail = false, moving = false} = {}) {
   const buddy = buddyById(id), img = document.createElement('img');
   img.alt = buddy.name + (shiny ? ' · shiny' : ''); img.width = thumbnail ? 96 : 475; img.height = thumbnail ? 96 : 475;
   img.referrerPolicy = 'no-referrer'; img.crossOrigin = 'anonymous'; img.decoding = 'async';
   img.loading = lazy ? 'lazy' : 'eager'; if (!thumbnail) img.fetchPriority = 'high';
-  img.src = thumbnail ? `${BASE}/${shiny ? 'shiny/' : ''}${id}.png` : spriteUrl(id, shiny);
-  img.onload = () => { img.dataset.loaded = 'true'; };
+  const animation = moving ? animatedUrl(id, shiny) : null;
+  img.dataset.kind=animation?'pixel':'artwork';if(animation)img.style.visibility='hidden';
+  img.src = animation || (thumbnail ? `${BASE}/${shiny ? 'shiny/' : ''}${id}.png` : spriteUrl(id, shiny));
+  img.onload = () => { img.dataset.loaded = 'true'; img.parentElement?.classList.remove('loading-sprite'); if(animation && img.dataset.kind==='pixel'){fitPixel(img);img.style.visibility='';} };
+  let animationFailed=false;
   let fallback = false;
   img.onerror = () => {
+    if(animation && !animationFailed){animationFailed=true;img.style.visibility='';img.dataset.kind='artwork';img.style.width='';img.style.height='';img.src=spriteUrl(id,shiny);return;}
     if (!thumbnail && !fallback) { fallback = true; img.src = spriteUrl(id, shiny, true); return; }
     const local = `/assets/buddies/${id}.png`;
     if (!shiny && buddyAssets.includes(local) && img.getAttribute('src') !== local) { img.src = local; return; }
@@ -71,9 +81,14 @@ export function buddyImage(id, {shiny = false, lazy = true, thumbnail = false} =
   };
   return img;
 }
-export function mountBuddy(root, id, shiny = false) {
+export function fitPixel(img){
+  const holder=img.parentElement; if(!holder || !img.naturalWidth)return;
+  const scale=Math.max(1,Math.floor(Math.min(holder.clientWidth/img.naturalWidth,holder.clientHeight/img.naturalHeight)));
+  img.style.width=img.naturalWidth*scale+'px'; img.style.height=img.naturalHeight*scale+'px'; img.dataset.scale=scale;
+}
+export function mountBuddy(root, id, shiny = false, moving = false) {
   const current = root.querySelector('img');
-  if (current?.getAttribute('src') !== spriteUrl(id, shiny)) root.replaceChildren(buddyImage(id, {shiny, lazy:false}));
+  if (current?.getAttribute('src') !== ((moving && animatedUrl(id,shiny)) || spriteUrl(id, shiny))) root.replaceChildren(buddyImage(id, {shiny, lazy:false,moving}));
   return buddyById(id);
 }
 export function buddyGreeting(id) { return Number(id) === 25 ? 'Pika! ' : ''; }

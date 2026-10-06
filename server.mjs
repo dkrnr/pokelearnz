@@ -13,6 +13,7 @@ const MIME = {
   ".webmanifest": "application/manifest+json",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".gif": "image/gif",
   ".ttf": "font/ttf",
   ".woff": "font/woff",
   ".webp": "image/webp",
