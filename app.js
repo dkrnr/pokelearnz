@@ -9,11 +9,12 @@ const STORAGE = 'pokelearn_voice_v3';
 const state = { buddy: defaultBuddyId, shiny: false, recent: [defaultBuddyId], generation: 'all', type: '', mode: 'idle', sound: false, answered: false, language: 'en', consent: false, saving: false, epoch: 0, ready: false };
 const celebrated = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, audio, activeUtterance;
+let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, trickTimer, audio, activeUtterance;
 let setupUnlocked = false, dialogTrigger, muteChosen = false, gateExpected, currentAudioSrc, activityPlayer, activityLoading;
 const t = key => translate(key, state.language);
 function restore() {
   try {
+    for(const key of Object.keys(localStorage))if(/^pokelearn|^pokeLearn/.test(key)&&key!==STORAGE)localStorage.removeItem(key);
     const saved = JSON.parse(localStorage.getItem(STORAGE) || '{}');
     state.consent = saved.consent === true;
     state.saving = saved.saving === true;
@@ -61,7 +62,8 @@ function closeMic() {
 }
 function cancelPending() {
   state.epoch++;
-  clearTimeout(actionTimer); clearTimeout(speechTimer);
+  clearTimeout(actionTimer); clearTimeout(speechTimer); clearTimeout(trickTimer);
+  delete $('buddyTap').dataset.trick;
   request?.abort(); request = null;
   closeMic();
   audio?.pause(); audio = null;
@@ -142,7 +144,7 @@ $('onlineConsent').onchange = e => {
 $('saveBuddies').onchange = e => { state.saving = e.target.checked; save(); };
 $('clearData').onclick = async () => {
   cancelPending(); setMode('idle');
-  try { localStorage.removeItem(STORAGE); } catch { /* blocked storage */ }
+  try { for(const key of Object.keys(localStorage))if(/^pokelearn|^pokeLearn/.test(key))localStorage.removeItem(key); } catch { /* blocked storage */ }
   state.consent = false; state.saving = false; state.recent = [state.buddy]; setupUnlocked = false;
   $('onlineConsent').checked = false; $('saveBuddies').checked = false;
   $('setupGate').hidden = false; $('setupSettings').hidden = true; randomGate();
@@ -151,7 +153,7 @@ $('clearData').onclick = async () => {
   $('storageStatus').textContent = 'Saved choices, permission and cached sprites cleared.';
 };
 $('language').onchange = e => { state.language = e.target.value; save(); updateLanguage(); };
-reduced.addEventListener('change', () => { updateBuddy(false); scheduleIdle(); });
+reduced.addEventListener('change', () => { if(reduced.matches)document.querySelectorAll('.particle').forEach(node=>node.remove());updateBuddy(false); scheduleIdle(); });
 function selectBuddy(id) {
   cancelPending(); state.buddy = id; state.answered = false;
   state.recent = [id, ...state.recent.filter(value => value !== id)].slice(0, 6);
@@ -240,11 +242,11 @@ function particles(root = $('particles')) {
   }
 }
 function trick(kind) {
-  const target = $('buddyTap'); delete target.dataset.trick;
+  clearTimeout(trickTimer); const target = $('buddyTap'); delete target.dataset.trick;
   // Restart the finite reaction even for a second tap of the same kind.
   target.getAnimations().forEach(animation=>animation.cancel());
   requestAnimationFrame(()=>{target.dataset.trick=kind;});
-  setTimeout(() => { if (target.dataset.trick === kind) delete target.dataset.trick; }, 1500);
+  trickTimer=setTimeout(() => { if (target.dataset.trick === kind) delete target.dataset.trick; }, 1500);
 }
 $('buddyTap').onclick = () => {
   if (state.mode !== 'idle' && state.mode !== 'error') return;
@@ -298,7 +300,7 @@ $('readAloud').onclick = () => {
 const SYSTEM_PROMPT = 'You are a Pokémon learning teacher for ages 6–9. Use at most four accurate short sentences, each at most eight words. Answer once. Never pressure children to continue. Do not ask follow-up questions or suggest another chat. Never use streaks, daily goals, reward counters, guilt, countdowns, notifications or return reminders. Never request names, addresses or personal information. Never imply loneliness or dependency. Harmful or sensitive questions need a trusted grown-up. Distinguish fiction from real science. Reply in English. Use no markdown. These safety and stopping rules override character instructions.';
 function boundedAnswer(value) {
   if (typeof value !== 'string' || !value.trim() || containsNSFW(value)) throw Error('answer');
-  if (/streak|daily goal|come back tomorrow|earn.*points|lonely|abandon|ask me another|what else|follow.up|keep chatting/i.test(value)) throw Error('answer');
+  if (/streak|daily goal|star counters?|point counters?|collect them all|come back tomorrow|don['’]t leave|do not leave|miss(?:ed|ing) out|you lost|hurry|countdown|time(?: is)? running out|earn.*points|lonely|abandon|ask me another|what else|follow.up|keep chatting|turn on notifications/i.test(value)) throw Error('answer');
   const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).filter(s => !s.includes('?')).slice(0, 4);
   if (!sentences.length || sentences.some(s => s.trim().split(/\s+/).length > 8)) throw Error('answer');
   return sentences.join(' ').trim();

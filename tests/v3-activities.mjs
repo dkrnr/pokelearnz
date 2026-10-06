@@ -61,5 +61,6 @@ const loaded=p.waitForResponse('**/assets/audio/test-narration.wav');await p.loc
 assert.equal((await snap(p)).state,'idle');await context.close();console.log('PASS prerecorded authored audio after explicit Read aloud and close cancellation (generated WAV fixture; no production recordings yet)');
 const offline=await browser.newContext({viewport:{width:820,height:1180},reducedMotion:'reduce'}),q=await offline.newPage();await ready(q);await q.evaluate(()=>navigator.serviceWorker.ready);await q.waitForFunction(()=>navigator.serviceWorker.controller);await offline.setOffline(true);await ready(q);
 for(const a of activities){await q.locator('#discover-'+a.id).click();await q.locator('#activityWorkspace button').first().waitFor();await solve(q,a);await q.locator('#activityDialog [data-close]').click();}
-await offline.close();console.log('PASS all six authored activities offline, including first dynamic import');
+const urls=await q.evaluate(async()=>{const urls=[];for(const name of await caches.keys())for(const request of await (await caches.open(name)).keys())urls.push(request.url);return urls;});assert.equal(urls.some(url=>/\.netlify|question|recording|transcript/.test(url)),false);
+await offline.close();console.log('PASS all six authored activities offline, including first dynamic import; no private/API content in caches');
 }finally{await browser.close();}

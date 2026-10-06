@@ -47,3 +47,18 @@ test("no notification, background engagement, autoplay or remote font APIs", asy
   assert.match(app, /celebrated\.has/);
 });
 export { forbidden };
+test('scene motion animates only transform and opacity',async()=>{
+  const css=await fs.readFile(new URL('../style.css',import.meta.url),'utf8');
+  for(const match of css.matchAll(/@keyframes\s+[\w-]+\s*\{/g)){
+    let end=match.index+match[0].length,depth=1,start=end;
+    while(depth&&end<css.length){if(css[end]==='{')depth++;if(css[end]==='}')depth--;end++;}
+    for(const property of css.slice(start,end-1).matchAll(/([a-z-]+)\s*:/g))assert.ok(['transform','opacity'].includes(property[1]),'expensive animation property: '+property[1]);
+  }
+});
+test('authored activity player cannot upload child questions or use background engagement APIs',async()=>{
+  const player=await fs.readFile(new URL('../activity-player.js',import.meta.url),'utf8');
+  assert.doesNotMatch(player,/fetch\(|XMLHttpRequest|Notification|PushManager|setInterval|autoplay/);
+  const {recordings,recordingFor}=await import('../authored-audio.js');
+  recordings.test='/assets/audio/narration.mp3';assert.equal(recordingFor('test'),recordings.test);
+  for(const path of ['/uploads/child.wav','https://example.com/voice.mp3','/assets/audio/../private.wav']){recordings.test=path;assert.equal(recordingFor('test'),undefined);}delete recordings.test;
+});
