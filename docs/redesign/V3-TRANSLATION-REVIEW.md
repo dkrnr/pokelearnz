@@ -1,0 +1,5 @@
+# V3 language review
+
+All new Sinhala (`si`) and Tamil (`ta`) values in locales.js are machine-translated drafts, generated during the v3 implementation and NOT human reviewed. Grown-ups sees the draft notice before selecting either language. Existing en/si/ta keys remain available; the selected language also controls Valsea transcription. Pokémon names, type labels, catalog controls (except title/search/shiny/status), provider disclosures and mock/science answers remain English at this checkpoint. Full translation and authored-line recordings are Stage 2 work.
+
+Review every key, especially microphone instructions, permission setup, errors, stopping language and mock disclosure. Check that short button labels fit at 390px, that a child understands them, and that spoken translations match intended scientific meaning. Readex Pro is self-hosted; device fonts supply glyphs outside its coverage. No claim that these drafts are reviewed educational content.

@@ -1,185 +1,88 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#fff7e8" />
-    <meta
-      name="description"
-      content="Little hands. Big discoveries. Six playful offline learning activities for children."
-    />
-    <title>PokeLearn · Let's play and learn</title>
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/style.css" />
-    <script type="module" src="/app.js"></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#main">Skip to play</a>
-    <div class="app-shell">
-      <header class="topbar">
-        <a class="brand" href="/" aria-label="PokeLearn home"
-          ><span class="brand-mark" aria-hidden="true">✿</span
-          ><span>Poke<span class="brand-learn">Learn</span></span></a
-        >
-        <div class="top-actions">
-          <button id="soundButton" aria-pressed="false">
-            <span aria-hidden="true">♬</span><span>Sound off</span></button
-          ><button id="grownupOpen">
-            <span aria-hidden="true">⚙</span><span>Grown-ups</span>
-          </button>
-        </div>
-      </header>
-      <nav class="play-nav" aria-label="Explore">
-        <button id="playNav" aria-current="page">
-          <span aria-hidden="true">▦</span><span>Play</span></button
-        ><button id="askNav">
-          <span aria-hidden="true">☁</span><span>Ask</span></button
-        ><button id="finish">
-          <span aria-hidden="true">☀</span><span>Done for now</span>
-        </button>
-      </nav>
-      <p id="connectionBanner" class="notice" hidden>
-        ☁ Offline. Our activities still work.
-      </p>
-      <div id="updateBanner" class="notice" hidden>
-        <span>A fresh version is ready.</span
-        ><button id="updateButton">
-          <span aria-hidden="true">↻</span><span>Update</span>
-        </button>
-        <p id="updateStatus" role="status"></p>
-      </div>
-      <main id="main" tabindex="-1">
-        <section class="buddy-hello" aria-label="Your learning buddy">
-          <div class="hello-copy">
-            <span class="eyebrow">LITTLE HANDS. BIG DISCOVERIES.</span>
-            <h1 id="heroTitle">Let's play and learn!</h1>
-            <p id="heroMessage">Pick something. We'll try it together.</p>
-            <button id="heroListen">
-              <span aria-hidden="true">◖))</span><span>Listen</span>
-            </button>
-          </div>
-          <div id="buddyStage" class="buddy-stage" data-state="idle">
-            <div class="buddy-bubble">
-              <span id="buddyName">Pip</span>
-              <span id="buddyMood">is ready!</span>
-            </div>
-            <div id="buddyCharacter" role="img" aria-label="Pip"></div>
-            <span class="buddy-shadow" aria-hidden="true"></span
-            ><span class="scene-flower" aria-hidden="true">✿</span
-            ><span class="scene-spark" aria-hidden="true">✦</span>
-          </div>
-        </section>
-        <div id="speechNotice" class="notice" hidden>
-          <p id="speechStatus" role="status"></p>
-          <button id="speechRetry">
-            <span aria-hidden="true">↻</span><span>Try voice again</span>
-          </button>
-        </div>
-        <div id="screen"></div>
-      </main>
-      <footer>
-        <span>Made for little discoveries.</span
-        ><span>Activities work offline after first visit.</span>
-      </footer>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#91d8ed" />
+  <meta name="description" content="Choose your Pokémon learning buddy. Tap the microphone and talk together." />
+  <title>PokeLearn · Your Pokémon learning buddy</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/style.css" />
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <svg class="icon-library" aria-hidden="true"><defs>
+    <symbol id="mic-icon" viewBox="0 0 32 32"><rect x="11" y="3" width="10" height="17" rx="5"/><path d="M6 14v2a10 10 0 0 0 20 0v-2M16 26v4M10 30h12"/></symbol>
+    <symbol id="book-icon" viewBox="0 0 32 32"><path d="M4 5h10q2 0 2 2q0-2 2-2h10v22H18q-2 0-2 2q0-2-2-2H4zM16 7v22"/><path d="M8 11h4M20 11h4M8 16h4M20 16h4"/></symbol>
+    <symbol id="keyboard-icon" viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="20" rx="3"/><path d="M7 12h2m3 0h2m3 0h2m3 0h2M7 17h2m3 0h2m3 0h2m3 0h2M9 22h14"/></symbol>
+    <symbol id="moon-icon" viewBox="0 0 32 32"><path d="M25 22A13 13 0 0 1 11 4a13 13 0 1 0 14 18z"/><path d="m24 3 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></symbol>
+  </defs></svg>
+  <a class="skip-link" href="#main">Skip to your buddy</a>
+  <main id="main" tabindex="-1" class="world" data-state="idle">
+    <div class="scenery" aria-hidden="true">
+      <div class="sun"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div>
+      <div class="far-hill"></div><div class="near-hill"></div><div class="ground"></div>
+      <div class="tree tree-left"><i></i></div><div class="tree tree-right"><i></i></div>
+      <div class="grass grass-left">❧</div><div class="grass grass-right">❧</div>
+      <span class="flower f1">✿</span><span class="flower f2">✿</span><span class="flower f3">✿</span>
     </div>
-    <dialog id="grownupDialog" aria-labelledby="grownupTitle">
-      <div class="dialog-head">
-        <h2 id="grownupTitle">For grown-ups</h2>
-        <button data-close>
-          <span aria-hidden="true">×</span><span>Close</span>
-        </button>
-      </div>
-      <p>
-        Six authored activities for ages 6–9. No timers, reward counters,
-        notifications or chat continuation prompts. A child can stop at any
-        time. AI answers are optional and can be inaccurate; explore them
-        together.
-      </p>
-      <h3>Questions, recordings and providers</h3>
-      <p>
-        Hosting and function requests go to <strong>Netlify</strong>. Typed
-        questions and transcribed voice text go to <strong>OpenRouter</strong>,
-        which routes them to an inference provider. The configured models are
-        Google Gemma, NVIDIA Nemotron and InclusionAI Ling, with an OpenRouter
-        free-router fallback. The frontend cannot identify the actual downstream
-        inference host; OpenRouter selects it. Provider retention is outside
-        this app's control.
-      </p>
-      <p>
-        Voice recordings go to <strong>Valsea</strong> (api.valsea.ai) for
-        transcription. Recording starts only after a tap and microphone
-        permission. The transcript is shown for review; sending it to OpenRouter
-        takes another tap. No sentiment requests are sent. Local read-aloud uses
-        only installed browser voices marked local; recordings, questions and
-        answers are never cached or saved by this app.
-      </p>
-      <label class="consent-check"
-        ><input id="onlineConsent" type="checkbox" />Allow online questions and
-        voice this session.</label
-      >
-      <h3>Optional device saving</h3>
-      <p>
-        Saving is off by default. You can save only the buddy choice and one
-        completed-activity flag. No names, questions, transcripts, answers or
-        audio are stored. App files are cached separately for offline use.
-      </p>
-      <p id="storageStatus" role="status"></p>
-      <div class="button-row">
-        <button id="saveAccept">
-          <span aria-hidden="true">▣</span><span>Allow saving</span></button
-        ><button id="saveReject">
-          <span aria-hidden="true">○</span><span>Keep temporary</span></button
-        ><button id="clearData">
-          <span aria-hidden="true">⌫</span><span>Clear saved data</span>
-        </button>
-      </div>
-      <h3>Buddy</h3>
-      <p>
-        The default buddy is an original character. Fan artwork can be replaced
-        through one buddy module.
-      </p>
-      <div id="buddyChoices" class="button-row"></div>
-      <p>
-        Unofficial fan project, not affiliated with Nintendo, Game Freak,
-        Creatures or The Pokémon Company.
-      </p>
-      <h3>Language</h3>
-      <label for="language">Voice transcription language</label
-      ><select id="language">
-        <option value="en">English</option>
-        <option value="si">සිංහල · draft</option>
-        <option value="ta">தமிழ் · draft</option>
-      </select>
-      <p id="languageNotice">
-        Lessons and read-aloud are in English. Sinhala and Tamil drafts need
-        human review. They are not presented as reviewed learning content.
-      </p>
-      <h3>Read-aloud and sounds</h3>
-      <p>
-        Listen uses speechSynthesis with a locally installed English voice. If
-        none is available, instructions remain visible and a grown-up can read
-        them. Sound effects start off each visit. The child can turn them on or
-        off.
-      </p>
-      <h3>Install and updates</h3>
-      <p>
-        Use your browser's “Add to Home Screen” or “Install app” menu.
-        Activities work offline after the first successful visit. Questions and
-        transcription need internet. Updates wait until the child leaves an
-        activity.
-      </p>
-      <button id="nativeInstall" hidden>
-        <span aria-hidden="true">↓</span><span>Install app</span>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="PokeLearn home"><span class="brand-orb" aria-hidden="true"></span>Poke<span>Learn</span></a>
+      <button id="grownupOpen" class="sticker small"><span aria-hidden="true">⚙</span><span>Grown-ups</span></button>
+    </header>
+    <nav class="scene-tools" aria-label="Buddy controls">
+      <button id="changeBuddy" class="sticker yellow"><svg aria-hidden="true"><use href="#book-icon"/></svg><span>Change buddy</span></button>
+      <button id="finish" class="sticker sleep"><svg aria-hidden="true"><use href="#moon-icon"/></svg><span>Sleep</span></button>
+    </nav>
+    <div class="buddy-label"><h1 id="buddyName">Pikachu</h1><div id="buddyTypes"></div></div>
+    <div class="buddy-space" id="buddyStage" data-state="idle">
+      <span class="listening-ring" aria-hidden="true"></span><span class="buddy-shadow" aria-hidden="true"></span>
+      <button id="buddyTap" class="buddy-tap" aria-label="Play with Pikachu">
+        <span id="buddyCharacter" class="buddy-character"></span>
+        <span class="tap-label"><span aria-hidden="true">♡</span><span id="tapWord">Tap me!</span></span>
       </button>
-      <p id="installStatus" role="status"></p>
-    </dialog>
-    <noscript
-      ><p class="noscript-note">
-        Ask a grown-up to turn on JavaScript. You can still find four things
-        nearby, trace a circle, or look at a leaf together.
-      </p></noscript
-    >
-  </body>
+      <span id="thinkingBubble" class="thinking-bubble" hidden>hmm…</span>
+      <div id="particles" aria-hidden="true"></div>
+    </div>
+    <div class="voice-dock">
+      <div class="caption" role="status" aria-live="polite" aria-atomic="true"><span id="captionSpeaker" class="caption-speaker">Pikachu says</span><p id="captionText">Pika! I'm here. Let's wonder together.</p></div>
+      <div class="talk-controls">
+        <button id="keyboardButton" class="sticker keyboard"><svg aria-hidden="true"><use href="#keyboard-icon"/></svg><span>Type</span></button>
+        <button id="micButton" class="mic-button" aria-pressed="false"><svg id="micGlyph" aria-hidden="true"><use href="#mic-icon"/></svg><span id="micLabel">Tap to talk</span></button>
+        <button id="readAloud" class="sticker read-aloud" aria-pressed="false"><span aria-hidden="true">♪</span><span>Read aloud</span></button>
+      </div>
+      <p id="voiceHint" class="voice-hint">Your voice. Your buddy. Little discoveries.</p>
+    </div>
+    <section id="endScreen" class="end-screen" hidden aria-labelledby="endTitle"><span class="end-moon" aria-hidden="true">☾</span><h2 id="endTitle">A lovely place to pause.</h2><p id="endCaption">Rest well. Our little discovery is done.</p><button id="wakeButton" class="sticker yellow"><span aria-hidden="true">☀</span><span>Wake buddy</span></button></section>
+  </main>
+  <footer>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</footer>
+  <dialog id="buddyDialog" class="pokedex" aria-labelledby="chooserTitle">
+    <div class="dialog-head"><div><span class="eyebrow">YOUR LITTLE LEARNING PAL</span><h2 id="chooserTitle">Choose your buddy</h2></div><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div>
+    <label class="search-label" for="buddySearch">Search by name or number</label>
+    <div class="search-box"><span aria-hidden="true">⌕</span><input id="buddySearch" type="search" placeholder="Pikachu or 25" autocomplete="off" /></div>
+    <div class="chooser-tools"><button id="shinyToggle" class="sticker yellow" aria-pressed="false"><span aria-hidden="true">✧</span><span>Shiny off</span></button><button id="surpriseBuddy" class="sticker mint"><span aria-hidden="true">⚄</span><span>Surprise me</span></button></div>
+    <div id="recentSection"><h3>Recently met</h3><div id="recentBuddies" class="recent-buddies"></div></div>
+    <p id="chooserStatus" role="status" class="chooser-status">All 1,025 buddies. Pick anyone.</p>
+    <div id="buddyGrid" class="buddy-grid"></div>
+    <div class="pagination"><button id="previousPage" class="sticker"><span aria-hidden="true">←</span><span>Back</span></button><span id="pageLabel">1 / 43</span><button id="nextPage" class="sticker"><span aria-hidden="true">→</span><span>Next</span></button></div>
+  </dialog>
+  <dialog id="keyboardDialog" class="keyboard-dialog" aria-labelledby="keyboardTitle"><div class="dialog-head"><h2 id="keyboardTitle">Type to your buddy</h2><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div><form id="questionForm"><label for="questionInput">What do you wonder?</label><textarea id="questionInput" maxlength="300" rows="3" placeholder="Why are leaves green?"></textarea><button class="sticker yellow" type="submit"><span aria-hidden="true">↑</span><span>Say it</span></button></form></dialog>
+  <dialog id="grownupDialog" class="grownups" aria-labelledby="grownupTitle">
+    <div class="dialog-head"><h2 id="grownupTitle">For grown-ups</h2><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div>
+    <p>A voice-first learning buddy for ages 6–9. Each answer has a calm stopping point. Sound starts off. Captions always stay visible.</p>
+    <section id="setupGate"><h3>One-time voice setup</h3><p>Grown-up check: what is 7 + 8?</p><label for="gateAnswer">Your answer</label><input id="gateAnswer" type="number" inputmode="numeric" /><button id="unlockSetup" class="sticker yellow"><span aria-hidden="true">⚿</span><span>Open setup</span></button><p id="gateStatus" role="status"></p></section>
+    <section id="setupSettings" hidden><h3>Microphone and online questions</h3><p>After you allow this, tapping the mic records audio, then sends it for transcription and an answer. Native browser microphone permission is still required. You can withdraw this permission here.</p><label class="check-row"><input id="onlineConsent" type="checkbox" />Allow voice and online questions on this device.</label><p id="consentStatus" role="status"></p></section>
+    <h3>Questions, voice and actual providers</h3>
+    <p><strong>Netlify</strong> hosts the app and proxies requests. Audio goes to <strong>Valsea (api.valsea.ai)</strong> for transcription. Questions and voice transcripts go to <strong>OpenRouter (openrouter.ai)</strong>. Configured models: Google Gemma, NVIDIA Nemotron, InclusionAI Ling, and the OpenRouter free-router fallback. OpenRouter chooses the downstream inference host; this app cannot identify that host or control provider retention. No sentiment requests are sent.</p>
+    <p>Questions, transcripts, recordings and answers are never saved or cached by this app. No browser speech recognition service is used. Optional read-aloud uses local device speechSynthesis voices; if unavailable, captions continue silently.</p>
+    <h3>Sprite hosts and offline use</h3><p>Pokémon images load from <strong id="spriteHosts">cdn.jsdelivr.net</strong> (jsDelivr CDN for PokeAPI sprites). That host receives image requests and your IP address, never questions or recordings. Visited sprites are cached on this device, with a 180-image limit. All 1,025 names and types work offline after first load; unvisited pictures may need internet. No full image collection is bundled.</p>
+    <h3>Optional device saving</h3><label class="check-row"><input id="saveBuddies" type="checkbox" />Remember buddy and recent choices.</label><p>Permission setup is saved separately so it is only needed once. Recent buddies stay temporary unless you enable saving. No rewards or progress counters.</p><button id="clearData" class="sticker"><span aria-hidden="true">⌫</span><span>Clear device data</span></button><p id="storageStatus" role="status"></p>
+    <h3>Language</h3><label for="language">Interface and transcription language</label><select id="language"><option value="en">English</option><option value="si">සිංහල · draft</option><option value="ta">தமிழ் · draft</option></select><p>New Sinhala and Tamil interface strings are machine-translated drafts awaiting human review. Buddy names and scientific answers remain in English. Transcription follows the selected language.</p>
+    <h3>About this project</h3><p>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</p>
+    <p>Stage 1 preview: the six authored activities are preserved for the next stage. Install through your browser’s Add to Home Screen menu. App updates become available on a later visit.</p>
+  </dialog>
+  <noscript><p>Enable JavaScript to choose and talk to a buddy.</p></noscript>
+</body>
 </html>

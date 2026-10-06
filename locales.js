@@ -1,32 +1,49 @@
-/** EN/SI/TA scaffold. Draft strings are gated pending human review. */
+/** SI/TA are machine-translated interface drafts. See V3-TRANSLATION-REVIEW.md. */
 export const languages = {
-  en: { label: "English", speech: "en", reviewed: true },
-  si: { label: "සිංහල · draft", speech: "si-LK", reviewed: false },
-  ta: { label: "தமிழ் · draft", speech: "ta-LK", reviewed: false },
+  en: { label: 'English', speech: 'en', reviewed: true },
+  si: { label: 'සිංහල · draft', speech: 'si-LK', reviewed: false },
+  ta: { label: 'தமிழ் · draft', speech: 'ta-LK', reviewed: false },
 };
 export const en = {
-  play: "Play",
-  ask: "Ask",
-  listen: "Listen",
-  done: "Done for now",
-  retry: "Try again",
+  play:'Play', ask:'Ask', listen:'Listen', done:'Done for now', retry:'Try again',
+  change:'Change buddy', sleep:'Sleep', grownups:'Grown-ups', type:'Type', readAloud:'Read aloud',
+  choose:'Choose your buddy', searchPlaceholder:'Pikachu or 25', talk:'Tap to talk', stopTalking:'Stop talking', stop:'Stop',
+  says:'says', littleNote:'A little note', playWith:'Play with', tapMe:'Tap me!',
+  hello:"I'm here. Let's wonder together.", voiceHint:'Your voice. Your buddy. Little discoveries.',
+  mockHint:'Practice mode · a pretend voice conversation', mockListening:'Practice mode: I’m listening to a pretend question.',
+  listening:'I’m listening. Tell me what you wonder.', thinking:'Hmm… let me think.', takeTime:'Take your time. We can pause here.',
+  tryTyping:'I couldn’t hear that. You can try typing.', trustedAdult:'A trusted grown-up can help with that.',
+  answerRest:'My answer is taking a little rest. We can pause.', offline:'We’re offline. We can pause here.',
+  setupNote:'A little voice setup first.', openingMic:'Opening the microphone…',
+  shinyOn:'Shiny on', shinyOff:'Shiny off', buddiesAvailable:'buddies to choose from.', noBuddies:'No buddy found. Try a name or number.',
+  goodbye:'Rest well. Our little discovery is done.', pauseTitle:'A lovely place to pause.',
 };
 export const si = {
-  play: "සෙල්ලම් කරමු",
-  ask: "අසන්න",
-  listen: "අහන්න",
-  done: "දැනට අවසන්",
-  retry: "නැවත උත්සාහ කරන්න",
+  play:'සෙල්ලම් කරමු', ask:'අසන්න', listen:'අහන්න', done:'දැනට අවසන්', retry:'නැවත උත්සාහ කරන්න',
+  change:'යාළුවා වෙනස් කරන්න', sleep:'නිදාගන්න', grownups:'වැඩිහිටියන්', type:'ලියන්න', readAloud:'හඬින් කියවන්න',
+  choose:'ඔබේ යාළුවා තෝරන්න', searchPlaceholder:'Pikachu හෝ 25', talk:'කතා කරන්න තට්ටු කරන්න', stopTalking:'කතා කිරීම නවත්වන්න', stop:'නවත්වන්න',
+  says:'කියනවා', littleNote:'පුංචි සටහනක්', playWith:'සෙල්ලම් කරන්න', tapMe:'මට තට්ටු කරන්න!',
+  hello:'මම මෙතැන. අපි එකට සොයා බලමු.', voiceHint:'ඔබේ හඬ. ඔබේ යාළුවා. පුංචි සොයාගැනීම්.',
+  mockHint:'පුහුණු ක්‍රමය · මවාගත් හඬ කතාබහක්', mockListening:'පුහුණු ක්‍රමය: මම මවාගත් ප්‍රශ්නයකට සවන් දෙමි.',
+  listening:'මම අහගෙන ඉන්නවා. ඔබ හිතන දේ කියන්න.', thinking:'හ්ම්… මට හිතන්න දෙන්න.', takeTime:'සෙමින් කරන්න. අපි මෙතැන විවේක ගනිමු.',
+  tryTyping:'මට එය ඇසුණේ නැහැ. ලියන්න පුළුවන්.', trustedAdult:'විශ්වාසවන්ත වැඩිහිටියෙකුගෙන් උදව් ගන්න.',
+  answerRest:'මගේ පිළිතුරට පුංචි විවේකයක්. අපි නවතිමු.', offline:'අන්තර්ජාලය නැහැ. අපි විවේක ගනිමු.',
+  setupNote:'මුලින් පුංචි හඬ සැකසුමක්.', openingMic:'මයික්‍රෆෝනය විවෘත කරමින්…',
+  shinyOn:'දිලිසීම සක්‍රියයි', shinyOff:'දිලිසීම අක්‍රියයි', buddiesAvailable:'තෝරාගත හැකි යාළුවන්.', noBuddies:'යාළුවෙක් හමු නොවුණි. නමක් හෝ අංකයක් බලන්න.',
+  goodbye:'හොඳින් විවේක ගන්න. අපේ පුංචි සොයාගැනීම අවසන්.', pauseTitle:'විවේකයට හොඳ තැනක්.',
 };
 export const ta = {
-  play: "விளையாடு",
-  ask: "கேள்",
-  listen: "கேள்",
-  done: "இப்போதைக்கு முடிந்தது",
-  retry: "மீண்டும் முயற்சி செய்",
+  play:'விளையாடு', ask:'கேள்', listen:'கேள்', done:'இப்போதைக்கு முடிந்தது', retry:'மீண்டும் முயற்சி செய்',
+  change:'நண்பரை மாற்று', sleep:'தூங்கு', grownups:'பெரியவர்கள்', type:'எழுது', readAloud:'சத்தமாக வாசி',
+  choose:'உங்கள் நண்பரைத் தேர்ந்தெடு', searchPlaceholder:'Pikachu அல்லது 25', talk:'பேச தட்டு', stopTalking:'பேசுவதை நிறுத்து', stop:'நிறுத்து',
+  says:'சொல்கிறது', littleNote:'ஒரு சிறு குறிப்பு', playWith:'விளையாடு', tapMe:'என்னைத் தட்டு!',
+  hello:'நான் இங்கே இருக்கிறேன். ஒன்றாக ஆராய்வோம்.', voiceHint:'உங்கள் குரல். உங்கள் நண்பர். சிறு கண்டுபிடிப்புகள்.',
+  mockHint:'பயிற்சி முறை · கற்பனை குரல் உரையாடல்', mockListening:'பயிற்சி முறை: ஒரு கற்பனை கேள்வியைக் கேட்கிறேன்.',
+  listening:'நான் கேட்கிறேன். உங்கள் கேள்வியைச் சொல்லுங்கள்.', thinking:'ம்… சிந்திக்கிறேன்.', takeTime:'மெதுவாகச் செய்யுங்கள். இங்கே ஓய்வெடுக்கலாம்.',
+  tryTyping:'என்னால் கேட்க முடியவில்லை. எழுதலாம்.', trustedAdult:'நம்பிக்கையான பெரியவர் உதவலாம்.',
+  answerRest:'என் பதில் சிறிது ஓய்வெடுக்கிறது. நிறுத்தலாம்.', offline:'இணையம் இல்லை. இங்கே ஓய்வெடுக்கலாம்.',
+  setupNote:'முதலில் சிறு குரல் அமைப்பு.', openingMic:'மைக்ரோஃபோனைத் திறக்கிறது…',
+  shinyOn:'ஒளிர்வு இயக்கு', shinyOff:'ஒளிர்வு அணை', buddiesAvailable:'தேர்ந்தெடுக்க நண்பர்கள்.', noBuddies:'நண்பர் கிடைக்கவில்லை. பெயர் அல்லது எண்ணை முயலுங்கள்.',
+  goodbye:'நன்றாக ஓய்வெடுங்கள். நம் சிறு கண்டுபிடிப்பு முடிந்தது.', pauseTitle:'ஓய்வெடுக்க அழகான இடம்.',
 };
-export function translate(key, language = "en") {
-  return languages[language]?.reviewed
-    ? ({ en, si, ta }[language][key] ?? en[key])
-    : en[key];
-}
+export function translate(key, language = 'en') { return ({ en, si, ta }[language] || en)[key] ?? en[key] ?? key; }
