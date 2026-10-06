@@ -9,6 +9,10 @@ async function ready(page, path='/?mock=1') {
   await page.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025);
 }
 const snapshot = p => p.evaluate(()=>window.__STUDIO_QA__.snapshot());
+async function unlock(p) {
+  const [a,b,c]=(await p.locator('#gateQuestion').innerText()).match(/\d+/g).map(Number);
+  await p.locator('#gateAnswer').fill(String(a*b+c)); await p.locator('#unlockSetup').click();
+}
 async function audit(p) {
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'horizontal overflow');
   assert.deepEqual(await p.locator('button:visible').evaluateAll(nodes=>nodes.filter(n=>{const r=n.getBoundingClientRect();return r.width<56||r.height<56}).map(n=>n.textContent)),[],'56px targets');
@@ -23,12 +27,16 @@ try {
   await ready(p); await audit(p);
   assert.equal((await snapshot(p)).sound,false); assert.equal(await p.evaluate(()=>window.__speechCalls),0);
   assert.equal(await p.locator('#keyboardDialog').isVisible(),false);
-  assert.match(await p.locator('#buddyCharacter img').getAttribute('src'),/\.png$/);
+  assert.match(await p.locator('#buddyCharacter img').getAttribute('src'),/\.webp$/);
   await p.locator('#changeBuddy').click(); await audit(p);
-  assert.equal(await p.locator('#buddyGrid button').count(),24);
-  await p.locator('#nextPage').click(); assert.equal(await p.locator('#pageLabel').innerText(),'2 / 43');
+  assert.ok(await p.locator('#buddyGrid button').count()<40);
+  await p.locator('#buddyGrid button').first().focus(); await p.keyboard.press('End');
+  await p.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt')); assert.match(await p.locator('#buddyGrid').innerText(),/Pecharunt/);
+  await p.locator('[data-generation="9"]').click(); assert.equal((await snapshot(p)).chooser.total,120);
+  await p.locator('#typeFilter').selectOption('grass'); assert.ok((await snapshot(p)).chooser.total<120);
+  await p.locator('[data-generation="all"]').click(); await p.locator('#typeFilter').selectOption('');
   await p.locator('#buddySearch').fill('#1025'); assert.equal(await p.locator('#buddyGrid button').count(),1);
-  assert.match(await p.locator('#buddyGrid').innerText(),/Pecharunt/);
+  await p.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt')); assert.match(await p.locator('#buddyGrid').innerText(),/Pecharunt/);
   await p.locator('#shinyToggle').click(); assert.match(await p.locator('#buddyGrid img').getAttribute('src'),/\/shiny\//);
   await p.locator('#buddyGrid button').click(); assert.equal((await snapshot(p)).buddy,1025);
   await p.locator('#changeBuddy').click(); await p.locator('#buddySearch').fill('eevee');
@@ -54,7 +62,7 @@ try {
   await p.locator('#finish').click(); await p.locator('#endScreen').waitFor({state:'visible'}); await audit(p);
   await p.locator('#wakeButton').click(); await p.locator('#grownupOpen').click();
   await p.locator('#gateAnswer').fill('14'); await p.locator('#unlockSetup').click(); assert.equal(await p.locator('#setupSettings').isVisible(),false);
-  await p.locator('#gateAnswer').fill('15'); await p.locator('#unlockSetup').click(); await p.locator('#onlineConsent').check();
+  await unlock(p); await p.locator('#onlineConsent').check();
   await p.locator('#saveBuddies').check(); await p.keyboard.press('Escape');
   const chosen=(await snapshot(p)).buddy; await ready(p);
   assert.equal((await snapshot(p)).consent,true); assert.equal((await snapshot(p)).buddy,chosen);
@@ -65,10 +73,10 @@ try {
   await p.locator('#clearData').click(); assert.equal((await snapshot(p)).consent,false); await p.keyboard.press('Escape');
   await ready(p,'/'); await p.locator('#micButton').click(); assert.equal(await p.locator('#grownupDialog').isVisible(),true);
   assert.equal(await p.evaluate(()=>window.__micCalls),0);
-  await p.locator('#gateAnswer').fill('15');await p.locator('#unlockSetup').click();await p.locator('#onlineConsent').check();await p.keyboard.press('Escape');
+  await unlock(p);await p.locator('#onlineConsent').check();await p.keyboard.press('Escape');
   await p.locator('#micButton').click();await p.waitForFunction(()=>window.__STUDIO_QA__.snapshot().state==='error');
   assert.match(await p.locator('#captionText').innerText(),/typing/); assert.equal(await p.locator('#keyboardButton').isEnabled(),true);
-  console.log('PASS mock flow, cancellation, selector 1–1025, shiny, pagination, recent shelf, setup persistence, language drafts, reduced motion, no automatic audio/mic/provider calls, friendly mic error');
+  console.log('PASS mock flow, cancellation, selector 1–1025, shiny, virtual scroll, generation/type filters, recent shelf, setup persistence, language drafts, reduced motion, no automatic audio/mic/provider calls, friendly mic error');
   await context.close();
   // Verify cached shell, metadata and an actually visited CDN sprite offline.
   const offlineContext=await browser.newContext({viewport:{width:820,height:1180},reducedMotion:'reduce'}), q=await offlineContext.newPage();
@@ -78,10 +86,12 @@ try {
   await q.reload({waitUntil:'domcontentloaded'});
   await q.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025);
   await q.locator('#buddyCharacter img').evaluate(img=>img.decode());
+  await q.locator('#changeBuddy').click(); await q.locator('#buddySearch').fill('bulbasaur');
+  await q.locator('#buddyGrid img').evaluate(img=>img.decode()); await q.keyboard.press('Escape');
   await q.waitForFunction(async()=>{const c=await caches.open('pokelearn-sprites-v3'); return (await c.keys()).length>0;});
   await offlineContext.setOffline(true);await ready(q);await audit(q);
   await q.locator('#buddyCharacter img').evaluate(img=>img.decode());
-  await q.locator('#changeBuddy').click();await q.locator('#buddySearch').fill('1025');assert.match(await q.locator('#buddyGrid').innerText(),/Pecharunt/);
+  await q.locator('#changeBuddy').click();await q.locator('#buddySearch').fill('1025');await q.waitForFunction(()=>document.querySelector('#buddyGrid').innerText.includes('Pecharunt'));assert.match(await q.locator('#buddyGrid').innerText(),/Pecharunt/);
   const keys=await q.evaluate(()=>caches.keys());assert.ok(keys.includes('pokelearn-sprites-v3'));
   console.log('PASS offline shell, full catalog and visited buddy image');await offlineContext.close();
   // Automated accessibility scan of scene, chooser, keyboard and grown-ups.

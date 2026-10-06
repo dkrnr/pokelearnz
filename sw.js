@@ -1,12 +1,12 @@
-/* Only public shell and visited sprite GETs. Never cache questions, audio or API responses. */
+/* Only public shell and visited sprite GETs. Never cache questions, recorded child voice or API responses. */
 const CACHE = 'pokelearn-shell-__BUILD__';
 const SPRITES = 'pokelearn-sprites-v3';
 const SHELL = [
-  '/', '/index.html', '/style.css', '/app.js', '/activities.js', '/art.js', '/buddy.js', '/buddy-catalog.json',
-  '/pokemonPersonalities.json', '/locales.js', '/safety.js', '/manifest.webmanifest', '/assets/mark.svg',
+  '/', '/index.html', '/style.css', '/app.js', '/chooser.js', '/activity-player.js', '/authored-audio.js', '/activities.js', '/art.js', '/buddy.js', '/buddy-catalog.json',
+  '/locales.js', '/safety.js', '/manifest.webmanifest', '/assets/mark.svg',
   '/assets/fonts/ReadexPro-Regular.woff', '/assets/fonts/ReadexPro-Bold.woff',
   '/assets/icons/icon-192.png', '/assets/icons/icon-512.png', '/assets/icons/maskable-512.png', '/assets/icons/apple-touch-icon.png',
-  ...__BUDDY_ASSETS__,
+  ...__BUDDY_ASSETS__, ...__AUTHORED_AUDIO__,
 ];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))));
 self.addEventListener('activate', e => e.waitUntil(Promise.all([

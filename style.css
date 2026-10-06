@@ -1326,3 +1326,60 @@ body {
 .buddy-tap[data-trick=bob]{animation:bob 1.5s ease-in-out}
 .buddy-cell{content-visibility:auto;contain-intrinsic-size:auto 196px}
 .sprite-frame{contain:layout paint}
+/* Scrollable Pokédex: only a small window of tiles exists in the DOM. */
+.pokedex{height:min(1040px,94svh);width:min(940px,calc(100vw - 24px));overflow:hidden}
+.pokedex[open]{display:flex;flex-direction:column}
+.pokedex .dialog-head{margin-bottom:12px}
+.pokedex .dialog-head h2{font-size:25px}
+.pokedex .eyebrow{display:none}
+.pokedex .chooser-tools{margin:12px 0 2px}
+.pokedex #recentSection h3{margin:10px 0 5px}
+.pokedex .recent-buddies{padding-bottom:4px}
+.pokedex .chooser-status{margin:8px 0;font-size:12px}
+.generation-tabs{display:flex;gap:7px;overflow-x:auto;flex-shrink:0;padding:3px 2px 7px;scrollbar-width:thin}
+.generation-tab{border:2px solid var(--ink);border-radius:7px;background:#fffef1;padding:5px 10px;display:flex;align-items:center;gap:5px;flex-shrink:0;font-size:12px;font-weight:700}
+.generation-tab[aria-pressed=true]{background:var(--yellow)}
+.generation-tab>span:first-child{border:1px solid var(--ink);border-radius:50%;width:21px;height:21px;display:grid;place-items:center;font-size:11px}
+.type-filter{display:flex;align-items:center;gap:12px;font-weight:700;font-size:12px;margin:5px 0 9px;flex-shrink:0}
+.type-filter select{flex:1;min-width:0;border:2px solid var(--ink);border-radius:8px;padding:8px;background:#fffef1}
+.buddy-viewport{flex:1;min-height:170px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;contain:layout paint;touch-action:pan-y}
+.buddy-grid{display:block;gap:0;width:100%;position:relative}
+.virtual-buddy{position:absolute;top:0;left:0;contain:layout paint style}
+.virtual-buddy .buddy-cell{width:100%;height:100%;content-visibility:auto;contain-intrinsic-size:auto 210px;box-shadow:none}
+.virtual-buddy .buddy-cell-name{min-height:30px;display:flex;align-items:center;text-align:center}
+@media(max-width:600px){.pokedex{padding:12px;max-height:96svh;height:96svh}.pokedex .dialog-head h2{font-size:21px}.pokedex .search-label{font-size:11px;margin-bottom:5px}.pokedex .search-box input{min-height:56px}.pokedex #recentSection h3{font-size:11px}.pokedex .recent-buddies button{min-height:56px}.pokedex .chooser-tools .sticker{min-height:56px}.type-filter{margin-top:1px}.generation-tab{padding:4px 9px}}
+/* Touchable objects at the edges of the meadow. Their hit areas reserve space. */
+.scene-props{position:absolute;inset:31% 5% 29%;pointer-events:none;z-index:2}
+.scene-prop{position:absolute;pointer-events:auto;min-width:88px;min-height:88px;background:none;border:0;display:flex;flex-direction:column;align-items:center;padding:0;font-size:13px;font-weight:700;transform-origin:50% 85%;transition:transform .18s var(--bounce)}
+.scene-prop:hover{transform:rotate(-5deg) scale(1.08)}
+.prop-art{width:90px;height:78px;display:block}
+.prop-art svg{width:100%;height:100%;stroke-width:1.5}
+.scene-prop>span:last-child{border:2px solid var(--ink);border-radius:4px 7px;background:#fff4bd;padding:3px 8px}
+.prop-plants{left:0;top:0;transform:rotate(-5deg)}.prop-homes{right:0;top:0;transform:rotate(5deg)}
+.prop-numbers{left:2%;top:36%;transform:rotate(3deg)}.prop-shapes{right:2%;top:36%;transform:rotate(-4deg)}
+.prop-sounds{left:0;bottom:0;transform:rotate(-3deg)}.prop-story{right:0;bottom:0;transform:rotate(4deg)}
+.buddy-tap[data-trick=tap-hop]{animation:tap-hop .85s cubic-bezier(.22,.8,.3,1)}
+@keyframes tap-hop{0%,100%{transform:translateY(0) scale(1)}15%{transform:translateY(12px) scale(1.18,.82)}42%{transform:translateY(-65px) scale(.88,1.12) rotate(-5deg)}65%{transform:translateY(-20px) scale(.95,1.05) rotate(4deg)}80%{transform:translateY(9px) scale(1.12,.88)}}
+.activity-dialog{width:min(760px,94vw);position:fixed;overflow:auto;background:#edf7d9}
+.activity-dialog .dialog-head{margin-bottom:12px}.activity-dialog .dialog-head .sticker{font-size:12px}
+.activity-buddy{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.activity-buddy img{object-fit:contain;flex-shrink:0}
+.activity-buddy .sticker{margin-left:auto;font-size:12px;padding:8px}
+.activity-caption{border:3px solid var(--ink);border-radius:12px 12px 12px 3px;background:#fffdf2;padding:14px;font-size:19px;line-height:1.5;min-height:88px;margin:8px 0 12px}
+.activity-figure{text-align:center;height:150px}.activity-figure .lesson-art{height:150px;width:150px;stroke-width:1.5}
+.activity-figure[data-helpers~="light"]{background:#fff0a366;border-radius:50%}
+.activity-choices,.animal-choices{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:12px 0}
+.activity-choice{min-height:70px;min-width:88px;background:#fff9d0;flex:0 1 auto}.activity-choice[aria-pressed=true]{background:var(--yellow)}
+.activity-feedback{min-height:46px;text-align:center;font-size:15px;margin:10px 0;line-height:1.5}
+.activity-actions{display:flex;justify-content:space-between;gap:12px}
+.activity-picture{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:20px}.activity-picture>span{font-size:68px}
+.number-blocks{min-height:80px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;color:#9b431f;font-size:48px}
+.story-sequence{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:56px}.story-sequence span{border:2px solid var(--ink);background:#fffdf1;padding:10px;border-radius:8px}
+#activityRecap{font-size:16px;line-height:1.7;text-align:center}#activityParticles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+@media(max-width:600px){.scene-props{inset:30% 0 30%}.scene-prop{min-width:64px;min-height:72px;font-size:10px}.prop-art{width:65px;height:51px}.scene-prop>span:last-child{padding:2px 4px}.prop-numbers{left:0}.prop-shapes{right:0}.activity-caption{font-size:16px;min-height:88px}.activity-figure,.activity-figure .lesson-art{height:105px}.activity-figure .lesson-art{width:105px}.activity-choice{font-size:14px;min-width:72px;padding:8px}.activity-dialog .dialog-head h2{font-size:21px}.activity-buddy{font-size:11px}.activity-buddy img{width:48px;height:48px}.activity-buddy .sticker{font-size:10px;max-width:96px}.activity-dialog .dialog-head .sticker{max-width:106px}}
+@media(min-width:900px) and (max-height:900px){.scene-props{inset:28% 13% 30%}.prop-art{width:86px;height:65px}.scene-prop{min-height:88px}.pokedex{padding:16px;height:94svh;max-height:94svh}.pokedex[open]{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto auto auto minmax(170px,1fr);column-gap:18px}.pokedex .dialog-head{grid-column:1/-1;margin-bottom:6px}.pokedex .search-label{grid-column:1}.pokedex .search-box{grid-column:1}.pokedex .chooser-tools{grid-column:2;grid-row:3;margin:0;align-items:center}.pokedex #recentSection{grid-column:1/-1}.pokedex #recentSection h3{margin:6px 0}.pokedex .recent-buddies{float:left;margin-right:12px}.pokedex .chooser-status{grid-column:2;grid-row:2;align-self:center;margin:0}.pokedex .generation-tabs{grid-column:1;grid-row:5}.pokedex .type-filter{grid-column:2;grid-row:5;margin:0 0 7px}.pokedex .buddy-viewport{grid-column:1/-1;grid-row:6}}
+@media(prefers-reduced-motion:reduce){.scene-prop:hover{transform:none}}
+/* Review 1: keep all prop words clear of the phone caption. */
+@media(max-width:600px){.scene-props{bottom:34%}}
+/* Review 2: keep the exit visible while a short-screen lesson scrolls. */
+.activity-dialog .dialog-head{position:sticky;top:-25px;z-index:3;background:#edf7d9;padding:6px 0}
+@media(max-width:600px){.activity-dialog .dialog-head{top:-16px}.activity-dialog:has(#animal-0) .activity-figure,.activity-dialog:has(#animal-0) .activity-figure .lesson-art{height:70px}.activity-dialog:has(#animal-0) .activity-figure .lesson-art{width:70px}}

@@ -48,6 +48,7 @@
       <span id="thinkingBubble" class="thinking-bubble" hidden>hmm…</span>
       <div id="particles" aria-hidden="true"></div>
     </div>
+    <nav id="sceneProps" class="scene-props" aria-label="Little discoveries"></nav>
     <div class="voice-dock">
       <div class="caption" role="status" aria-live="polite" aria-atomic="true"><span id="captionSpeaker" class="caption-speaker">Pikachu says</span><p id="captionText">Pika! I'm here. Let's wonder together.</p></div>
       <div class="talk-controls">
@@ -67,23 +68,34 @@
     <div class="chooser-tools"><button id="shinyToggle" class="sticker yellow" aria-pressed="false"><span aria-hidden="true">✧</span><span>Shiny off</span></button><button id="surpriseBuddy" class="sticker mint"><span aria-hidden="true">⚄</span><span>Surprise me</span></button></div>
     <div id="recentSection"><h3>Recently met</h3><div id="recentBuddies" class="recent-buddies"></div></div>
     <p id="chooserStatus" role="status" class="chooser-status">All 1,025 buddies. Pick anyone.</p>
-    <div id="buddyGrid" class="buddy-grid"></div>
-    <div class="pagination"><button id="previousPage" class="sticker"><span aria-hidden="true">←</span><span>Back</span></button><span id="pageLabel">1 / 43</span><button id="nextPage" class="sticker"><span aria-hidden="true">→</span><span>Next</span></button></div>
+    <div id="generationTabs" class="generation-tabs" role="group" aria-label="Generation"></div>
+    <label class="type-filter" for="typeFilter">Type <select id="typeFilter"><option value="">◉ All types</option></select></label>
+    <div id="buddyViewport" class="buddy-viewport" tabindex="0" aria-label="Scroll to choose a buddy"><div id="buddyGrid" class="buddy-grid"></div></div>
+  </dialog>
+  <dialog id="activityDialog" class="activity-dialog" aria-labelledby="activityTitle">
+    <div class="dialog-head"><h2 id="activityTitle">Little discovery</h2><button data-close class="sticker"><span aria-hidden="true">↩</span><span>Back to buddy</span></button></div>
+    <div class="activity-buddy"><img id="activityBuddy" alt="" width="64" height="64" /><span id="activityBuddyName">Pikachu says</span><button id="activityRead" class="sticker" aria-pressed="false"><span aria-hidden="true">♪</span><span>Read aloud</span></button></div>
+    <p id="activityCaption" class="activity-caption" role="status" aria-live="polite"></p>
+    <div id="activityFigure" class="activity-figure" aria-hidden="true"></div>
+    <div id="activityWorkspace"></div><p id="activityFeedback" class="activity-feedback" role="status" aria-live="polite"></p>
+    <div class="activity-actions"><button id="resetStep" class="sticker"><span aria-hidden="true">↺</span><span>Reset step</span></button><button id="nextStep" class="sticker yellow" hidden><span aria-hidden="true">→</span><span>Next</span></button></div>
+    <section id="activityRecap" hidden><p id="activityNote"></p><p id="activityOutside"></p><button id="completeActivity" class="sticker mint"><span aria-hidden="true">☾</span><span>Done for now</span></button></section>
+    <div id="activityParticles" aria-hidden="true"></div>
   </dialog>
   <dialog id="keyboardDialog" class="keyboard-dialog" aria-labelledby="keyboardTitle"><div class="dialog-head"><h2 id="keyboardTitle">Type to your buddy</h2><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div><form id="questionForm"><label for="questionInput">What do you wonder?</label><textarea id="questionInput" maxlength="300" rows="3" placeholder="Why are leaves green?"></textarea><button class="sticker yellow" type="submit"><span aria-hidden="true">↑</span><span>Say it</span></button></form></dialog>
   <dialog id="grownupDialog" class="grownups" aria-labelledby="grownupTitle">
     <div class="dialog-head"><h2 id="grownupTitle">For grown-ups</h2><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div>
     <p>A voice-first learning buddy for ages 6–9. Each answer has a calm stopping point. Sound starts off. Tapping the mic allows a spoken reply, unless sound has been switched off. Captions always stay visible.</p>
-    <section id="setupGate"><h3>One-time voice setup</h3><p>Grown-up check: what is 7 + 8?</p><label for="gateAnswer">Your answer</label><input id="gateAnswer" type="number" inputmode="numeric" /><button id="unlockSetup" class="sticker yellow"><span aria-hidden="true">⚿</span><span>Open setup</span></button><p id="gateStatus" role="status"></p></section>
+    <section id="setupGate"><h3>One-time voice setup</h3><p id="gateQuestion">Grown-up check</p><label for="gateAnswer">Your answer</label><input id="gateAnswer" type="number" inputmode="numeric" /><button id="unlockSetup" class="sticker yellow"><span aria-hidden="true">⚿</span><span>Open setup</span></button><p id="gateStatus" role="status"></p></section>
     <section id="setupSettings" hidden><h3>Microphone and online questions</h3><p>After you allow this, tapping the mic records audio, then sends it for transcription and an answer. Native browser microphone permission is still required. You can withdraw this permission here.</p><label class="check-row"><input id="onlineConsent" type="checkbox" />Allow voice and online questions on this device.</label><p id="consentStatus" role="status"></p></section>
     <h3>Questions, voice and actual providers</h3>
     <p><strong>Netlify</strong> hosts the app and proxies requests. Audio goes to <strong>Valsea (api.valsea.ai)</strong> for transcription. Questions and voice transcripts go to <strong>OpenRouter (openrouter.ai)</strong>. Configured models: Google Gemma, NVIDIA Nemotron, InclusionAI Ling, and the OpenRouter free-router fallback. OpenRouter chooses the downstream inference host; this app cannot identify that host or control provider retention. No sentiment requests are sent.</p>
-    <p>Questions, transcripts, recordings and answers are never saved or cached by this app. No browser speech recognition service is used. Optional read-aloud uses local device speechSynthesis voices; if unavailable, captions continue silently.</p>
+    <p>Questions, transcripts, recordings and answers are never saved or cached by this app. No browser speech recognition service is used. Authored activities support prerecorded files served by this app (none recorded yet). Optional read-aloud falls back to local device speechSynthesis voices; if unavailable, captions continue silently.</p>
     <h3>Sprite hosts and offline use</h3><p>Pokémon images load from <strong id="spriteHosts">cdn.jsdelivr.net</strong> (jsDelivr CDN for PokeAPI sprites). That host receives image requests and your IP address, never questions or recordings. Visited sprites are cached on this device, with a 180-image limit. All 1,025 names and types work offline after first load; unvisited pictures may need internet. No full image collection is bundled.</p>
     <h3>Optional device saving</h3><label class="check-row"><input id="saveBuddies" type="checkbox" />Remember buddy and recent choices.</label><p>Permission setup is saved separately so it is only needed once. Recent buddies stay temporary unless you enable saving. No rewards or progress counters.</p><button id="clearData" class="sticker"><span aria-hidden="true">⌫</span><span>Clear device data</span></button><p id="storageStatus" role="status"></p>
     <h3>Language</h3><label for="language">Interface and transcription language</label><select id="language"><option value="en">English</option><option value="si">සිංහල · draft</option><option value="ta">தமிழ் · draft</option></select><p>New Sinhala and Tamil interface strings are machine-translated drafts awaiting human review. Buddy names and scientific answers remain in English. Transcription follows the selected language.</p>
     <h3>About this project</h3><p>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</p>
-    <p>Stage 1 preview: the six authored activities are preserved for the next stage. Install through your browser’s Add to Home Screen menu. App updates become available on a later visit.</p>
+    <p>The six scene props open finite authored activities, available offline after first load. Install through your browser’s Add to Home Screen menu. App updates become available on a later visit.</p>
   </dialog>
   <noscript><p>Enable JavaScript to choose and talk to a buddy.</p></noscript>
 </body>

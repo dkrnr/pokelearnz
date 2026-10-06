@@ -9,6 +9,9 @@ for (const name of [
   "index.html",
   "style.css",
   "app.js",
+  "chooser.js",
+  "activity-player.js",
+  "authored-audio.js",
   "activities.js",
   "art.js",
   "buddy.js",
@@ -21,8 +24,11 @@ for (const name of [
 ])
   await cp(new URL(name, root), new URL(name, out), { recursive: true });
 await cp(new URL("../_headers", import.meta.url), new URL("_headers", out));
+const { recordings } = await import(new URL("../authored-audio.js", import.meta.url));
+const authoredAssets=Object.values(recordings).filter(path=>/^\/assets\/audio\/[\w-]+\.(mp3|wav|ogg)$/.test(path));
 const { buddyAssets } = await import(new URL("../buddy.js", import.meta.url));
 for (const name of [
+  "assets/audio",
   "assets/mark.svg",
   "assets/icons",
   "assets/fonts",
@@ -51,6 +57,7 @@ await writeFile(
   worker,
   (await readFile(worker, "utf8"))
     .replace("__BUILD__", stamp)
-    .replace("__BUDDY_ASSETS__", JSON.stringify(buddyAssets)),
+    .replace("__BUDDY_ASSETS__", JSON.stringify(buddyAssets))
+    .replace("__AUTHORED_AUDIO__", JSON.stringify(authoredAssets)),
 );
 console.log(`Built public files at ${fileURLToPath(out)}`);

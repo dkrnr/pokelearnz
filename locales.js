@@ -5,6 +5,7 @@ export const languages = {
   ta: { label: 'தமிழ் · draft', speech: 'ta-LK', reviewed: false },
 };
 export const en = {
+  plantProp:'Plant',fishProp:'Fish',blocksProp:'Blocks',shapesProp:'Shapes',beeProp:'Sounds',storyProp:'Story',tapHello:'Hee-hee!',
   play:'Play', ask:'Ask', listen:'Listen', done:'Done for now', retry:'Try again',
   change:'Change buddy', sleep:'Sleep', grownups:'Grown-ups', type:'Type', readAloud:'Read aloud',
   choose:'Choose your buddy', searchPlaceholder:'Pikachu or 25', talk:'Tap to talk', stopTalking:'Stop talking', stop:'Stop',
@@ -19,6 +20,7 @@ export const en = {
   goodbye:'Rest well. Our little discovery is done.', pauseTitle:'A lovely place to pause.',
 };
 export const si = {
+  plantProp:'පැළය',fishProp:'මාළු',blocksProp:'කැට',shapesProp:'හැඩ',beeProp:'හඬ',storyProp:'කතාව',tapHello:'හී හී!',
   play:'සෙල්ලම් කරමු', ask:'අසන්න', listen:'අහන්න', done:'දැනට අවසන්', retry:'නැවත උත්සාහ කරන්න',
   change:'යාළුවා වෙනස් කරන්න', sleep:'නිදාගන්න', grownups:'වැඩිහිටියන්', type:'ලියන්න', readAloud:'හඬින් කියවන්න',
   choose:'ඔබේ යාළුවා තෝරන්න', searchPlaceholder:'Pikachu හෝ 25', talk:'කතා කරන්න තට්ටු කරන්න', stopTalking:'කතා කිරීම නවත්වන්න', stop:'නවත්වන්න',
@@ -33,6 +35,7 @@ export const si = {
   goodbye:'හොඳින් විවේක ගන්න. අපේ පුංචි සොයාගැනීම අවසන්.', pauseTitle:'විවේකයට හොඳ තැනක්.',
 };
 export const ta = {
+  plantProp:'செடி',fishProp:'மீன்',blocksProp:'கட்டைகள்',shapesProp:'வடிவங்கள்',beeProp:'ஒலிகள்',storyProp:'கதை',tapHello:'ஹீ ஹீ!',
   play:'விளையாடு', ask:'கேள்', listen:'கேள்', done:'இப்போதைக்கு முடிந்தது', retry:'மீண்டும் முயற்சி செய்',
   change:'நண்பரை மாற்று', sleep:'தூங்கு', grownups:'பெரியவர்கள்', type:'எழுது', readAloud:'சத்தமாக வாசி',
   choose:'உங்கள் நண்பரைத் தேர்ந்தெடு', searchPlaceholder:'Pikachu அல்லது 25', talk:'பேச தட்டு', stopTalking:'பேசுவதை நிறுத்து', stop:'நிறுத்து',

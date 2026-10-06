@@ -23,9 +23,13 @@ export function buddyById(id) {
   if (item) return { ...item, name:item.displayName };
   return Number(id) === defaultBuddyId ? {id:25, name:'Pikachu', types:['electric']} : {id:Number(id), name:`Buddy ${id}`, types:[]};
 }
-export function searchBuddies(query) {
+export const generations = [
+  [1,151], [152,251], [252,386], [387,493], [494,649], [650,721], [722,809], [810,905], [906,1025],
+].map(([start,end], index) => ({id:String(index+1), start, end, label:`Gen ${index+1}`}));
+export function searchBuddies(query, {generation='all', type=''} = {}) {
   const text = query.toLowerCase().trim().replace(/^#/, '');
-  return catalog.filter(b => String(b.id) === text || b.searchName.includes(text));
+  const range = generations.find(g => g.id === generation);
+  return catalog.filter(b => (!range || (b.id >= range.start && b.id <= range.end)) && (!type || b.types.includes(type)) && (String(b.id) === text || b.searchName.includes(text)));
 }
 export const buddyCount = () => catalog.length;
 export async function buddyPersonality(id) {

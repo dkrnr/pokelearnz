@@ -16,6 +16,9 @@ const MIME = {
   ".ttf": "font/ttf",
   ".woff": "font/woff",
   ".webp": "image/webp",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
 };
 const handlers = Object.fromEntries(
   ["chat", "transcribe", "sentiment"].map((name) => [

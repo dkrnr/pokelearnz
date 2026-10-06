@@ -1,14 +1,16 @@
-import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyPersonality, buddyGreeting, spriteHosts } from './buddy.js';
+import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyPersonality, buddyGreeting, spriteHosts, generations, typeMarks } from './buddy.js';
+import { art } from './art.js';
+import { createChooser } from './chooser.js';
 import { translate } from './locales.js';
 import { containsNSFW } from './safety.js';
 const $ = id => document.getElementById(id);
 const MOCK = new URL(location.href).searchParams.get('mock') === '1';
 const STORAGE = 'pokelearn_voice_v3';
-const state = { buddy: defaultBuddyId, shiny: false, recent: [defaultBuddyId], page: 0, mode: 'idle', sound: false, answered: false, language: 'en', consent: false, saving: false, epoch: 0, ready: false };
+const state = { buddy: defaultBuddyId, shiny: false, recent: [defaultBuddyId], generation: 'all', type: '', mode: 'idle', sound: false, answered: false, language: 'en', consent: false, saving: false, epoch: 0, ready: false };
 const celebrated = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, audio, activeUtterance;
-let setupUnlocked = false, dialogTrigger, muteChosen = false;
+let setupUnlocked = false, dialogTrigger, muteChosen = false, gateExpected, currentAudioSrc, activityPlayer, activityLoading;
 const t = key => translate(key, state.language);
 function restore() {
   try {
@@ -35,6 +37,7 @@ function save() {
   }
 }
 function caption(text, speaker = true) {
+  currentAudioSrc=undefined;
   $('captionSpeaker').textContent = speaker ? `${buddyById(state.buddy).name} ${t('says')}` : t('littleNote');
   $('captionText').textContent = text;
 }
@@ -90,6 +93,7 @@ function updateLanguage() {
   $('chooserTitle').textContent = t('choose');
   $('buddySearch').placeholder = t('searchPlaceholder');
   $('voiceHint').textContent = MOCK ? t('mockHint') : t('voiceHint');
+  for(const prop of $('sceneProps').children)prop.lastElementChild.textContent=t(prop.dataset.word);
   setMode(state.mode); updateBuddy();
 }
 function openDialog(id) {
@@ -99,10 +103,20 @@ function openDialog(id) {
   $(id).showModal();
 }
 for (const dialog of document.querySelectorAll('dialog')) {
-  dialog.querySelector('[data-close]').onclick = () => dialog.close();
+  const stopActivity=()=>{if(dialog.id==='activityDialog'){cancelPending();setMode('idle');}};
+  dialog.querySelector('[data-close]').onclick = () => {stopActivity();dialog.close();};
+  dialog.addEventListener('cancel',stopActivity);
   dialog.addEventListener('close', () => { $('main').dataset.paused = 'false'; dialogTrigger?.focus(); scheduleIdle(); });
 }
+function randomGate() {
+  const numbers = crypto.getRandomValues(new Uint32Array(3));
+  const first = 12 + numbers[0] % 18, second = 3 + numbers[1] % 7, extra = 11 + numbers[2] % 19;
+  gateExpected = first * second + extra;
+  $('gateQuestion').textContent = `Grown-up check: (${first} × ${second}) + ${extra} = ?`;
+  $('gateAnswer').value = ''; $('gateStatus').textContent = '';
+}
 function openGrownups() {
+  if (!setupUnlocked) randomGate();
   openDialog('grownupDialog');
   $('setupGate').hidden = setupUnlocked;
   $('setupSettings').hidden = !setupUnlocked;
@@ -116,7 +130,7 @@ function permitted() {
 }
 $('grownupOpen').onclick = openGrownups;
 $('unlockSetup').onclick = () => {
-  if ($('gateAnswer').value.trim() !== '15') { $('gateStatus').textContent = 'Try that sum again.'; return; }
+  if (Number($('gateAnswer').value) !== gateExpected || !$('gateAnswer').value.trim()) { $('gateStatus').textContent = 'Try that sum again.'; return; }
   setupUnlocked = true; $('setupGate').hidden = true; $('setupSettings').hidden = false;
   $('onlineConsent').focus();
 };
@@ -131,7 +145,7 @@ $('clearData').onclick = async () => {
   try { localStorage.removeItem(STORAGE); } catch { /* blocked storage */ }
   state.consent = false; state.saving = false; state.recent = [state.buddy]; setupUnlocked = false;
   $('onlineConsent').checked = false; $('saveBuddies').checked = false;
-  $('setupGate').hidden = false; $('setupSettings').hidden = true; $('gateAnswer').value = '';
+  $('setupGate').hidden = false; $('setupSettings').hidden = true; randomGate();
   $('storageStatus').textContent = 'Saved choices and permission cleared. Clearing sprite cache…';
   if ('caches' in window) await caches.delete('pokelearn-sprites-v3').catch(() => {});
   $('storageStatus').textContent = 'Saved choices, permission and cached sprites cleared.';
@@ -158,50 +172,84 @@ function buddyCell(id, recent = false) {
   button.append(frame, name); if (!recent) button.append(typeChips(buddy.types));
   button.onclick = () => selectBuddy(id); return button;
 }
+const chooser = createChooser($('buddyViewport'), $('buddyGrid'), id => buddyCell(id));
 function renderChooser() {
-  const results = searchBuddies($('buddySearch').value), pages = Math.max(1, Math.ceil(results.length / 24));
-  state.page = Math.min(state.page, pages - 1);
+  const results = searchBuddies($('buddySearch').value, {generation:state.generation, type:state.type});
   $('shinyToggle').setAttribute('aria-pressed', String(state.shiny));
   $('shinyToggle').lastElementChild.textContent = state.shiny ? t('shinyOn') : t('shinyOff');
   $('recentBuddies').replaceChildren(...state.recent.map(id => buddyCell(id, true)));
-  $('buddyGrid').replaceChildren(...results.slice(state.page * 24, state.page * 24 + 24).map(b => buddyCell(b.id)));
   $('chooserStatus').textContent = results.length ? `${results.length.toLocaleString()} ${t('buddiesAvailable')}` : t('noBuddies');
-  $('pageLabel').textContent = `${state.page + 1} / ${pages}`;
-  $('previousPage').disabled = state.page === 0; $('nextPage').disabled = state.page >= pages - 1;
+  $('surpriseBuddy').disabled = !results.length;
+  for (const button of $('generationTabs').children) button.setAttribute('aria-pressed', String(button.dataset.generation === state.generation));
+  chooser.setItems(results);
 }
-$('changeBuddy').onclick = () => {
-  openDialog('buddyDialog'); state.page = 0; $('buddySearch').value = ''; renderChooser();
-};
-$('buddySearch').oninput = () => { state.page = 0; renderChooser(); };
+for (const generation of [{id:'all', label:'All'}, ...generations]) {
+  const button = document.createElement('button'); button.className = 'generation-tab'; button.dataset.generation = generation.id;
+  const icon = document.createElement('span'); icon.setAttribute('aria-hidden', 'true'); icon.textContent = generation.id === 'all' ? '◉' : generation.id;
+  const label = document.createElement('span'); label.textContent = generation.label; button.append(icon,label);
+  button.onclick = () => { state.generation = generation.id; renderChooser(); };
+  $('generationTabs').append(button);
+}
+for (const [type, icon] of Object.entries(typeMarks)) {
+  const option = document.createElement('option'); option.value = type; option.textContent = `${icon} ${type}`; $('typeFilter').append(option);
+}
+$('changeBuddy').onclick = () => { openDialog('buddyDialog'); $('buddySearch').value = ''; renderChooser(); };
+$('buddySearch').oninput = renderChooser;
+$('typeFilter').onchange = e => { state.type = e.target.value; renderChooser(); };
 $('shinyToggle').onclick = () => { state.shiny = !state.shiny; renderChooser(); updateBuddy(false); if (state.saving) save(); };
-$('surpriseBuddy').onclick = () => selectBuddy(1 + Math.floor(Math.random() * buddyCount()));
-function changePage(delta) {
-  state.page += delta; renderChooser();
-  $('buddyDialog').scrollTo({ top: 0, behavior: reduced.matches ? 'instant' : 'smooth' });
-  $('buddySearch').focus({ preventScroll: true });
+$('surpriseBuddy').onclick = () => {
+  const choices = searchBuddies($('buddySearch').value, {generation:state.generation, type:state.type});
+  if (choices.length) selectBuddy(choices[Math.floor(Math.random() * choices.length)].id);
+};
+// Scene props are physical discoveries, not a lesson menu.
+for(const [id,key] of [['plants','plantProp'],['homes','fishProp'],['numbers','blocksProp'],['shapes','shapesProp'],['sounds','beeProp'],['story','storyProp']]) {
+  const prop=document.createElement('button');prop.id='discover-'+id;prop.className='scene-prop prop-'+id;prop.dataset.word=key;
+  const picture=document.createElement('span');picture.className='prop-art';picture.innerHTML=art(id);
+  const label=document.createElement('span');label.textContent=t(key);prop.append(picture,label);$('sceneProps').append(prop);
+  prop.onclick=async()=>{
+    openDialog('activityDialog'); $('activityCaption').textContent=t('takeTime');
+    $('activityBuddyName').textContent=buddyById(state.buddy).name+' '+t('says');
+    $('activityBuddy').src=$('buddyCharacter img')?.src || '/assets/buddies/25-official.webp';
+    const epoch=state.epoch;
+    try {
+      activityLoading ||= import('./activity-player.js');
+      const {createActivityPlayer}=await activityLoading;
+      if(epoch!==state.epoch || !$('activityDialog').open)return;
+      activityPlayer ||= createActivityPlayer({
+        say:(text,src)=>{cancelPending();caption(text);currentAudioSrc=src;speak(text,{audioSrc:src});},
+        celebrate:id=>{if(!celebrated.has(id)){celebrated.add(id);$('activityDialog').dataset.celebration=id;particles($('activityParticles'));}},
+        finish:()=>$('finish').click(), sound:()=>state.sound, toggleSound:()=>$('readAloud').click(), word:t,
+      });
+      activityPlayer.open(id);
+    } catch {$('activityCaption').textContent=t('offline');}
+  };
 }
-$('previousPage').onclick = () => changePage(-1); $('nextPage').onclick = () => changePage(1);
 $('keyboardButton').onclick = () => { openDialog('keyboardDialog'); $('questionInput').focus(); };
 $('questionForm').onsubmit = e => {
   e.preventDefault(); const text = $('questionInput').value.trim();
   if (text.length < 2) { $('questionInput').focus(); return; }
   $('keyboardDialog').close(); $('questionInput').value = ''; askQuestion(text);
 };
-function particles() {
+function particles(root = $('particles')) {
   if (reduced.matches) return;
+  root.replaceChildren();
   for (let i = 0; i < 7; i++) {
     const p = document.createElement('span'); p.className = 'particle'; p.textContent = i % 2 ? '✦' : '♡';
     p.style.setProperty('--x', `${Math.cos(i * .9) * 150}px`); p.style.setProperty('--y', `${Math.sin(i * .9) * 120 - 40}px`);
-    $('particles').append(p); p.onanimationend = () => p.remove();
+    root.append(p); p.onanimationend = () => p.remove();
   }
 }
 function trick(kind) {
-  const target = $('buddyTap'); target.dataset.trick = kind;
+  const target = $('buddyTap'); delete target.dataset.trick;
+  // Restart the finite reaction even for a second tap of the same kind.
+  target.getAnimations().forEach(animation=>animation.cancel());
+  requestAnimationFrame(()=>{target.dataset.trick=kind;});
   setTimeout(() => { if (target.dataset.trick === kind) delete target.dataset.trick; }, 1500);
 }
 $('buddyTap').onclick = () => {
   if (state.mode !== 'idle' && state.mode !== 'error') return;
-  trick(['hop', 'giggle', 'peek'][Math.floor(Math.random() * 3)]); particles();
+  trick('tap-hop'); particles(); caption(t('tapHello'));
+  if(reduced.matches) $('tapWord').textContent=t('tapHello');
 };
 function scheduleIdle() {
   clearTimeout(idleTimer);
@@ -212,8 +260,8 @@ function scheduleIdle() {
   }, 6000 + Math.random() * 8000);
 }
 /** Authored lines may supply a local prerecorded asset; browser speech is the fallback. */
-async function speak(text, { audioSrc } = {}) {
-  const epoch = state.epoch;
+async function speak(text, { audioSrc = currentAudioSrc } = {}) {
+  const epoch = state.epoch; let fellBack=false;
   const finish = () => { if (epoch === state.epoch && state.mode === 'speaking') setMode('idle'); };
   setMode('speaking');
   if (state.sound && audioSrc?.startsWith('/assets/audio/')) {
@@ -224,7 +272,7 @@ async function speak(text, { audioSrc } = {}) {
   }
   fallback();
   function fallback() {
-    if (epoch !== state.epoch) return;
+    if (epoch !== state.epoch || fellBack) return; fellBack=true;
     if (state.sound && 'speechSynthesis' in window) {
       const voice = speechSynthesis.getVoices().find(v => v.localService && v.lang.startsWith('en'));
       if (voice) {
@@ -240,7 +288,7 @@ async function speak(text, { audioSrc } = {}) {
 }
 $('readAloud').onclick = () => {
   state.sound = !state.sound; muteChosen = !state.sound; $('readAloud').setAttribute('aria-pressed', String(state.sound));
-  if (state.sound && ['idle', 'error'].includes(state.mode)) speak($('captionText').textContent);
+  if (state.sound && ['idle', 'error', 'speaking'].includes(state.mode)) {cancelPending();speak($('captionText').textContent);}
   else if (!state.sound) {
     clearTimeout(speechTimer); audio?.pause();
     if ('speechSynthesis' in window) speechSynthesis.cancel();
@@ -397,4 +445,4 @@ restore(); updateLanguage(); scheduleIdle();
 $('micButton').disabled = true; $('changeBuddy').disabled = true;
 loadBuddies().then(() => { state.ready = true; updateBuddy(); setMode('idle'); $('changeBuddy').disabled = false; })
   .catch(() => { state.ready = false; $('changeBuddy').disabled = false; $('micButton').disabled = false; $('chooserStatus').textContent = 'Buddy pictures need another visit online.'; });
-window.__STUDIO_QA__ = { snapshot: () => ({ state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered }) };
+window.__STUDIO_QA__ = { snapshot: () => ({ state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered, chooser: chooser.snapshot(), activity: activityPlayer?.snapshot(), celebrations:[...celebrated] }) };
