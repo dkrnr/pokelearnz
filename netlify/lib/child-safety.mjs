@@ -31,7 +31,7 @@ export function safeOutput(value){
  if(typeof value!=='string'||!value.trim()||value.length>180||/[<>\[\]{}#*_`\n\r]/.test(value))return false;
  const clean=leet(value);
  if(distress.test(normal(value))||personalData(value)||danger.test(clean)||guilt.test(clean)||sensitive.test(clean)||discrimination.test(normal(value))||hooks.test(normal(value))||hooks.test(clean)||injection.test(normal(value)))return false;
- // English answers only. Fail closed on control characters, encoded/obfuscated or non-English output.
+ // The prompt requests English; unsupported scripts/symbols fail closed. This is not language detection.
  if(/[^\p{Script=Latin}0-9\s.,!:'’“”\-]/u.test(value))return false;
  const sentences=value.trim().split(/(?<=[.!])\s+/);
  const words=value.normalize('NFKD').replace(/\p{Diacritic}/gu,'').match(/[a-z]+(?:['’][a-z]+)?/gi)||[];

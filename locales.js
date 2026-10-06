@@ -5,7 +5,7 @@ export const languages = {
   ta: { label: 'தமிழ் · draft', speech: 'ta-LK', reviewed: false },
 };
 export const en = {
-  rateLimited:'Our little chat can rest. Typing and discoveries are here.',
+  rateLimited:'Our little chat can rest. Our discoveries are here.',
   moving:'Moving',artwork:'Artwork',tapGiggle:'That tickles!',tapPeek:'Peek-a-boo!',tapSpin:'A little twirl!',tapWiggle:'Wiggle, wiggle!',tapStretch:'A lovely stretch!',
   plantProp:'Plant',fishProp:'Fish',blocksProp:'Blocks',shapesProp:'Shapes',beeProp:'Sounds',storyProp:'Story',tapHello:'Hee-hee!',
   play:'Play', ask:'Ask', listen:'Listen', done:'Done for now', retry:'Try again',
@@ -22,7 +22,7 @@ export const en = {
   goodbye:'Rest well. Our little discovery is done.', pauseTitle:'A lovely place to pause.',
 };
 export const si = {
-  rateLimited:'අපේ කතාබහට විවේකයක්. ලියන්න සහ සොයාගන්න පුළුවන්.',
+  rateLimited:'අපේ කතාබහට විවේකයක්. පුංචි සොයාගැනීම් මෙතැන තියෙනවා.',
   moving:'චලනය',artwork:'පින්තූරය',tapGiggle:'කිති කැවෙනවා!',tapPeek:'මෙන්න මම!',tapSpin:'පුංචි කැරකීමක්!',tapWiggle:'සෙලවෙමු!',tapStretch:'හොඳ දිගහැරීමක්!',
   plantProp:'පැළය',fishProp:'මාළු',blocksProp:'කැට',shapesProp:'හැඩ',beeProp:'හඬ',storyProp:'කතාව',tapHello:'හී හී!',
   play:'සෙල්ලම් කරමු', ask:'අසන්න', listen:'අහන්න', done:'දැනට අවසන්', retry:'නැවත උත්සාහ කරන්න',
@@ -39,7 +39,7 @@ export const si = {
   goodbye:'හොඳින් විවේක ගන්න. අපේ පුංචි සොයාගැනීම අවසන්.', pauseTitle:'විවේකයට හොඳ තැනක්.',
 };
 export const ta = {
-  rateLimited:'நம் உரையாடல் ஓய்வெடுக்கலாம். எழுதவும் கண்டறியவும் முடியும்.',
+  rateLimited:'நம் உரையாடல் ஓய்வெடுக்கலாம். சிறிய கண்டுபிடிப்புகள் இங்கே உள்ளன.',
   moving:'அசைவு',artwork:'ஓவியம்',tapGiggle:'கூச்சமாக இருக்கிறது!',tapPeek:'இதோ நான்!',tapSpin:'ஒரு சிறிய சுழல்!',tapWiggle:'அசை, அசை!',tapStretch:'நன்றாக நீட்டலாம்!',
   plantProp:'செடி',fishProp:'மீன்',blocksProp:'கட்டைகள்',shapesProp:'வடிவங்கள்',beeProp:'ஒலிகள்',storyProp:'கதை',tapHello:'ஹீ ஹீ!',
   play:'விளையாடு', ask:'கேள்', listen:'கேள்', done:'இப்போதைக்கு முடிந்தது', retry:'மீண்டும் முயற்சி செய்',
