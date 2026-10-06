@@ -12,9 +12,12 @@
     "test:v3": "node tests/v3-smoke.mjs && node tests/v3-voice.mjs",
     "screenshots:v3": "node tests/v3-capture.mjs",
     "test:animation": "node tests/v3-animation.mjs",
-    "check:models": "node scripts/check-models.mjs",
+    "test:stage4": "node tests/stage4-browser.mjs",
+    "test:all": "node scripts/test-all.mjs",
+    "check:models": "node --env-file-if-exists=.env scripts/check-models.mjs",
     "test:backend": "node --test tests/backend.test.mjs",
     "smoke:live": "node --env-file-if-exists=.env scripts/smoke-live.mjs"
+    ,"audit:live": "node --env-file-if-exists=.env scripts/audit-live.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

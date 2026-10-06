@@ -2,7 +2,7 @@
 
 A voice-first game for ages 6–9: choose any of 1,025 Pokémon as a teacher, tap the mic and talk. Persistent captions, keyboard fallback, six finite authored activities as scene props, and a calm Sleep ending. Moving / Artwork switches confirmed animated GIFs and official artwork; reduced motion stays static. No streaks, counters, reminders, notifications, autoplay or endless follow-ups.
 
-Stage 3 Part A is on `redesign/kid-friendly-v3`. This `backend/hardening` branch starts from that checkpoint and adds separately reviewable server safeguards. No deployment/merge or Netlify setting change. See [Part A coverage/screens/performance](docs/redesign/V3-STAGE-3-A.md) and [Part B findings/tests/limits](docs/redesign/V3-STAGE-3-B.md).
+The UI checkpoint is on `redesign/kid-friendly-v3`. This `backend/hardening` branch starts from that checkpoint and adds separately reviewable server safeguards. No deployment/merge or Netlify setting change. See [Stage 4 development and repository report](docs/redesign/V3-STAGE-4.md), [Part A coverage/screens/performance](docs/redesign/V3-STAGE-3-A.md) and [Part B findings/tests/limits](docs/redesign/V3-STAGE-3-B.md).
 
 ## Local scene / mock
 
@@ -34,11 +34,33 @@ npm run check:models
 POKELEARN_TEST_URL=http://localhost:8888 npm run smoke:live
 ```
 
-Model checks query the public OpenRouter catalog, with no key. The live smoke loads ignored `.env`, skips calls without local keys, sends only a synthetic science question and generated WebM/MP4 tones to the local function server, and prints only status/error codes. Synthetic silence/tone acceptance does not prove speech recognition accuracy. It can consume existing Valsea credits. This pass observed Valsea accepting both formats but OpenRouter returning no eligible private endpoints; the deterministic resting fallback worked. No successful live generated lesson was verified. Details are in the Part B report.
+Model checks query the public OpenRouter catalog using the same ordered `OPENROUTER_MODELS` list as chat, with no API key. The script loads `.env` only for configuration; keys are never sent to the catalog. Override the comma-separated list when free models disappear. Invalid, duplicate or paid IDs fail closed. Default order: NVIDIA Nemotron 3 Super, Google Gemma 4 31B, Google Gemma 4 26B. Each gets an 8-second deadline and one retry, within a 50-second total deadline. Every upstream attempt reserves quota. No free-router, streaming or unbounded retries.
+
+`AI_PROVIDER=openrouter` selects the adapter in `netlify/lib/providers`; the interface is `configured()`, `models()`, `complete({model,system,question,signal})`. Another adapter can be registered without changing safety, chat orchestration or the UI. `AI_PRIVACY=account` inherits existing OpenRouter account privacy options; the application never changes those options or sends an explicit collection allowance. Free endpoints can retain or train on questions depending on account settings and provider policies. `AI_PRIVACY=strict` additionally requests no collection and zero retention, which can leave no eligible free endpoints. Zero-price limits stay enforced in both modes. A private/paid provider decision and policy review are required before public launch.
+
+`DEMO_MODE=true` selects a curated bank of 20 common questions without a chat-provider call. Normal mode also uses the bank after provider failure or for matched questions without a key. Unmatched failures get a clear, calm authored answer. Origin/consent/input safety and the pause switch remain enforced; unavailable quota storage and rate limits retain their friendly error states. Unsafe model content goes to a trusted grown-up; reading/format misses use bounded retries before the bank. No developer message is shown to children. **Demo questions still require the device's online consent; voice still uses Valsea**. Use `?mock=1` or offline activities when no upload is wanted.
+
+The live smoke loads ignored `.env`, skips calls without local keys, and sends only synthetic science questions and generated WebM/MP4 tones to the local function server. Default output contains only status/error codes. Tones do not prove speech recognition accuracy and can consume existing Valsea credits. Explicit ten-question reporting:
+
+```sh
+SMOKE_TEN=1 SMOKE_VOICE=0 POKELEARN_TEST_URL=http://localhost:8888 npm run smoke:live
+RUN_LIVE_AUDIT=1 npm run audit:live
+```
+
+Ten-question mode prints only the fixed synthetic questions, answers, model IDs and latencies. The adversarial diagnostic sends a fixed synthetic corpus directly to the adapter with the server prompt, deliberately bypassing input rejection **only in the script** to study model responses. It is not exposed as an API. It makes one zero-price, 8-second call per case, at least 3.5 seconds apart, without retries. Heuristic verdicts are recorded in `docs/redesign`; raw synthetic responses stay in ignored `qa/artifacts`. Do not adapt it to real child data. Provider outages/rate limits can leave cases unverified. See the Stage 4 report for actual live outcomes and heuristic misses.
 
 ## Checks
 
-With a built server running:
+The CI workflow uses Node 24, installs Chromium, builds, and runs every available deterministic regression without AI keys:
+
+```sh
+npm ci
+npx playwright install --with-deps chromium
+npm run build
+npm run test:all
+```
+
+Individual commands with a built server running:
 
 ```sh
 npm test
@@ -53,7 +75,9 @@ Install the pinned Chromium browser once with `npx playwright install chromium`.
 
 ## Data, providers and limitations
 
-[Privacy and processing details](PRIVACY.md). Netlify hosts/proxies, Valsea receives voice, OpenRouter receives permitted questions/transcripts and routes to a downstream inference host. Explicit ordered free models: Gemma 4 31B, Nemotron 3 Super, Gemma 4 26B. No free-router. Requests enforce zero-price/no-data-collection/zero-retention routing flags; provider compliance and downstream identity are not independently verified. Filtering may leave no eligible free provider. Valsea retention is not controlled by this app.
+[Privacy and processing details](PRIVACY.md). Netlify hosts/proxies, Valsea receives voice, OpenRouter receives permitted questions/transcripts and routes to a downstream inference host. Explicit ordered free models, no free-router. Zero-price limits are enforced; account privacy options are inherited in development. **Free AI providers may retain or train on questions**, depending on those settings and their policies; no zero-retention guarantee is made. [OpenRouter’s provider policy](https://openrouter.ai/docs/guides/privacy/logging) explains separate free/paid training settings and provider-specific retention. Account settings were not inspected or changed. Provider compliance and downstream identity are not independently verified.
+
+[Valsea’s public policy](https://valsea.ai/policies/en), May 2026 version 1.1, states 30-day default retention (different account schedules may apply), encryption in transit/at rest, sharing with necessary cloud and ASR/LLM sub-processors, and no use of audio to train its models without explicit written consent. This is the provider’s statement, not our audit. Its terms require account users to be 13+; applicability to children using a client’s service and parental consent need written clarification before launch.
 
 The app does not persist/cache questions, transcripts, audio or answers. Quotas persist counts and daily salted IP hashes in Netlify Blobs; cleanup is best effort on activity, not automatic TTL. Application telemetry logs only error codes, latency and the selected model. Netlify/provider logging remains outside that assertion. Private text detected by regex is withheld from providers; audio can contain private/background speech before transcription. Server output checks are restrictive heuristics, **not a complete moderation system or factual guarantee**. The device arithmetic gate and consent header are not authenticated parental consent.
 

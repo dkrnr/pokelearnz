@@ -37,7 +37,7 @@ test("API method guard and missing-key response require no provider call", async
   const r = await fetch(base + "/.netlify/functions/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json",Origin:base,"X-PokeLearn-Consent":"1" },
-    body: '{"question":"Why are leaves green?","buddyId":25}',
+    body: '{"question":"What is a quasar?","buddyId":25}',
   });
   assert.equal(r.status, 503);
   assert.match(r.headers.get("cache-control"), /no-store/);

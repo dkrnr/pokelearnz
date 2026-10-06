@@ -1,8 +1,9 @@
 import {test,before,after} from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
 import {createChat,config as chatConfig} from '../netlify/functions/chat.mjs';import {createTranscribe,config as voiceConfig} from '../netlify/functions/transcribe.mjs';import health from '../netlify/functions/health.mjs';
 import {inputDecision,safeOutput,lines} from '../netlify/lib/child-safety.mjs';import {models} from '../netlify/lib/models.mjs';import {createMemoryStore,reserve} from '../netlify/lib/quota.mjs';import {validateAudio} from '../netlify/lib/audio.mjs';
+import {getModels,getRouting} from '../netlify/lib/models.mjs';import {answerBank,authoredAnswer,unknownAnswer} from '../netlify/lib/answer-bank.mjs';
 const corpus=JSON.parse(await fs.readFile('tests/fixtures/adversarial.json','utf8')),env={...process.env},logs=[],originalLog=console.info;
-before(()=>{process.env.OPENROUTER_KEY='test-only-not-a-real-key';process.env.VALSEA_KEY='test-only-not-a-real-key';process.env.PAUSE_AI='false';console.info=value=>logs.push(JSON.parse(value));});
+before(()=>{process.env.OPENROUTER_KEY='test-only-not-a-real-key';process.env.VALSEA_KEY='test-only-not-a-real-key';process.env.PAUSE_AI='false';delete process.env.DEMO_MODE;delete process.env.OPENROUTER_MODELS;delete process.env.AI_PRIVACY;delete process.env.AI_PROVIDER;console.info=value=>logs.push(JSON.parse(value));});
 after(()=>{console.info=originalLog;for(const key of Object.keys(process.env))if(!(key in env))delete process.env[key];Object.assign(process.env,env);});
 const noQuota=async()=>{};
 function request(payload={question:'Why are leaves green?',buddyId:25},options={}){return new Request('http://127.0.0.1:4178/api/chat',{method:'POST',headers:{Origin:'http://127.0.0.1:4178','X-PokeLearn-Consent':'1','Content-Type':'application/json',...options.headers},body:typeof payload==='string'?payload:JSON.stringify(payload),...options});}
@@ -14,7 +15,7 @@ test('all adversarial inputs stop before providers; distress is kind and support
  assert.equal(calls,0);
 });
 test('adversarial output corpus is blocked server-side; allowed answers pass length/reading/stopping checks',async()=>{
- for(const output of corpus.outputs){assert.equal(safeOutput(output),false,'unsafe output accepted: '+output);const handler=createChat({reserve:noQuota,fetcher:async()=>ok(output)});assert.equal((await (await handler(request())).json()).code,'TRUSTED_GROWNUP');}
+ for(const output of corpus.outputs){assert.equal(safeOutput(output),false,'unsafe output accepted: '+output);const handler=createChat({reserve:noQuota,fetcher:async()=>ok(output)});const body=await (await handler(request())).json();assert.notEqual(body.choices[0].message.content,output);assert.ok(['TRUSTED_GROWNUP','OK'].includes(body.code));if(body.code==='OK')assert.equal(body.source,'authored');}
  for(const output of corpus.allowed)assert.equal(safeOutput(output),true,output);
 });
 test('roles, histories, injected personas, oversized/malformed/control-character inputs are rejected',async()=>{
@@ -25,19 +26,19 @@ test('roles, histories, injected personas, oversized/malformed/control-character
 test('server prompt is owned by server, ordered explicit free models retry once, then next model',async()=>{
  const calls=[];let quota=0;const handler=createChat({reserve:async()=>quota++,fetcher:async(url,options)=>{const body=JSON.parse(options.body);calls.push(body);return calls.length<=2?new Response('',{status:503}):ok(corpus.allowed[0]);}});
  assert.equal((await (await handler(request())).json()).code,'OK');assert.deepEqual(calls.map(c=>c.model),[models[0],models[0],models[1]]);assert.equal(quota,3);
- for(const call of calls){assert.equal(call.models,undefined);assert.equal(call.max_tokens,96);assert.equal(call.messages.length,2);assert.match(call.messages[0].content,/ages 6–9/);assert.equal(call.provider.zdr,true);assert.equal(call.provider.data_collection,'deny');assert.equal(call.provider.max_price.prompt,0);assert.equal(call.provider.allow_fallbacks,false);}
+ for(const call of calls){assert.equal(call.models,undefined);assert.equal(call.max_tokens,128);assert.equal(call.messages.length,2);assert.match(call.messages[0].content,/ages 6–9/);assert.equal(call.provider.zdr,undefined);assert.equal(call.provider.data_collection,undefined);assert.equal(call.provider.max_price.prompt,0);assert.equal(call.provider.allow_fallbacks,false);}
 });
 test('per-attempt timeout, whole-chain deadline, deterministic fallback and cancellation bound provider work',async()=>{
  let count=0;const handler=createChat({reserve:noQuota,timeoutMs:5,deadlineMs:200,fetcher:(_url,{signal})=>{count++;return new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('private diagnostic')),{once:true}));}});
- const started=Date.now(),response=await handler(request());assert.equal(count,6);assert.ok(Date.now()-started<500);assert.equal((await response.json()).choices[0].message.content,lines.rest);
+ const started=Date.now(),response=await handler(request());assert.equal(count,6);assert.ok(Date.now()-started<500);assert.equal((await response.json()).choices[0].message.content,authoredAnswer('Why are leaves green?'));
  const controller=new AbortController(),pending=handler(request(undefined,{signal:controller.signal}));setTimeout(()=>controller.abort(),2);assert.equal((await pending).status,499);
- const deadline=createChat({reserve:noQuota,timeoutMs:30,deadlineMs:10,fetcher:(_url,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('timeout')),{once:true}))});assert.equal((await (await deadline(request())).json()).code,'RESTING');
+ const deadline=createChat({reserve:noQuota,timeoutMs:30,deadlineMs:10,fetcher:(_url,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('timeout')),{once:true}))});assert.equal((await (await deadline(request())).json()).source,'authored');
 });
 test('origin, consent assertion, pause switch, missing keys and rate limits fail closed',async()=>{
  let calls=0;const handler=createChat({fetcher:async()=>{calls++;return ok(corpus.allowed[0]);}});
  for(const headers of [{Origin:'https://other.test','X-PokeLearn-Consent':'1'},{Origin:'null','X-PokeLearn-Consent':'1'},{Origin:'http://127.0.0.1:4178'}])assert.equal((await handler(request(undefined,{headers:{'Content-Type':'application/json',...headers}}))).status,403);
  process.env.PAUSE_AI='true';assert.equal((await handler(request())).status,503);process.env.PAUSE_AI='false';
- delete process.env.OPENROUTER_KEY;assert.equal((await handler(request())).status,503);process.env.OPENROUTER_KEY='test-only-not-a-real-key';
+ delete process.env.OPENROUTER_KEY;assert.equal((await handler(request({question:'What is a quasar?',buddyId:25}))).status,503);assert.equal((await (await handler(request())).json()).source,'authored');process.env.OPENROUTER_KEY='test-only-not-a-real-key';
  delete process.env.RATE_LIMIT_SALT;assert.equal((await handler(request(),{ip:'127.0.0.1'})).status,503);assert.equal(calls,0);
  assert.deepEqual(chatConfig.rateLimit.aggregateBy,['ip','domain']);assert.deepEqual(voiceConfig.rateLimit.aggregateBy,['ip','domain']);
 });
@@ -65,7 +66,25 @@ test('health reveals only boolean presence; all responses no-store; logs contain
  for(const row of logs){assert.deepEqual(Object.keys(row).sort(),['code','latencyMs','model']);assert.equal(typeof row.latencyMs,'number');assert.ok(['none','valsea-transcribe',...models].includes(row.model));assert.doesNotMatch(JSON.stringify(row),/test-only|child@example|Why are leaves|private diagnostic|raw-secret/);}
 });
 test('permanent authentication/credit failures stop immediately; raw provider diagnostics never leave the server',async()=>{
- for(const status of [401,402,403]){let calls=0;const h=createChat({reserve:noQuota,fetcher:async()=>{calls++;return new Response('unsafe raw diagnostic and a secret',{status});}});const response=await h(request());const body=await response.json();assert.equal(calls,1);assert.equal(body.code,'RESTING');assert.doesNotMatch(JSON.stringify(body),/diagnostic|secret/);}
+ for(const status of [401,402,403]){let calls=0;const h=createChat({reserve:noQuota,fetcher:async()=>{calls++;return new Response('unsafe raw diagnostic and a secret',{status});}});const response=await h(request());const body=await response.json();assert.equal(calls,1);assert.equal(body.source,'authored');assert.doesNotMatch(JSON.stringify(body),/diagnostic|secret/);}
+});
+test('provider interface swaps independently of safety, quotas, retry order and the UI',async()=>{
+ const calls=[];let reserves=0;const provider={id:'fixture',configured:()=>true,models:()=>['fixture-one','fixture-two'],complete:async args=>{calls.push(args);return {text:corpus.allowed[0],model:args.model};}};
+ const handler=createChat({provider,reserve:async()=>reserves++});const body=await (await handler(request())).json();assert.equal(body.source,'ai');assert.equal(body.model,'fixture-one');assert.equal(reserves,1);assert.equal(calls.length,1);assert.equal(calls[0].question,'Why are leaves green?');assert.match(calls[0].system,/untrusted/);
+ await handler(request({question:'My phone is +94 77 123 4567',buddyId:25}));assert.equal(calls.length,1);
+});
+test('config rejects paid/duplicate models and invalid privacy mode; strict is opt-in without account writes',()=>{
+ assert.deepEqual(getModels({OPENROUTER_MODELS:models.slice().reverse().join(',')}),models.slice().reverse());
+ for(const list of ['openrouter/free','google/paid','x/y:free,x/y:free',','])assert.throws(()=>getModels({OPENROUTER_MODELS:list}));
+ assert.equal(getRouting({AI_PRIVACY:'strict'}).zdr,true);assert.equal(getRouting({AI_PRIVACY:'strict'}).data_collection,'deny');assert.equal(getRouting({}).data_collection,undefined);assert.throws(()=>getRouting({AI_PRIVACY:'allow'}));
+});
+test('authored demo bank stays behind guards and safety and never sends to a provider',async()=>{
+ assert.equal(answerBank.length,20);for(const entry of answerBank)assert.ok(safeOutput(entry.text),entry.id);assert.ok(safeOutput(unknownAnswer));
+ assert.equal(authoredAnswer('Why is the sky blue?'),answerBank[0].text);assert.equal(authoredAnswer('How do plants grow?'),answerBank[1].text);assert.equal(authoredAnswer('A random unusual topic'),unknownAnswer);
+ let calls=0;process.env.DEMO_MODE='true';const h=createChat({reserve:async()=>calls++,fetcher:async()=>{calls++;return ok(corpus.allowed[0]);}});
+ for(const question of ['Why is the sky blue?','Unusual topic']){const body=await (await h(request({question,buddyId:25}))).json();assert.equal(body.source,'authored');assert.equal(body.choices[0].message.content,authoredAnswer(question));}
+ assert.equal((await (await h(request({question:'I want to die',buddyId:25}))).json()).choices[0].message.content,lines.distress);
+ assert.equal((await h(request(undefined,{headers:{Origin:'https://other.test'}}))).status,403);process.env.PAUSE_AI='true';assert.equal((await h(request())).status,503);process.env.PAUSE_AI='false';delete process.env.DEMO_MODE;assert.equal(calls,0);
 });
 test('empty or low-confidence transcripts offer Type without forwarding a fabricated question',async()=>{
  for(const data of [{text:''},{text:'Invented words',segments:[{no_speech_prob:.9}]},{text:'Invented words',segments:[{avg_logprob:-2}]}]){

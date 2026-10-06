@@ -32,4 +32,4 @@ export async function providerJson(response,limit=65536){
  if(!response.ok){let privacy=false;try{const diagnostic=JSON.parse((await readLimited(response,8192)).toString('utf8'));privacy=response.status===404&&/(?:data policy|zero.?data.?retention|\bzdr\b|privacy)/i.test(diagnostic?.error?.message||'');}catch{}const codes={400:'PROVIDER_REJECTED',401:'PROVIDER_AUTH',402:'PROVIDER_CREDIT',403:'PROVIDER_AUTH',404:'PROVIDER_UNAVAILABLE',429:'RATE_LIMITED'};throw new ApiError(privacy?'PROVIDER_PRIVACY_UNAVAILABLE':codes[response.status]||'PROVIDER_FAILED',response.status===429?429:502);}
  try{return JSON.parse((await readLimited(response,limit)).toString('utf8'));}catch(error){if(error instanceof ApiError)throw error;throw new ApiError('PROVIDER_FAILED',502);}
 }
-export const brainReply=(content,code='OK')=>reply({code,choices:[{message:{role:'assistant',content}}]});
+export const brainReply=(content,code='OK',details={})=>reply({code,...details,choices:[{message:{role:'assistant',content}}]});

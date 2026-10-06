@@ -279,7 +279,7 @@ function scheduleIdle() {
   clearTimeout(idleTimer);
   if (document.hidden || reduced.matches || state.mode==='asleep') return;
   idleTimer = setTimeout(() => {
-    if (state.mode === 'idle' && !$('buddyTap').dataset.trick && !document.querySelector('dialog[open]')) trick(['blink', 'bob', 'breathe', 'tilt', 'yawn'][Math.floor(Math.random() * 3)]);
+    if (state.mode === 'idle' && !$('buddyTap').dataset.trick && !document.querySelector('dialog[open]')) trick(['blink', 'bob', 'breathe', 'tilt', 'yawn'][Math.floor(Math.random() * 5)]);
     scheduleIdle();
   }, 6000 + Math.random() * 8000);
 }
