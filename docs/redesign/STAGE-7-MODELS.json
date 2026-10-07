@@ -1,0 +1,103 @@
+{
+  "checkedAt": "2026-10-07T06:30:17.342Z",
+  "catalogOnly": true,
+  "groqCatalog": [
+    {
+      "id": "allam-2-7b",
+      "contextWindow": 4096,
+      "answerModel": true
+    },
+    {
+      "id": "canopylabs/orpheus-arabic-saudi",
+      "contextWindow": 4000,
+      "answerModel": false
+    },
+    {
+      "id": "canopylabs/orpheus-v1-english",
+      "contextWindow": 4000,
+      "answerModel": false
+    },
+    {
+      "id": "meta-llama/llama-prompt-guard-2-22m",
+      "contextWindow": 512,
+      "answerModel": false
+    },
+    {
+      "id": "meta-llama/llama-prompt-guard-2-86m",
+      "contextWindow": 512,
+      "answerModel": false
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "contextWindow": 131072,
+      "answerModel": true
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "contextWindow": 131072,
+      "answerModel": true
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "contextWindow": 131072,
+      "answerModel": false
+    },
+    {
+      "id": "qwen/qwen3.8-27b",
+      "contextWindow": 131072,
+      "answerModel": true
+    },
+    {
+      "id": "whisper-large-v3",
+      "contextWindow": 448,
+      "answerModel": false
+    },
+    {
+      "id": "whisper-large-v3-turbo",
+      "contextWindow": 448,
+      "answerModel": false
+    }
+  ],
+  "models": [
+    {
+      "provider": "openrouter",
+      "id": "nvidia/nemotron-3-super-120b-a12b:free",
+      "exists": true,
+      "free": true,
+      "answerModel": true,
+      "jsonFormat": true
+    },
+    {
+      "provider": "openrouter",
+      "id": "google/gemma-4-31b-it:free",
+      "exists": true,
+      "free": true,
+      "answerModel": true,
+      "jsonFormat": true
+    },
+    {
+      "provider": "openrouter",
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "exists": true,
+      "free": true,
+      "answerModel": true,
+      "jsonFormat": true
+    },
+    {
+      "provider": "groq",
+      "id": "openai/gpt-oss-120b",
+      "exists": true,
+      "active": true,
+      "answerModel": true,
+      "format": "strict json_schema; runtime output validation"
+    },
+    {
+      "provider": "groq",
+      "id": "openai/gpt-oss-20b",
+      "exists": true,
+      "active": true,
+      "answerModel": true,
+      "format": "strict json_schema; runtime output validation"
+    }
+  ]
+}
