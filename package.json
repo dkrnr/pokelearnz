@@ -6,18 +6,31 @@
     "build": "node scripts/build.mjs",
     "start": "node server.mjs",
     "test": "node --test tests/server.test.mjs tests/policy.test.mjs tests/sprite-cache.test.mjs",
-    "test:ui": "node tests/browser.mjs",
+    "test:ui": "node tests/browser.mjs && node tests/v3-errors.mjs",
     "test:pwa": "node tests/final-qa.mjs",
     "screenshots": "node tests/v3-capture.mjs",
     "test:v3": "node tests/v3-smoke.mjs && node tests/v3-voice.mjs",
     "screenshots:v3": "node tests/v3-capture.mjs",
-    "test:animation": "node tests/v3-animation.mjs"
+    "test:animation": "node tests/v3-animation.mjs",
+    "test:stage4": "node tests/stage4-browser.mjs",
+    "test:all": "node scripts/test-all.mjs",
+    "check:models": "node --env-file-if-exists=.env scripts/check-models.mjs",
+    "test:backend": "node --test tests/backend.test.mjs",
+    "smoke:live": "node --env-file-if-exists=.env scripts/smoke-live.mjs",
+    "audit:live": "node --env-file-if-exists=.env scripts/audit-live.mjs",
+    "test:core": "node --env-file-if-exists=.env scripts/test-core.mjs",
+    "test:live": "node scripts/test-live.mjs",
+    "test:stage5": "node tests/stage5-browser.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "devDependencies": {
-    "playwright": "1.63.0",
-    "axe-core": "4.13.0"
+    "axe-core": "4.13.0",
+    "playwright": "1.63.0"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.3",
+    "music-metadata": "12.0.0"
   }
 }

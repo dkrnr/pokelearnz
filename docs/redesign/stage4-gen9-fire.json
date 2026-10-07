@@ -1,0 +1,47 @@
+{
+  "source": "https://pokeapi.co/api/v2/type/fire",
+  "generation": 9,
+  "count": 10,
+  "buddies": [
+    {
+      "id": 909,
+      "name": "fuecoco"
+    },
+    {
+      "id": 910,
+      "name": "crocalor"
+    },
+    {
+      "id": 911,
+      "name": "skeledirge"
+    },
+    {
+      "id": 935,
+      "name": "charcadet"
+    },
+    {
+      "id": 936,
+      "name": "armarouge"
+    },
+    {
+      "id": 937,
+      "name": "ceruledge"
+    },
+    {
+      "id": 952,
+      "name": "scovillain"
+    },
+    {
+      "id": 994,
+      "name": "iron-moth"
+    },
+    {
+      "id": 1004,
+      "name": "chi-yu"
+    },
+    {
+      "id": 1020,
+      "name": "gouging-fire"
+    }
+  ]
+}

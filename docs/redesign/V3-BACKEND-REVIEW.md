@@ -1,5 +1,7 @@
 # Stage 2: backend observations and child risks
 
+Historical review of the Stage 2 checkpoint. See [Stage 3 Part B](V3-STAGE-3-B.md) for the separate hardening branch, resolutions and remaining risks.
+
 Read-only review of all three `netlify/functions/*.js` files. They remain byte-for-byte unchanged from the Stage 1 checkpoint. No provider request, secret inspection, Netlify configuration change or deployment was performed. This is a code review, not a provider-policy or live-model audit.
 
 ## Chat: `netlify/functions/chat.js`

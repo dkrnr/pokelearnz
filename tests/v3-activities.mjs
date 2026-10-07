@@ -27,7 +27,7 @@ async function solve(p,a){
 }
 try{
 for(const [label,width,height] of [['phone',390,844],['portrait',820,1180],['landscape',1180,820]]){
-  const context=await browser.newContext({viewport:{width,height},hasTouch:true,reducedMotion:'reduce'}),p=await context.newPage(),errors=[],calls=[];
+  const context=await browser.newContext({viewport:{width,height},hasTouch:true,reducedMotion:'reduce',bypassCSP:true}),p=await context.newPage(),errors=[],calls=[];
   p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(r.url().includes('/.netlify/functions/'))calls.push(r.url());});
   await p.addInitScript(()=>{window.__audioPlays=0;window.__speech=0;HTMLMediaElement.prototype.play=async function(){window.__audioPlays++};speechSynthesis.speak=()=>window.__speech++;});
   await ready(p); await audit(p,label+' scene');

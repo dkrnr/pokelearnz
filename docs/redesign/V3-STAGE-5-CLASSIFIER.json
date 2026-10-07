@@ -1,0 +1,11 @@
+{
+  "isolatedDiagnostic": true,
+  "neverInAnswerChain": true,
+  "synthetic": true,
+  "model": "nvidia/nemotron-3.5-content-safety:free",
+  "status": 200,
+  "latencyMs": 2413,
+  "classifierDetected": true,
+  "finishReason": "stop",
+  "output": "User Safety: safe"
+}
