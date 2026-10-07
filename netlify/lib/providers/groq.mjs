@@ -1,6 +1,6 @@
 import {providerJson,ApiError} from '../common.mjs';
 import {isClassifierOutput} from '../../../answer-contract.js';
-export const groqDefaults=Object.freeze(['openai/gpt-oss-20b']);
+export const groqDefaults=Object.freeze(['openai/gpt-oss-120b','openai/gpt-oss-20b']);
 export function getGroqModels(env=process.env){
  const list=(env.GROQ_MODELS||groqDefaults.join(',')).split(',').map(s=>s.trim());
  if(!list.length||list.length>3||new Set(list).size!==list.length||list.some(id=>!/^[-a-zA-Z0-9_./]{3,100}$/.test(id)||/guard|safety|classif|moderat|whisper|tts|compound|embed/i.test(id)))throw new ApiError('ANSWER_MODEL_REQUIRED');
