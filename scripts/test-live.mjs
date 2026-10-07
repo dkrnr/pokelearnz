@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';import path from 'node:path';import {chromium} from 'playwright';import {assessLiveResult} from './live-result.mjs';
 const supplied=process.argv[2];if(!supplied)throw Error('Usage: npm run test:live -- <url>');
 const url=new URL(supplied);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw Error('Supply an app HTTP(S) URL without credentials.');url.searchParams.set('debug','1');url.searchParams.delete('mock');url.searchParams.delete('demo');
-const report={checkedAt:new Date().toISOString(),url:url.origin,synthetic:true,maxQuestions:3,gateAutoSent:false,results:[],cspViolations:[],runtimeErrors:[],networkErrors:[],headers:{},views:[]};
+const report={checkedAt:new Date().toISOString(),url:url.origin,synthetic:true,maxQuestions:3,gateAutoSent:false,results:[],cspViolations:[],runtimeErrors:[],networkErrors:[],headers:{},views:[],publicPages:[]};
 const browser=await chromium.launch();
 try{
  const page=await browser.newPage({serviceWorkers:'block'});
@@ -35,9 +35,20 @@ try{
   report.results.push(row);console.log(JSON.stringify(row));page.off('request',listener);if(!row.pass)break;
   if(['thinking','speaking','listening'].includes((await page.evaluate(()=>window.__STUDIO_QA__.snapshot())).state))await page.locator('#micButton').click();
  }
+ // Audit all public pages in this same live run, without extra questions.
+ for(const slug of ['about','parents','privacy','contact']){
+  const info=await browser.newPage();
+  try{
+   const res=await info.goto(url.origin+'/'+slug,{waitUntil:'networkidle',timeout:20000});
+   const text=await info.locator('main').innerText();
+   const frames=await info.locator('iframe[src^="https://app.netlify.com/cdp"]').evaluateAll(nodes=>nodes.map(n=>({origin:'https://app.netlify.com',path:'/cdp',visible:getComputedStyle(n).display!=='none'})));
+   report.publicPages.push({slug,status:res.status(),offMessage:/Collaborate on projects before going live|Developer test reports|HMAC|PII|Missing keys|when configured|production activity/i.test(text),reviewFrames:frames});
+  }catch{report.publicPages.push({slug,pass:false,error:'PUBLIC_PAGE_AUDIT_FAILED'});}finally{await info.close();}
+ }
+ report.answerNoteVisible=await page.locator('#answerNote').isVisible();
  report.views.push('typing');await page.locator('#changeBuddy').click();await page.locator('#buddySearch').fill('eevee');await page.locator('#buddyGrid button').click();report.views.push('chooser');
  await page.locator('#discover-numbers').click();await page.locator('#checkGroup').click();report.views.push('activity');await page.waitForTimeout(1000);report.cspViolations.push(...await page.evaluate(()=>window.__liveCsp));
- report.pass=report.gateAutoSent&&report.results.length===3&&report.results.every(r=>r.pass)&&!report.cspViolations.length&&!report.runtimeErrors.length;
+ report.pass=report.gateAutoSent&&report.results.length===3&&report.results.every(r=>r.pass)&&!report.cspViolations.length&&!report.runtimeErrors.length&&report.answerNoteVisible&&report.publicPages.every(p=>p.status===200&&!p.offMessage&&p.reviewFrames.every(f=>!f.visible));
  report.cacheVerified=report.results[2]?.cacheHit===true;report.groqVerified=report.results.some(r=>r.source==='ai'&&r.provider==='groq');
 }catch(error){report.pass=false;report.error=/ERR_CONNECTION_CLOSED|ERR_CONNECTION_RESET|ERR_SSL|MISSING_OPENROUTER_KEY|MISSING_VALSEA_KEY|HEALTH_UNAVAILABLE|UNSUPPORTED_GATE/.exec(error.message)?.[0]||'LIVE_CHECK_FAILED';console.log(JSON.stringify({error:report.error,pass:false}));}
 finally{
