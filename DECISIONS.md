@@ -18,7 +18,7 @@ Limits still exist: Groq and model hosts have their own quotas, failures and pol
 
 Ninety-five short answers cover common animal, space, body, weather, plant and fictional Pokémon questions. Matching requires exact questions or conservative keyword combinations. It is deterministic and avoids a model call, but is less flexible and can choose the wrong topic. Every answer passes the same output checks in tests; passing checks does not constitute scientific review.
 
-The shared cache reduces repeated inference. Only output-validated, PII-screened general-science answers qualify. Raw questions are replaced with salted HMAC keys, and arbitrary personal contexts are excluded through a restricted vocabulary. A small 256-entry / 256-KiB cap and 30-day serving TTL constrain storage. Cleanup on later activity avoids a scheduled job, but cannot promise automatic physical deletion on day 30. Provider policies and this compromise are disclosed.
+The shared cache reduces repeated inference. Only output-validated, PII-screened general-science answers qualify. Raw questions are replaced with salted HMAC keys, and arbitrary personal contexts are excluded through a restricted vocabulary. A small 256-entry / 256-KiB cap and 24-hour serving TTL constrain storage. Cleanup on later activity avoids a scheduled job, but cannot promise automatic physical deletion on 24 hours. Model answers remain unverified after caching. A version change invalidates all answers; legacy 30-day records are never read by v2. Short or hedged answers are not cached. [Cache runbook](docs/CACHE.md) covers targeted purging without resetting quota state. Provider policies and this compromise are disclosed.
 
 ## Restrictive answer checks and friendly recovery
 
