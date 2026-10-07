@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(fileURLToPath(new URL("./dist/", import.meta.url)));
 const MIME = {
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -45,7 +47,7 @@ export function createServer() {
       const pathname = decodeURIComponent(url.pathname);
       const requested = path.resolve(
         ROOT,
-        pathname === "/" ? "index.html" : `.${pathname}`,
+        pathname === "/" ? "index.html" : /^\/(about|parents|privacy|contact)\/?$/.test(pathname) ? `.${pathname.replace(/\/$/,'')}/index.html` : `.${pathname}`,
       );
       if (
         !requested.startsWith(ROOT + path.sep) ||

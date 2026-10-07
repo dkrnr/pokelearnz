@@ -36,10 +36,9 @@ function recordResult(result){
 function updateDebug(){
  $('demoTag').hidden=!(DEMO&&setupUnlocked);
  const panel=$('debugStatus');if(!panel)return;panel.hidden=!(DEBUG&&setupUnlocked);
- $('demoTag').hidden=!(DEMO&&setupUnlocked);
  const label={cache:'Validated answer cache',ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
  $('debugSource').textContent=label;$('debugSource').dataset.source=lastResult.source||'none';
- $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Provider: ${lastResult.provider||'none'} · OpenRouter: ${lastResult.openrouterResetAt>Date.now()?'daily pause until '+new Date(lastResult.openrouterResetAt).toISOString():'no remembered daily limit'} · Audio: ${audioStatus}`;
+ $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Provider: ${lastResult.provider||'none'} · OpenRouter: ${lastResult.openrouterResetAt>Date.now()?'daily pause until '+new Date(lastResult.openrouterResetAt).toISOString():'no daily-limit record on this response'} · Audio: ${audioStatus}`;
 }
 function restore() {
   try {
@@ -118,7 +117,6 @@ function updateBuddy(greet = true) {
   $('movingToggle').lastElementChild.textContent=t(state.moving?'moving':'artwork');
   $('buddyName').textContent = buddy.name;
   $('buddyTypes').replaceChildren(typeChips(buddy.types));
-  $('buddyTap').setAttribute('aria-label', `${t('playWith')} ${buddy.name}`);
   $('spriteHosts').textContent = spriteHosts.join(', ');
   $('tapWord').textContent = t('tapMe');
   if (greet) caption(`${buddyGreeting(state.buddy)}${t('hello')}`);
