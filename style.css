@@ -1426,3 +1426,8 @@ body {
 #debugSource[data-source=authored]{background:#dcecff;color:#183f75}
 
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}footer nav{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem;margin-bottom:.5rem}footer nav a{color:inherit;padding:.3rem}.no-js-content{max-width:52rem;padding:2rem;margin:auto;color:#153b37}
+
+.answer-note{display:block;flex-shrink:0;margin-top:4px;font-size:12px;line-height:1.3;color:var(--ink)}
+
+/* Keep hosting review tools out of the family/demo pages. */
+iframe[src^="https://app.netlify.com/cdp"]{display:none!important}

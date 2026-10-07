@@ -10,6 +10,8 @@ assert.deepEqual(fire.map(b=>b.id),[909,910,911,935,936,937,952,994,1004,1020]);
 const browser=await chromium.launch();
 try{
  const page=await browser.newPage({viewport:{width:820,height:1180},serviceWorkers:'block'});
+ // Decode/motion fixture avoids making this deterministic check depend on CDN availability.
+ await page.route('https://cdn.jsdelivr.net/**/official-artwork/906.png',route=>route.fulfill({path:new URL('../assets/buddies/1.png',import.meta.url).pathname,contentType:'image/png'}));
  await page.addInitScript(()=>{Math.random=()=>.5;});
  await page.goto(base+'/?mock=1');await page.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025);
  await page.locator('#changeBuddy').click();await page.locator('[data-generation="9"]').click();await page.locator('#typeFilters [data-type="fire"]').click();
@@ -37,5 +39,5 @@ try{
  await page.locator('#completeActivity').click();await page.locator('#endScreen').waitFor({state:'visible'});
  assert.equal(await page.locator('#main button:visible').count(),1);await page.locator('#wakeButton').click();
  assert.equal((await page.evaluate(()=>window.__STUDIO_QA__.snapshot())).state,'idle');
- console.log('PASS Gen 9 Fire count=10; no-GIF Sprigatito Artwork idle transforms; reduced motion static; Blocks wrong answer through recap, Done for now and Wake');
+ console.log('PASS Gen 9 Fire count=10; no-GIF Artwork URL and idle transforms (bundled image fixture); reduced motion static; Blocks wrong answer through recap, Done for now and Wake');
 }finally{await browser.close();}
