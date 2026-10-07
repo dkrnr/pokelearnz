@@ -355,11 +355,11 @@ $('readAloud').onclick = () => {
     if (state.mode === 'speaking') setMode('idle');
   }
 };
-function boundedAnswer(value) {
-  if(!validAnswer(value)||isClassifierOutput(value))throw Object.assign(Error('answer'),{code:'INVALID_ANSWER'});
+function boundedAnswer(value,options={}) {
+  if(!validAnswer(value,options)||isClassifierOutput(value))throw Object.assign(Error('answer'),{code:'INVALID_ANSWER'});
   if (typeof value !== 'string' || !value.trim() || containsNSFW(value)) throw Error('answer');
   if (/streak|daily goal|star counters?|point counters?|collect them all|come back tomorrow|don['’]t leave|do not leave|miss(?:ed|ing) out|you lost|hurry|countdown|time(?: is)? running out|earn.*points|lonely|abandon|ask me another|what else|follow.up|keep chatting|turn on notifications/i.test(value)) throw Error('answer');
-  const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).filter(s => !s.includes('?')).slice(0, 3);
+  const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).slice(0, 3);
   if (!sentences.length || sentences.some(s => s.trim().split(/\s+/).length > 8)) throw Error('answer');
   const answer=sentences.join(' ').trim();
   if(answer.length>180)throw Error('answer');
@@ -400,7 +400,7 @@ async function askQuestion(text,{continuing=false}={}) {
     } else {
       const controller = request;
       const result=await post('chat',{question:text,buddyId:state.buddy},controller);
-      answer = boundedAnswer(readAnswer(result));recordResult(result);
+      answer = boundedAnswer(readAnswer(result),{greeting:result.source==='authored'&&result.kind==='greeting'});recordResult(result);
     }
     if (epoch !== state.epoch || state.answered) return;
     clearTimeout(turnTimer);turnUntil=0;state.answered = true; caption(answer); request = null; speak(answer);
@@ -450,7 +450,7 @@ async function record() {
       try {
         const result = await post('transcribe', form, request);
         if (epoch !== state.epoch) return;
-        if(result.answer){recordResult(result);clearTimeout(turnTimer);turnUntil=0;state.answered=true;request=null;caption(boundedAnswer(readAnswer(result)));speak($('captionText').textContent);return;}
+        if(result.answer){recordResult(result);clearTimeout(turnTimer);turnUntil=0;state.answered=true;request=null;caption(boundedAnswer(readAnswer(result),{greeting:result.source==='authored'&&result.kind==='greeting'}));speak($('captionText').textContent);return;}
         if (typeof result.text !== 'string' || result.text.trim().length < 2) throw Error('empty');
         await askQuestion(result.text,{continuing:true});
       } catch(error) {if(epoch===state.epoch)showProviderState(error,true);}

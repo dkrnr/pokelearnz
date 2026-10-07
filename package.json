@@ -15,7 +15,7 @@
     "test:stage4": "node tests/stage4-browser.mjs",
     "test:all": "node scripts/test-all.mjs",
     "check:models": "node --env-file-if-exists=.env scripts/check-models.mjs",
-    "test:backend": "node --test tests/backend.test.mjs",
+    "test:backend": "node --test tests/backend.test.mjs tests/origin.test.mjs tests/small-talk.test.mjs",
     "smoke:live": "node --env-file-if-exists=.env scripts/smoke-live.mjs",
     "audit:live": "node --env-file-if-exists=.env scripts/audit-live.mjs",
     "test:core": "node --env-file-if-exists=.env scripts/test-core.mjs",

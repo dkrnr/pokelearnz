@@ -20,9 +20,9 @@ try{
   if(ready)break;await new Promise(resolve=>setTimeout(resolve,100));
  }
  if(!ready)throw Error('Regression server did not become ready');
- const units=['tests/server.test.mjs','tests/policy.test.mjs','tests/sprite-cache.test.mjs','tests/backend.test.mjs','tests/origin.test.mjs'];
+ const units=['tests/server.test.mjs','tests/policy.test.mjs','tests/sprite-cache.test.mjs','tests/backend.test.mjs','tests/origin.test.mjs','tests/small-talk.test.mjs'];
  await run(['--test',...(await Promise.all(units.map(async path=>(await exists(path))?path:null))).filter(Boolean)]);
- for(const path of ['tests/browser.mjs','tests/v3-errors.mjs','tests/v3-voice.mjs','tests/v3-animation.mjs','tests/stage4-browser.mjs','tests/stage5-browser.mjs','tests/final-qa.mjs']){
+ for(const path of ['tests/browser.mjs','tests/v3-errors.mjs','tests/v3-voice.mjs','tests/v3-animation.mjs','tests/stage4-browser.mjs','tests/stage5-browser.mjs','tests/small-talk-browser.mjs','tests/final-qa.mjs']){
   if(await exists(path))await run([path]);
  }
  console.log('PASS all available deterministic regressions; no live providers');

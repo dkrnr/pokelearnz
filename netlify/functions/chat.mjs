@@ -1,9 +1,10 @@
 import {guard,readJson,brainReply,ApiError,failure,log,abortable} from '../lib/common.mjs';
-import {parseQuestion,inputDecision,safeOutput,outputHasRisk,systemPrompt,lines} from '../lib/child-safety.mjs';
+import {parseQuestion,inputDecision,safeOutput,outputHasRisk,outputRiskRules,systemPrompt,strictRetryPrompt} from '../lib/child-safety.mjs';
 import {isClassifierOutput} from '../../answer-contract.js';
 import {modelTimeoutMs,brainDeadlineMs} from '../lib/models.mjs';
 import {createProvider} from '../lib/providers/index.mjs';
 import {authoredAnswer,knownAnswer,unknownAnswer} from '../lib/answer-bank.mjs';
+import {smallTalk} from '../lib/small-talk.mjs';
 import {reserveAttempt} from '../lib/quota.mjs';
 export const config={path:['/api/chat','/.netlify/functions/chat'],rateLimit:{windowLimit:10,windowSize:60,aggregateBy:['ip','domain']}};
 export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeoutMs=modelTimeoutMs,deadlineMs=brainDeadlineMs}={}){
@@ -12,7 +13,7 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
  return async(request,context={})=>{
   const began=performance.now(),overall=new AbortController();
   const timer=setTimeout(()=>overall.abort(),Math.min(deadlineMs,/^\d+$/.test(request.headers.get('x-pokelearn-budget-ms')||'')?Math.max(1,Number(request.headers.get('x-pokelearn-budget-ms'))):deadlineMs));
-  const deadline=AbortSignal.any([request.signal,overall.signal]);let used='none',question;
+  const deadline=AbortSignal.any([request.signal,overall.signal]);let used='none',question,safetyRecovery=false;
   const authored=(error=null)=>{
    const answer=authoredAnswer(question),source=answer===unknownAnswer?'fallback':'authored';
    log(error||'OK',performance.now()-began,used,'fallback');
@@ -23,6 +24,8 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
    const decision=inputDecision(question);
    log(decision?.code||'OK',performance.now()-began,'none','input');
    if(decision)return brainReply(decision.content,decision.code);
+   const talk=smallTalk(question,parsed.buddy);
+   if(talk)return brainReply(talk.answer,'OK',{source:'authored',model:'none',lastError:null,kind:talk.kind});
    if(/^(1|true|yes)$/i.test(process.env.DEMO_MODE||''))return authored('DEMO_MODE');
    const brain=provider||createProvider({fetcher});
    if(!brain.configured())return authored('PROVIDER_UNAVAILABLE');
@@ -35,10 +38,10 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
     const attemptControl=new AbortController(),attemptTimer=setTimeout(()=>attemptControl.abort(),timeoutMs);
     const signal=AbortSignal.any([deadline,attemptControl.signal]);
     try{
-     const result=await abortable(()=>brain.complete({model,system:systemPrompt(parsed.buddy),question,signal}),signal),text=result.answer;
+     const result=await abortable(()=>brain.complete({model,system:systemPrompt(parsed.buddy)+(safetyRecovery?strictRetryPrompt:''),question,signal}),signal),text=result.answer;
      if(isClassifierOutput(text))throw new ApiError('CLASSIFIER_OUTPUT',502);
      if(!safeOutput(text)){
-      if(outputHasRisk(text)){log('OUTPUT_BLOCKED',performance.now()-started,model,'answer',502);return brainReply(lines.grownup,'TRUSTED_GROWNUP',{model,lastError:'OUTPUT_BLOCKED'});}
+      if(outputHasRisk(text)){for(const rule of outputRiskRules(text))log('OUTPUT_RULE_'+rule,performance.now()-started,model,'output',502);throw new ApiError('OUTPUT_BLOCKED',502);}
       throw new ApiError('INVALID_ANSWER',502);
      }
      // Known observed factual failure: never explain green leaves as consuming green light.
@@ -51,6 +54,10 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
      if(['DAILY_LIMIT','RATE_LIMITED'].includes(last)){
       restCode=last;restModel=model;restUntil=last==='DAILY_LIMIT'?Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate()+1):Date.now()+30000;
       return authored(last); // One failed free-limit request, no quota-burning model cascade.
+     }
+     if(safetyRecovery)return authored(last);
+     if(last==='OUTPUT_BLOCKED'){
+      safetyRecovery=true;attempt=-1;continue; // One extra attempt on this model, within existing quota/deadline.
      }
      if(['PROVIDER_AUTH','PROVIDER_CREDIT','CLASSIFIER_OUTPUT','FACT_CHECK_FAILED'].includes(last))return authored(last);
      if(deadline.aborted)return authored('REQUEST_TIMEOUT');

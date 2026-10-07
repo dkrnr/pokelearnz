@@ -23,6 +23,6 @@ export const answerBank=Object.freeze([
  {id:'sleep',match:/\bwhy\b.{0,20}\b(?:sleep|tired)\b/i,text:'Sleep gives your body time to rest. It helps your brain learn and grow.'},
  {id:'math',match:/\b(?:two (?:and|plus) two|2\s*\+\s*2)\b/i,text:'Two and two make four. Four is an even number.'}
 ]);
-export const unknownAnswer='I do not know that yet. A trusted grown-up can help us learn.';
+export const unknownAnswer='That one has me stumped. We can find out with a grown-up.';
 export function knownAnswer(question){return answerBank.find(item=>item.match.test(question));}
 export function authoredAnswer(question){return knownAnswer(question)?.text||unknownAnswer;}
