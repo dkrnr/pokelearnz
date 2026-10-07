@@ -52,6 +52,12 @@ The old credential type was an **OpenAI-style API secret key** in historical `co
 
 ## Verification checkpoint
 
-Local and preview results will be added after the final checks. One preview live run is permitted, with at most three synthetic questions. The separate 20-call local Groq comparison above was explicitly requested; it is not a second deployed live gate.
+- `npm run build` and `npm run test:all` passed: **57 unit tests** and all deterministic browser/accessibility/PWA/voice-fixture suites, including all five public pages, the visible AI note, simulated hidden hosting drawer and the three-question live harness against fixtures.
+- One legacy motion test initially failed because a CDN image could not be decoded. Its source URL/idle transforms now use a bundled decode fixture, and the complete suite passed. This does not verify live Gen 9 artwork delivery.
+- Model catalog checks and the 20-call local Groq comparison passed as recorded above. Hosted cache expiry/invalidation/purging and model fallback were tested with local fixtures, not by changing hosting settings.
+- [PR #25](https://github.com/dkrnr/pokelearnz/pull/25) targets main. GitHub identity CI passed, and Netlify reported its automatic preview and header-rule checks ready at implementation/evidence head `58aafda`. Full GitHub CI was still running at this documentation checkpoint; current status is on the PR.
+- The **one** deployed [live check](STAGE-7-LIVE.json), at 06:43:58 UTC on that head, failed with **ERR_CONNECTION_CLOSED before navigation completed: zero questions sent**. It verified no deployed headers, public pages, CSP, gate, new model order or cache flow. The failed attempt was not repeated. Empty error arrays are not a successful safety result.
+
+The separate 20-call local Groq comparison was explicitly requested; it is not a second deployed live gate. A fresh deployed corrected answer and hosting-drawer cleanup remain unverified. The final documentation-only commit does not change the tested runtime code.
 
 No force-push, merge, manual deploy or Netlify settings change was performed. Remaining reviews include human factual/language/child usability review, real Valsea and physical devices, provider account/age/consent terms and fan-asset permissions.
