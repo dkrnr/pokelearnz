@@ -23,7 +23,7 @@ flowchart TD
   Providers -->|each attempt| Quota[CAS quota reservation]
   Providers --> Output[Output checks / one stricter retry]
   Output -->|validated answer only| Cache
-  Output --> Reply[Shared JSON answer contract]
+  Output --> Reply[JSON or checked sentence stream]
   Small --> Reply
   Bank --> Reply
   Cache --> Reply
@@ -41,6 +41,8 @@ flowchart TD
 - `child-safety.mjs` / `answer-contract.js`: input and output heuristics, PII screening, short English sentence limits and transport validation. Output has at most 180 characters and three sentences with at most eight words each. Greetings permit one narrow authored follow-up question. Fact checks cover selected known misconceptions, not all facts.
 
 Provider calls are deadline bounded (14-second handler budget, four-second attempts, bounded model/retry lists). Each attempt reserves app quota. Output rejection allows one stricter retry; it does not silently display raw provider text. Stopping a request aborts browser work but cannot retract provider processing already started.
+
+Chat clients can request `application/x-ndjson` for ordered sentence events and a final answer envelope. Whole-answer checks still precede emission; provider generation remains buffered. The browser queues a local utterance for each sentence as it arrives, uses primary-type pitch/rate variations, keeps captions visible and exposes Listening / Thinking / Speaking plus an interrupt-to-listen button. Timing uses speech-start and word-boundary events when the device supplies them; it is neither uploaded nor stored. `voice.js` shares stream parsing, silence detection and recording bounds. Recording stops at 29.75 seconds for a 30-second encoded-audio ceiling; inputs below 0.7 seconds or beyond 2 MiB fail before a provider call. Quiet input ends after six seconds without upload when the analyser is available.
 
 ## Persistent data
 

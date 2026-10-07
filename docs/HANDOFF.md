@@ -7,7 +7,7 @@ This is the sanitized project memory for a new Codex/orchestrator session. Read 
 - Active checkout: `/performance/projects/dkrnr/pokelearnz`.
 - Active GitHub repository: [dkrnr/pokelearnz](https://github.com/dkrnr/pokelearnz), public.
 - Remote uses the existing account alias `git@github-dkrnr:dkrnr/pokelearnz.git`. It reaches the same repository as the owner's standard SSH URL. No SSH/global Git configuration was changed.
-- Current development branch: `feat/answer-quality-demo`, created from main after PR #24 merged at `ab6d1bd` on 7 October 2026. Stage 7 is [PR #25](https://github.com/dkrnr/pokelearnz/pull/25). PR #24 included PR #23's identity/migration safeguards; main remains the production branch.
+- Current development branch: `feat/stage-8-voice`, created from main `69c0d00` after PRs #24 and #25 merged on 7 October 2026. PR #24 included PR #23's identity/migration safeguards; duplicate #23 is now closed with an explanatory comment. Main remains the production branch.
 - Repo-local identity: `Dunith Kerner <250664980+dkrnr@users.noreply.github.com>`, `user.useConfigOnly=true`, `core.hooksPath=.githooks`. The owner approved the GitHub noreply identity. Preserve approved contributor identities.
 - `.env` was transferred by the owner, remains ignored and unmodified. Do not read keys into output or stage it. Local notes `LEARNINGS.md`, `SOL-HANDOFF.md`, `STUDIO.md` and `research/` remain untracked owner material.
 
@@ -53,7 +53,7 @@ Deterministic tests exclude live keys. Model catalog checks do not infer. `npm r
 
 Small commits, status/secrets checks before each commit, push each milestone. No force-push, merge, manual deploy or Netlify settings changes. Never publish the private identity's values in files, PRs, issues, messages or reports. Keep raw identity output outside Git. Do not change global/other-repo Git or SSH config. Do not invite/message collaborators without explicit authorization.
 
-The owner still needs to review Stage 7 PR #25 and the overlapping guard PR #23, coordinate/invite two collaborators, revoke the historical key if not already revoked, decide when to delete the old repository, and request GitHub cache/old-PR purge if desired. Public child-service launch remains blocked on provider age terms/consent, human language/safety/usability review, physical-device voice checks and fan-asset permissions. These are stated limitations, not completed tests.
+Stage 7 PR #25 is merged and duplicate guard PR #23 is closed. The owner still needs to review Stage 8, coordinate/invite two collaborators, revoke the historical key if not already revoked, decide when to delete the old repository, and request GitHub cache/old-PR purge if desired. Public child-service launch remains blocked on provider age terms/consent, human language/safety/usability review, physical-device voice checks and fan-asset permissions. These are stated limitations, not completed tests.
 
 ## Final release checkpoint
 
@@ -73,3 +73,17 @@ Read [Stage 7 report](redesign/STAGE-7-REPORT.md), [all 20 local Groq answers](r
 - The one deployed live check failed with `ERR_CONNECTION_CLOSED` before navigation, **zero questions sent**. No retry was run. Fresh deployed model/cache/gate, headers/CSP and public-page cleanup are unverified. The separate local 20-call Groq comparison was explicitly authorized.
 
 Continue only in dkrnr/pokelearnz, with small commits, identity hooks and staged-secret checks. No force-push, merge, manual deployment or Netlify settings change. The one-check budget is spent for this session even though navigation failed. Existing ignored/local owner material remains untouched.
+
+
+## Stage 8 checkpoint
+
+Read [Stage 8 report](redesign/STAGE-8-REPORT.md), [all 40 synthetic recognition results](redesign/STAGE-8-VOICE.json) and [browser playback fixture timing](redesign/STAGE-8-PLAYBACK.json).
+
+- Stage 8 was authorized after verifying #25 merged. The new branch starts at main `69c0d00`. Duplicate #23 is closed; main retains the guards through #24.
+- Recording limits are 0.7–30 seconds, with 1.4-second speech-following silence and 6-second quiet-device end without upload. The existing single server retry remains; failed voice requests offer Type.
+- One real-key local Valsea run synthesized 20 short questions using espeak-ng 1.51, each in WebM and MP4. These are not real children's voices. WebM: 19/20 OK, 13/20 exact, 76.3% word accuracy, median 4.71s. MP4: 20/20 OK, 13/20 exact, 79.6% word accuracy, median 3.01s. One timeout exhausted its retry; total 41 attempts, no live rerun. Incorrect transcripts often returned HTTP 200.
+- Checked answers stream to the client sentence by sentence; provider generation remains buffered for the whole-answer safety check. Captions stay on. Speech uses modest primary-type pitch/rate variations when local English voices exist. Interrupt cancels speech/request and starts listening.
+- The first-word browser fixture measured 210ms for a sentence arriving at 180ms, before stream completion at 800ms. It used mocked speech events. Zero native local voices were exposed here; audible real-device first-word latency is unverified.
+- Build and full deterministic regressions passed: 65 unit tests plus browser/accessibility/voice/cancellation/PWA flows. `CI=1 npm run test:voice` passed eight focused tests and skipped live calls.
+- `npm run test:voice` skips live calls without a key/toolchain or in CI. The bounded 40-recording run has been spent; do not automatically rerun it. No deployed live check was performed for Stage 8.
+- Same standing boundaries: small commits, active identity hooks, staged-secret scans, no force-push/merge/manual deploy/Netlify settings change. Owner notes/research and `.env` remain untouched.

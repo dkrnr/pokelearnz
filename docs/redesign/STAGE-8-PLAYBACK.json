@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-07T08:54:05.979Z",
+  "fixture": true,
+  "notice": "Mock stream and speech events: no audible output or real device first-word latency verified.",
+  "firstSentenceDelayMs": 180,
+  "streamDoneDelayMs": 800,
+  "firstSpeechStartMs": 205,
+  "firstSpokenWordMs": 210,
+  "nativeLocalVoices": 0,
+  "verified": [
+    "sentence order",
+    "first sentence before stream done",
+    "buddy pitch/rate",
+    "interrupt cancels old speech and stream, starts listening",
+    "captions without voices and on speech error",
+    "silent microphone skips upload"
+  ]
+}
