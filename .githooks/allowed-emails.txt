@@ -1,0 +1,7 @@
+# Approved owner, existing contributors, and GitHub merge committer.
+250664980+dkrnr@users.noreply.github.com
+Zahrah@Luqmans-MacBook-Pro.local
+kernerdunith@gmail.com
+noreply@github.com
+suyoothiibaad@gmail.com
+zahrahnowfer@gmail.com

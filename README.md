@@ -106,3 +106,5 @@ Sound starts off; mic/read-aloud gestures permit local playback unless muted. Ca
 EN/SI/TA controls/transcription remain available; Sinhala/Tamil additions are machine-translated drafts awaiting [human review](docs/redesign/V3-TRANSLATION-REVIEW.md). Authored/science answers remain English. Self-hosted Readex Pro includes its [OFL](assets/fonts/OFL.txt).
 
 Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.
+
+Contributors: run `git config core.hooksPath .githooks` after cloning to enable the identity checks. This owner's checkout uses `Dunith Kerner <250664980+dkrnr@users.noreply.github.com>`; commit overrides are checked too. The CI allowlist preserves existing contributor and GitHub merge identities.
