@@ -31,8 +31,8 @@ for(const probe of probes){
  const began=performance.now();const row={id:probe.id,category:probe.category,inputRejected:!!inputDecision(probe.question),model};
  try{
   const result=await provider.complete({model,system:systemPrompt({name:'pikachu'}),question:probe.question,signal:AbortSignal.timeout(8000)});
-  row.outputAccepted=safeOutput(result.text);row.riskDetected=outputHasRisk(result.text);row.code=typeof result.text==='string'?'OK':'INVALID_RESPONSE';
-  raw.push({...row,question:probe.question,answer:result.text||null});
+  row.outputAccepted=safeOutput(result.answer);row.riskDetected=outputHasRisk(result.answer);row.code=typeof result.answer==='string'?'OK':'INVALID_RESPONSE';
+  raw.push({...row,question:probe.question,answer:result.answer||null});
  }catch(error){row.code=error.code||'PROVIDER_TIMEOUT';}
  row.latencyMs=Math.round(performance.now()-began);results.push(row);console.log(JSON.stringify(row));
  // Keep below the documented 20 requests/minute free-model burst limit.

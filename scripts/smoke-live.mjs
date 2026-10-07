@@ -7,7 +7,7 @@ if(!chat&&!voice){console.log('SKIP live providers: no local keys present.');pro
 let health;try{health=await fetch(base+'/api/health',{signal:AbortSignal.timeout(5000)}).then(r=>r.json());}catch{console.log('SMOKE_FAILED: local function server is unavailable. Start netlify dev first.');process.exit(1);}
 const headers={Origin:url.origin,'X-PokeLearn-Consent':'1'};let failed=false;
 async function check(path,body,type){
- try{const response=await fetch(base+'/api/'+path,{method:'POST',headers:{...headers,...(type?{'Content-Type':type}:{})},body,signal:AbortSignal.timeout(55000)});const result=await response.json();const pass=(response.ok&&result.code==='OK')||(path==='transcribe'&&result.reason==='NO_SPEECH');console.log(JSON.stringify({check:path,status:response.status,code:result.code||'INVALID_RESPONSE',...(result.reason?{reason:result.reason}:{}),pass}));if(!pass)failed=true;}
+ try{const response=await fetch(base+'/api/'+path,{method:'POST',headers:{...headers,...(type?{'Content-Type':type}:{})},body,signal:AbortSignal.timeout(15500)});const result=await response.json();const pass=(response.ok&&result.code==='OK')||(path==='transcribe'&&result.reason==='NO_SPEECH');console.log(JSON.stringify({check:path,status:response.status,code:result.code||'INVALID_RESPONSE',...(result.reason?{reason:result.reason}:{}),pass}));if(!pass)failed=true;}
  catch{console.log(JSON.stringify({check:path,code:'SMOKE_FAILED'}));failed=true;}
 }
 if(chat&&health.openrouter){
@@ -16,8 +16,8 @@ if(chat&&health.openrouter){
   for(const question of questions){
    const began=performance.now();let row;
    try{
-    const response=await fetch(base+'/api/chat',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({question,buddyId:25}),signal:AbortSignal.timeout(55000)}),body=await response.json();
-    row={question,status:response.status,code:body.code,source:body.source||'safety',model:body.model||'none',latencyMs:Math.round(performance.now()-began),answer:body.choices?.[0]?.message?.content||null};
+    const response=await fetch(base+'/api/chat',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({question,buddyId:25}),signal:AbortSignal.timeout(15500)}),body=await response.json();
+    row={question,status:response.status,code:body.code,source:body.source||'safety',model:body.model||'none',latencyMs:Math.round(performance.now()-began),answer:body.answer||null};
     if(row.source!=='ai'||row.code!=='OK')failed=true;
    }catch{row={question,code:'SMOKE_FAILED',latencyMs:Math.round(performance.now()-began)};failed=true;}
    results.push(row);console.log(JSON.stringify(row));await new Promise(resolve=>setTimeout(resolve,3500));
