@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-07T06:43:58.310Z",
+  "url": "https://deploy-preview-25--pokelearnz.netlify.app",
+  "synthetic": true,
+  "maxQuestions": 3,
+  "gateAutoSent": false,
+  "results": [],
+  "cspViolations": [],
+  "runtimeErrors": [],
+  "networkErrors": [
+    {
+      "host": "deploy-preview-25--pokelearnz.netlify.app",
+      "error": "net::ERR_CONNECTION_CLOSED"
+    }
+  ],
+  "headers": {},
+  "views": [],
+  "publicPages": [],
+  "pass": false,
+  "error": "ERR_CONNECTION_CLOSED",
+  "testedCommit": "58aafda9ad00b690c7eff3d108a4601bb91b1302"
+}

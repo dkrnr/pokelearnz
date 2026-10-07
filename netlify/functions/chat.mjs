@@ -64,7 +64,8 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
      if(['DAILY_LIMIT','RATE_LIMITED'].includes(last)){
       if(providerId==='openrouter'&&last==='DAILY_LIMIT')openrouterResetAt=await abortable(()=>cache?.markLimit(request)||Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate()+1),deadline);
       if(providerId==='openrouter'){restCode=last;restModel=model;restUntil=openrouterResetAt||Date.now()+30000;}
-      break providerModels; // No more calls within a depleted provider; Groq has a separate quota.
+      if(providerId==='groq')continue providerModels; // Groq model limits can differ: try the next configured model once.
+      break providerModels; // OpenRouter free models share daily account capacity.
      }
      if(safetyRecovery)return authored(last);
      if(last==='OUTPUT_BLOCKED'){

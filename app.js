@@ -36,7 +36,7 @@ function recordResult(result){
 function updateDebug(){
  $('demoTag').hidden=!(DEMO&&setupUnlocked);
  const panel=$('debugStatus');if(!panel)return;panel.hidden=!(DEBUG&&setupUnlocked);
- const label={cache:'Validated answer cache',ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
+ const label={cache:'Cached model answer (unverified)',ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
  $('debugSource').textContent=label;$('debugSource').dataset.source=lastResult.source||'none';
  $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Provider: ${lastResult.provider||'none'} · OpenRouter: ${lastResult.openrouterResetAt>Date.now()?'daily pause until '+new Date(lastResult.openrouterResetAt).toISOString():'no daily-limit record on this response'} · Audio: ${audioStatus}`;
 }

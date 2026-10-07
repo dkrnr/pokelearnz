@@ -4,6 +4,10 @@
 
 A university project exploring calm, short learning moments for ages 6–9: a Pokémon buddy, six finite activities, captions and optional voice questions.
 
+![Short PokeLearn demo: science answer, chooser, Blocks, Sleep and parents](docs/portfolio/demo.gif)
+
+[Three-minute employer walkthrough](docs/DEMO.md) · [Stage 7 evidence](docs/redesign/STAGE-7-REPORT.md)
+
 ![Pikachu in the PokeLearn learning scene](docs/portfolio/scene-desktop.png)
 
 [Try the demo](https://pokelearnz.netlify.app/?demo=1) · [Parents](https://pokelearnz.netlify.app/parents) · [Privacy](https://pokelearnz.netlify.app/privacy) · [Project feedback](https://github.com/dkrnr/pokelearnz/issues)
@@ -24,7 +28,7 @@ The chooser has a locally bundled catalogue of 1,025 buddies, generation and typ
 
 </details>
 
-These screenshots and the social card were made with Playwright from the mock scene; they contain no real child conversations.
+The GIF was recorded with Playwright from the local authored demo; screenshots and the social card use the mock scene. All questions are synthetic.
 
 ## Architecture
 
@@ -36,7 +40,7 @@ flowchart LR
   Voice --> Valsea[Valsea]
   Valsea -->|transcript| Chat
   Chat --> Checks[Input checks and local small talk]
-  Checks --> Cache[Validated answer cache]
+  Checks --> Cache[Output-checked answer cache]
   Cache -->|miss| Bank[95 authored answers]
   Bank -->|miss| Groq[Optional Groq adapter]
   Groq -->|unavailable| OR[OpenRouter free adapter]
@@ -70,7 +74,7 @@ npm start
 
 Open `http://127.0.0.1:4178/?mock=1` for a provider-free mock scene. Activities work without model keys. `?demo=1` forces authored answers and shows a small Demo label in unlocked grown-up settings; microphone transcription still uploads to Valsea after consent.
 
-For real local function calls, copy `.env.example` to ignored `.env` and provide server-only keys plus a private, stable `RATE_LIMIT_SALT` of at least 32 characters. Never put keys in public assets or Git. `GROQ_MODELS` selects explicit chat models (default `openai/gpt-oss-20b`); `OPENROUTER_MODELS` selects free IDs. `AI_PROVIDER` is retained for adapter compatibility; the normal handler uses the ordered configured chain. `AI_PRIVACY=account` inherits account policies; `strict` may leave no free OpenRouter endpoints. No account setting is changed by the app.
+For real local function calls, copy `.env.example` to ignored `.env` and provide server-only keys plus a private, stable `RATE_LIMIT_SALT` of at least 32 characters. Never put keys in public assets or Git. `GROQ_MODELS` selects explicit chat models (default `openai/gpt-oss-120b,openai/gpt-oss-20b`); `OPENROUTER_MODELS` selects free IDs. `AI_PROVIDER` is retained for adapter compatibility; the normal handler uses the ordered configured chain. `AI_PRIVACY=account` inherits account policies; `strict` may leave no free OpenRouter endpoints. No account setting is changed by the app.
 
 ```sh
 npm run check:models
@@ -106,4 +110,4 @@ It sends at most three synthetic questions, checks a pending gated question, mod
 
 ## Honest limitations
 
-No child study or learning-outcome evaluation has been conducted. English answers are supported; Sinhala/Tamil UI drafts need human review. Physical iOS/Android audio, reviewed activity recordings, live Valsea recognition and production provider-account privacy controls remain unverified. A simple arithmetic gate is not authenticated parental consent. Caches have a 30-day serving TTL and lazy cleanup, not a guaranteed deletion date. Providers have independent limits and models can disappear or return inaccurate facts. The project is not an emergency or medical service. Fan assets and provider age terms require review before any public child launch.
+No child study or learning-outcome evaluation has been conducted. English answers are supported; Sinhala/Tamil UI drafts need human review. Physical iOS/Android audio, reviewed activity recordings, live Valsea recognition and production provider-account privacy controls remain unverified. A simple arithmetic gate is not authenticated parental consent. Cached model answers are unverified and may be wrong. `CACHE_VERSION` invalidates all answers; a new v2 namespace excludes legacy 30-day entries. [Cache runbook](docs/CACHE.md). Caches have a 24-hour serving TTL and lazy cleanup, not a guaranteed deletion date. Providers have independent limits and models can disappear or return inaccurate facts. The project is not an emergency or medical service. Fan assets and provider age terms require review before any public child launch.

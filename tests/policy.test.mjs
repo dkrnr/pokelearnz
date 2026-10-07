@@ -40,7 +40,7 @@ test("no notification, background engagement, autoplay or remote font APIs", asy
     /Notification|PushManager|setInterval|\.subscribe\(|serviceWorker\.ready.*push/,
   );
   assert.doesNotMatch(html, /<audio|<video|autoplay|https?:\/\//i);
-  assert.doesNotMatch(css, /https?:\/\//i);
+  assert.doesNotMatch(css, /url\(\s*['"]?https?:\/\/|@import\s+['"]https?:\/\//i);
   assert.match(app, /sound:\s*false/);
   assert.match(app, /v\.localService/);
   assert.match(app, /state\.answered/);

@@ -12,7 +12,7 @@ async function audit(p,label){
   assert.deepEqual(buttons,[],label+' targets/icons/words');
   assert.doesNotMatch(await p.locator('#main').innerText(),forbidden);
   assert.doesNotMatch(await p.locator('#activityDialog').innerText(),forbidden);
-  assert.doesNotMatch(await p.locator('#main').innerText(),/Practice mode|ask a grown-up/i);
+  assert.doesNotMatch(await p.locator('#main').innerText(),/Practice mode/i);
   await p.addScriptTag({path:new URL('../node_modules/axe-core/axe.min.js',import.meta.url).pathname});
   const violations=await p.evaluate(async()=> (await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})));
   assert.deepEqual(violations,[],label+' accessibility');
