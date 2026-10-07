@@ -1,4 +1,6 @@
 import http from "node:http";
+import {Readable} from 'node:stream';
+import {pipeline} from 'node:stream/promises';
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,7 +38,8 @@ export function createServer() {
         const origin=`http://${req.headers.host||'127.0.0.1'}`;
         const request=new Request(new URL(req.url,origin),{method:req.method,headers:req.headers,signal:cancellation.signal,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});
         const response=await handlers[functionName](request,{ip:req.socket.remoteAddress});
-        res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());return;
+        res.writeHead(response.status,Object.fromEntries(response.headers));
+        if(response.body)await pipeline(Readable.fromWeb(response.body),res);else res.end();return;
       }
       if(url.pathname.startsWith("/api/")||url.pathname.startsWith("/.netlify/functions/")){res.writeHead(404,{"Content-Type":"application/json","Cache-Control":"no-store"});res.end(JSON.stringify({code:"NOT_FOUND"}));return;}
       if (!["GET", "HEAD"].includes(req.method)) {

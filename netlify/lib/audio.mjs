@@ -1,5 +1,5 @@
 import {parseBuffer} from 'music-metadata';import {ApiError} from './common.mjs';
-export const audioLimits={bytes:2*1024*1024,duration:45};
+export const audioLimits={bytes:2*1024*1024,minDuration:.7,duration:30};
 function invalid(){throw new ApiError('TYPE_INSTEAD',422);}
 function uint(bytes){if(bytes.length>8)invalid();let n=0;for(const b of bytes)n=n*256+b;if(!Number.isSafeInteger(n))invalid();return n;}
 function vint(buffer,offset,keep=false){let width=1,mask=128;while(width<=8&&!(buffer[offset]&mask)){width++;mask>>=1;}if(width>8||offset+width>buffer.length)invalid();const bytes=buffer.subarray(offset,offset+width);const unknown=!keep&&(bytes[0]&~mask)===mask-1&&bytes.subarray(1).every(b=>b===255);return {width,value:unknown?0:uint(keep?bytes:Buffer.from([bytes[0]&~mask,...bytes.subarray(1)])),unknown};}
@@ -56,6 +56,6 @@ export async function validateAudio(buffer,mime){
  let data;try{data=await parseBuffer(buffer,{mimeType:kind,size:buffer.length},{duration:true,skipCovers:true});}catch{invalid();}
  if(data.format.hasVideo || data.format.hasAudio===false || (kind==='audio/webm' && !/opus/i.test(data.format.codec||'')) || (kind==='audio/mp4' && !/aac/i.test(data.format.codec||'')) || data.format.trackInfo?.some(track=>track.type===1)||!data.format.codec||!/(opus|aac|mpeg-4|vorbis)/i.test(data.format.codec))invalid();
  const duration=Math.max(scanned||0,data.format.duration||0);
- if(!Number.isFinite(duration)||duration<=0||duration>audioLimits.duration)invalid();
+ if(!Number.isFinite(duration)||duration<audioLimits.minDuration||duration>audioLimits.duration)invalid();
  return {duration,kind,filename:kind==='audio/mp4'?'recording.m4a':kind==='audio/ogg'?'recording.ogg':'recording.webm'};
 }

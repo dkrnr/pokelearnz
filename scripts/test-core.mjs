@@ -1,3 +1,4 @@
+import {readBrowserAnswer} from './browser-answer.mjs';
 /** Real local providers only. CI deliberately skips; no keys or provider diagnostics printed. */
 import fs from 'node:fs/promises';import {randomBytes} from 'node:crypto';import {chromium} from 'playwright';
 import {readAnswer} from '../answer-contract.js';import {questions} from './core-questions.mjs';
@@ -32,7 +33,7 @@ try{
     return dest.stream;
    };
   },{wav});
-  const stages=[];page.on('response',async response=>{if(!/\/.netlify\/functions\/(transcribe|chat)$/.test(new URL(response.url()).pathname))return;try{const data=await response.json();stages.push({stage:new URL(response.url()).pathname.split('/').pop(),status:response.status(),code:data.code,source:data.source,model:data.model,lastError:data.lastError});}catch{}});
+  const stages=[];page.on('response',async response=>{if(!/\/.netlify\/functions\/(transcribe|chat)$/.test(new URL(response.url()).pathname))return;try{const data=await readBrowserAnswer(response);stages.push({stage:new URL(response.url()).pathname.split('/').pop(),status:response.status(),code:data.code,source:data.source,model:data.model,lastError:data.lastError});}catch{}});
   await page.goto(base+'/?debug=1');await page.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025);const began=performance.now();await page.locator('#micButton').click();
   await page.waitForFunction(()=>['speaking','error'].includes(window.__STUDIO_QA__.snapshot().state),{}, {timeout:24000});
   await page.waitForTimeout(750);const snapshot=await page.evaluate(()=>window.__STUDIO_QA__.snapshot());

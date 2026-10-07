@@ -96,6 +96,8 @@ npm run lighthouse
 
 The combined deterministic suite excludes live keys and does not load `.env`. It covers input/output policy, strict origins, server responses, small-talk regressions, all 95 authored answers, provider contracts, cache expiry/caps, UTC quota reset, gate auto-send, cancellation, activities, chooser filters, accessibility with axe, reduced motion, offline assets and service-worker update behavior. Fixture voice tests do not prove real recognition quality.
 
+`npm run test:voice` adds a bounded real Valsea benchmark: 20 short questions synthesized by local espeak-ng, each encoded by FFmpeg as WebM and MP4. Live calls skip without a key/toolchain or in CI; otherwise they consume up to 80 provider attempts including one retry per upload. Synthetic audio is not real children's speech. [Stage 8 results](docs/redesign/STAGE-8-REPORT.md) distinguish recognition errors, latency and mocked first-word timing from physical-device evidence.
+
 `npm run lighthouse` runs mobile audits for `/` and `/parents`, saves HTML/JSON under ignored `qa/artifacts/lighthouse`, and accepts an explicit base URL. Local scores describe a local build, not production latency. `npm run check:models` checks current model catalogs without an inference request.
 
 A live gate is opt-in and consumes quota:
@@ -106,7 +108,7 @@ npm run test:live -- https://deploy-preview-24--pokelearnz.netlify.app/
 
 It sends at most three synthetic questions, checks a pending gated question, model/cache routing, scene/chooser/activity CSP events, and security headers. Valid `DAILY_LIMIT` / `PROVIDER_UNAVAILABLE` HTTP-200 fallbacks are recorded separately from model answers. Use one live check per session. Legacy `test:core` / `audit:live` / `smoke:live` scripts can consume additional quota; they are not part of `test:all` and were not run for this release.
 
-[Release evidence](docs/redesign/STAGE-6-RELEASE.md) · [Session handoff](docs/HANDOFF.md) · [Migration checkpoint](docs/REPOSITORY-MIGRATION.md) · [Redesign reports](docs/redesign/) · [Voice review](docs/VOICE-MIGRATION-REPORT.md)
+[Release evidence](docs/redesign/STAGE-6-RELEASE.md) · [Session handoff](docs/HANDOFF.md) · [Migration checkpoint](docs/REPOSITORY-MIGRATION.md) · [Redesign reports](docs/redesign/) · [Voice review](docs/redesign/STAGE-8-REPORT.md)
 
 ## Honest limitations
 

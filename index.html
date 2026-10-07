@@ -58,6 +58,7 @@
         <button id="micButton" class="mic-button" aria-pressed="false"><svg id="micGlyph" aria-hidden="true"><use href="#mic-icon"/></svg><span id="micLabel">Tap to talk</span></button>
         <button id="readAloud" class="sticker read-aloud" aria-pressed="false"><span aria-hidden="true">♪</span><span>Read aloud</span></button>
       </div>
+      <div class="voice-progress" hidden><span id="voiceState" role="status" aria-live="polite"></span><button id="interruptVoice" class="sticker" hidden><span aria-hidden="true">↩</span><span>Interrupt and talk</span></button></div>
       <p id="voiceHint" class="voice-hint">Your voice. Your buddy. Little discoveries.</p>
     </div>
     <section id="endScreen" class="end-screen" hidden aria-labelledby="endTitle"><div id="sleepingBuddy" class="sleeping-buddy" aria-hidden="true"></div><h2 id="endTitle">A lovely place to pause.</h2><p id="endCaption">Rest well. Our little discovery is done.</p><button id="wakeButton" class="sticker yellow"><span aria-hidden="true">☀</span><span>Wake buddy</span></button></section>

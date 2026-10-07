@@ -4,6 +4,7 @@ import { createChooser } from './chooser.js';
 import { translate } from './locales.js';
 import { containsNSFW } from './safety.js';
 import {readAnswer,validAnswer,isClassifierOutput} from './answer-contract.js';
+import {recordingLimits,silenceDetector,voiceStyle,readVoiceStream} from './voice.js';
 const $ = id => document.getElementById(id);
 const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
 const DEMO = new URL(location.href).searchParams.get('demo') === '1';
@@ -15,6 +16,7 @@ const celebrated = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, trickTimer, audio, activeUtterance;
 let setupUnlocked = false, dialogTrigger, muteChosen = false, gateExpected, currentAudioSrc, activityPlayer, activityLoading, pendingQuestion, pendingVoice=false, turnTimer, modeTimer;
+let speechPlayback, turnStarted=0, firstSpeechStartMs=null, firstSpokenWordMs=null;
 let turnUntil=0, lastResult={source:null,model:'none',lastError:null,code:null,provider:null,openrouterResetAt:0}, audioStatus='off';
 const t = key => translate(key, state.language);
 function armSound(){$('voiceHint').textContent=MOCK?t('mockHint'):t('voiceHint');if(!muteChosen){state.sound=true;$('readAloud').setAttribute('aria-pressed','true');}}
@@ -25,7 +27,7 @@ async function localVoice(){
  return find();
 }
 function beginTurn(){
- request=new AbortController();turnUntil=performance.now()+TURN_MS;
+ request=new AbortController();turnStarted=performance.now();firstSpeechStartMs=null;firstSpokenWordMs=null;turnUntil=turnStarted+TURN_MS;
  const epoch=state.epoch;clearTimeout(turnTimer);
  turnTimer=setTimeout(()=>{if(epoch!==state.epoch)return;recordResult({...lastResult,lastError:'REQUEST_TIMEOUT',code:'REQUEST_TIMEOUT'});friendlyError('retryReply','retry');},TURN_MS);
 }
@@ -38,7 +40,7 @@ function updateDebug(){
  const panel=$('debugStatus');if(!panel)return;panel.hidden=!(DEBUG&&setupUnlocked);
  const label={cache:'Cached model answer (unverified)',ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
  $('debugSource').textContent=label;$('debugSource').dataset.source=lastResult.source||'none';
- $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Provider: ${lastResult.provider||'none'} · OpenRouter: ${lastResult.openrouterResetAt>Date.now()?'daily pause until '+new Date(lastResult.openrouterResetAt).toISOString():'no daily-limit record on this response'} · Audio: ${audioStatus}`;
+ $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Provider: ${lastResult.provider||'none'} · OpenRouter: ${lastResult.openrouterResetAt>Date.now()?'daily pause until '+new Date(lastResult.openrouterResetAt).toISOString():'no daily-limit record on this response'} · Audio: ${audioStatus} · Speech start: ${firstSpeechStartMs===null?'unavailable':firstSpeechStartMs+' ms'} · First word event: ${firstSpokenWordMs===null?'unavailable':firstSpokenWordMs+' ms'}`;
 }
 function restore() {
   try {
@@ -83,6 +85,10 @@ function setMode(mode) {
   $('micButton').setAttribute('aria-pressed', String(mode === 'listening'));
   $('micButton').setAttribute('aria-busy', String(mode === 'thinking'));
   const activityOpen=$('activityDialog').open;
+  $('voiceState').textContent=activityOpen?'':({listening:t('stateListening'),thinking:t('stateThinking'),speaking:t('stateSpeaking')})[mode]||'';
+  $('interruptVoice').hidden=activityOpen||!['thinking','speaking'].includes(mode);
+  $('interruptVoice').lastElementChild.textContent=t('interruptVoice');
+  $('voiceState').parentElement.hidden=activityOpen||!['listening','thinking','speaking'].includes(mode);
   $('micLabel').textContent = t(activityOpen?'talk':mode === 'listening' ? 'stopTalking' : ['thinking', 'speaking'].includes(mode) ? 'stop' : 'talk');
   $('micButton').disabled = activityOpen || ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
   $('keyboardButton').disabled = ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
@@ -95,7 +101,7 @@ function closeMic() {
   analyserContext?.close().catch(() => {}); analyserContext = null;
 }
 function cancelPending() {
-  state.epoch++;
+  state.epoch++;speechPlayback=null;
   clearTimeout(turnTimer);clearTimeout(modeTimer);turnUntil=0;
   clearTimeout(actionTimer); clearTimeout(speechTimer); clearTimeout(trickTimer);
   delete $('buddyTap').dataset.trick;
@@ -319,39 +325,60 @@ function scheduleIdle() {
     scheduleIdle();
   }, 6000 + Math.random() * 8000);
 }
-/** Authored lines may supply a local prerecorded asset; browser speech is the fallback. */
-async function speak(text, { audioSrc = currentAudioSrc } = {}) {
-  const epoch = state.epoch; let fellBack=false;
-  const finish = () => {if(epoch===state.epoch){clearTimeout(speechTimer);if(audioStatus!=='unavailable')audioStatus=state.sound?'finished':'muted';updateDebug();if(state.mode==='speaking')setMode('idle');}};
-  setMode('speaking');audioStatus=state.sound?'starting':'muted';updateDebug();
-  if (state.sound && audioSrc?.startsWith('/assets/audio/')) {
-    try {
-      audio = new Audio(audioSrc); audio.onended = finish; audio.onerror = () => fallback();
-      await audio.play(); return;
-    } catch { /* Fall through to local voice. */ }
-  }
-  fallback();
-  async function fallback() {
-    if (epoch !== state.epoch || fellBack) return; fellBack=true;
-    if (state.sound && 'speechSynthesis' in window) {
-      let voice;try{voice=await localVoice();}catch{ /* A missing device speech service keeps captions. */ }if(epoch!==state.epoch)return;
-      if (voice) {try{
-        const utterance = new SpeechSynthesisUtterance(text); activeUtterance = utterance;
-        utterance.voice = voice; utterance.rate = .85; utterance.onend = finish; utterance.onerror = ()=>{finish();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();};
-        audioStatus='speaking';updateDebug();speechSynthesis.resume();speechSynthesis.speak(utterance);
-        speechTimer=setTimeout(()=>{if(epoch!==state.epoch)return;speechSynthesis.cancel();finish();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();},20000);return;
-      }catch{ /* Device speech may reject playback; show captions. */ }}
+/** One local utterance per sentence, queued as checked sentence events arrive. */
+function startPlayback(){
+  const session={epoch:state.epoch,queue:[],busy:false,done:false,spoken:false,voice:localVoiceSafe()};
+  speechPlayback=session;return session;
+}
+async function localVoiceSafe(){
+  if(!state.sound||!('speechSynthesis' in window))return;
+  try{return await localVoice();}catch{return;}
+}
+function queueSentence(session,text){
+  if(session!==speechPlayback||session.epoch!==state.epoch)return;
+  session.queue.push(text);setMode('speaking');pumpSpeech(session);
+}
+function completePlayback(session){
+  if(session!==speechPlayback)return;session.done=true;pumpSpeech(session);
+}
+async function pumpSpeech(session){
+  if(session!==speechPlayback||session.epoch!==state.epoch||session.busy)return;
+  if(!session.queue.length){
+    if(session.done){
+      const finish=()=>{if(session!==speechPlayback)return;audioStatus=session.spoken?'finished':state.sound?'unavailable':'muted';updateDebug();if(state.mode==='speaking')setMode('idle');};
+      if(session.spoken)finish();else speechTimer=setTimeout(finish,4000);
     }
-    if(state.sound){audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();}
-    // Silent visual speaking still gives children time to read every caption.
-    speechTimer = setTimeout(finish, Math.max(4000, Math.min(12000, text.length * 60)));
+    return;
   }
+  session.busy=true;const text=session.queue.shift(),voice=await session.voice;
+  if(session!==speechPlayback||session.epoch!==state.epoch)return;
+  let settled=false;
+  const next=()=>{if(settled||session!==speechPlayback||session.epoch!==state.epoch)return;settled=true;clearTimeout(speechTimer);activeUtterance=null;session.busy=false;pumpSpeech(session);};
+  if(voice&&state.sound){try{
+    const utterance=new SpeechSynthesisUtterance(text);activeUtterance=utterance;
+    Object.assign(utterance,voiceStyle(buddyById(state.buddy).types));utterance.voice=voice;
+    utterance.onstart=()=>{if(session!==speechPlayback)return;session.spoken=true;audioStatus='speaking';if(firstSpeechStartMs===null&&turnStarted)firstSpeechStartMs=Math.round(performance.now()-turnStarted);updateDebug();};
+    utterance.onboundary=event=>{if(session===speechPlayback&&event.name==='word'&&firstSpokenWordMs===null&&turnStarted){firstSpokenWordMs=Math.round(performance.now()-turnStarted);updateDebug();}};
+    utterance.onend=next;
+    utterance.onerror=()=>{if(session!==speechPlayback)return;session.voice=Promise.resolve();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');next();};
+    audioStatus='starting';updateDebug();speechSynthesis.resume();speechSynthesis.speak(utterance);
+    speechTimer=setTimeout(()=>{if(session!==speechPlayback)return;session.voice=Promise.resolve();speechSynthesis.cancel();audioStatus='unavailable';next();},12000);return;
+  }catch{session.voice=Promise.resolve();}}
+  audioStatus=state.sound?'unavailable':'muted';if(state.sound)$('voiceHint').textContent=t('audioSilent');updateDebug();next();
+}
+/** Authored activities may supply an existing same-origin recording. */
+async function speak(text,{audioSrc=currentAudioSrc}={}){
+  if(state.sound&&audioSrc?.startsWith('/assets/audio/')){
+    const epoch=state.epoch;setMode('speaking');
+    try{audio=new Audio(audioSrc);audio.onended=()=>{if(epoch===state.epoch)setMode('idle');};await audio.play();return;}catch{}
+  }
+  const session=startPlayback();for(const sentence of text.split(/(?<=[.!?])\s+/))queueSentence(session,sentence);completePlayback(session);
 }
 $('readAloud').onclick = () => {
   state.sound = !state.sound; muteChosen = !state.sound; $('readAloud').setAttribute('aria-pressed', String(state.sound));
   if (state.sound && ['idle', 'error', 'speaking'].includes(state.mode)) {cancelPending();speak($('captionText').textContent);}
   else if (!state.sound) {
-    clearTimeout(speechTimer); audio?.pause();
+    speechPlayback=null;activeUtterance=null;clearTimeout(speechTimer); audio?.pause();
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     if (state.mode === 'speaking') setMode('idle');
   }
@@ -374,16 +401,17 @@ function mockAnswer(text) {
     : 'Leaves use light to make food. Roots take in water.';
   return prefix + content;
 }
-async function post(path, payload, controller) {
+async function post(path, payload, controller, onSentence) {
   const timeout=setTimeout(()=>controller.abort(),Math.max(1,turnUntil-performance.now()));
   try {
-    const response = await fetch(`/.netlify/functions/${path}`, { method: 'POST', headers:{'X-PokeLearn-Consent':'1','X-PokeLearn-Budget-Ms':String(Math.max(1,Math.floor(turnUntil-performance.now()-500))),...(payload instanceof FormData?{}:{'Content-Type':'application/json'})}, body: payload instanceof FormData ? payload : JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
-    let result;try{result=await response.json();}catch{throw Object.assign(Error('provider'),{code:response.status===429?'RATE_LIMITED':'RESTING'});}
+    const response = await fetch(`/.netlify/functions/${path}`, { method: 'POST', headers:{...(onSentence?{Accept:'application/x-ndjson'}:{}),'X-PokeLearn-Consent':'1','X-PokeLearn-Budget-Ms':String(Math.max(1,Math.floor(turnUntil-performance.now()-500))),...(payload instanceof FormData?{}:{'Content-Type':'application/json'})}, body: payload instanceof FormData ? payload : JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
+    let result;try{result=response.ok&&response.headers.get('content-type')?.includes('application/x-ndjson')&&onSentence?await readVoiceStream(response,onSentence,controller.signal):await response.json();}catch(error){throw Object.assign(Error('provider'),{code:error.code||(response.status===429?'RATE_LIMITED':'RESTING')});}
     if(!response.ok || ['RESTING','OFFLINE','RATE_LIMITED','TYPE_INSTEAD'].includes(result.code))throw Object.assign(Error('provider'),{code:result.code||'RESTING'});return result;
   } catch(error){if(error instanceof TypeError && !error.code)error.code='OFFLINE';throw error;} finally { clearTimeout(timeout); }
 }
 function showProviderState(error,voice=false){
   recordResult({...lastResult,source:null,lastError:error?.code||'REQUEST_TIMEOUT',code:error?.code||'REQUEST_TIMEOUT'});
+  if(voice&&!['RATE_LIMITED','PRIVATE_INPUT','CONSENT_REQUIRED'].includes(error?.code)){friendlyError('tryTyping','type-instead');return;}
   const states={REQUEST_TIMEOUT:['retryReply','retry'],INVALID_ANSWER:['retryReply','retry'],OFFLINE:['offline','offline'],RATE_LIMITED:['rateLimited','rate-limited'],TYPE_INSTEAD:['tryTyping','type-instead'],PRIVATE_INPUT:['trustedAdult','resting'],CONSENT_REQUIRED:['answerRest','resting']};
   const [line,mode]=states[error?.code]||[voice?'tryTyping':'answerRest',voice?'type-instead':'resting'];friendlyError(line,mode);
 }
@@ -394,17 +422,23 @@ async function askQuestion(text,{continuing=false}={}) {
   const epoch = state.epoch;
   setMode('thinking'); caption(t('thinking'));
   try {
-    let answer;
+    let answer,playback;
     if (MOCK) {
       await new Promise(resolve => { actionTimer = setTimeout(resolve, 1400); });
       answer = boundedAnswer(mockAnswer(text));recordResult({source:'mock',model:'none',lastError:null,code:'OK'});
     } else {
       const controller = request;
-      const result=await post('chat',{question:text,buddyId:state.buddy,...(DEMO?{demo:true}:{})},controller);
+      let streamedCaption='';
+      const result=await post('chat',{question:text,buddyId:state.buddy,...(DEMO?{demo:true}:{})},controller,(sentence,event)=>{
+        if(epoch!==state.epoch)return;
+        boundedAnswer(sentence,{greeting:event.source==='authored'&&event.kind==='greeting'});
+        streamedCaption+=(streamedCaption?' ':'')+sentence;caption(streamedCaption);
+        playback ||= startPlayback();queueSentence(playback,sentence);
+      });
       answer = boundedAnswer(readAnswer(result),{greeting:result.source==='authored'&&result.kind==='greeting'});recordResult(result);
     }
     if (epoch !== state.epoch || state.answered) return;
-    clearTimeout(turnTimer);turnUntil=0;state.answered = true; caption(answer); request = null; speak(answer);
+    clearTimeout(turnTimer);turnUntil=0;state.answered = true; caption(answer); request = null;if(playback)completePlayback(playback);else speak(answer);
   } catch(error) {
     if(epoch===state.epoch)showProviderState(error);
   }
@@ -433,14 +467,14 @@ async function record() {
     stream = acquired;
     const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(m => MediaRecorder.isTypeSupported(m));
     recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-    const currentRecorder = recorder, chunks = [];
+    const currentRecorder = recorder, chunks = [],recordingStarted=performance.now(),capture={heardVoice:null};
     currentRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     currentRecorder.onerror = () => { if (epoch === state.epoch) friendlyError(); };
     currentRecorder.onstop = async () => {
       acquired.getTracks().forEach(t => t.stop());
       if (epoch !== state.epoch) return;
       closeMic();
-      if (!chunks.length) { friendlyError(); return; }
+      if (!chunks.length||performance.now()-recordingStarted<recordingLimits.minMs||capture.heardVoice===false) { friendlyError(); return; }
       setMode('thinking'); caption(t('thinking'));
       const form = new FormData(), blob = new Blob(chunks, { type: currentRecorder.mimeType || 'audio/webm' });
       if (blob.size > 2 * 1024 * 1024) { friendlyError(); return; }
@@ -457,12 +491,13 @@ async function record() {
       } catch(error) {if(epoch===state.epoch)showProviderState(error,true);}
     };
     currentRecorder.start(); setMode('listening'); caption(t('listening'));
-    monitorSilence(acquired, epoch);
-    autoStopTimer = setTimeout(stopListening, 30000);
+    monitorSilence(acquired, epoch,capture);
+    // Leave space for the final encoded packet under the server's 30-second bound.
+    autoStopTimer = setTimeout(stopListening, recordingLimits.maxMs-250);
   } catch { if (epoch === state.epoch) friendlyError(); }
 }
-function monitorSilence(acquired, epoch) {
-  const began = performance.now(); let lastVoice = began, heardVoice = false;
+function monitorSilence(acquired, epoch,capture) {
+  const detector=silenceDetector(performance.now());
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     analyserContext = new AudioContext();
@@ -474,14 +509,14 @@ function monitorSilence(acquired, epoch) {
       if (epoch !== state.epoch || state.mode !== 'listening') return;
       analyser.getByteTimeDomainData(samples);
       const rms = Math.sqrt(samples.reduce((sum, sample) => sum + ((sample - 128) / 128) ** 2, 0) / samples.length);
-      const now = performance.now();
-      if (rms > .025) { heardVoice = true; lastVoice = now; }
-      if ((heardVoice && now - lastVoice > 1800) || (!heardVoice && now - began > 12000)) { stopListening(); return; }
+      const result=detector(rms,performance.now());capture.heardVoice=result.heardVoice;
+      if(result.stop){stopListening();return;}
       silenceTimer = setTimeout(poll, 100);
     };
     poll();
   } catch { /* Tap-to-stop and recording ceiling still work without the analyser. */ }
 }
+$('interruptVoice').onclick=()=>{cancelPending();record();};
 $('micButton').onclick = () => {
   if (state.mode === 'listening') stopListening();
   else if (['thinking', 'speaking'].includes(state.mode)) stopAction();
@@ -514,4 +549,4 @@ restore(); updateLanguage(); scheduleIdle();
 $('micButton').disabled = true; $('changeBuddy').disabled = true;
 loadBuddies().then(() => { state.ready = true; updateBuddy(); setMode('idle'); $('changeBuddy').disabled = false; })
   .catch(() => { state.ready = false; $('changeBuddy').disabled = false; $('micButton').disabled = false; $('chooserStatus').textContent = 'Buddy pictures need another visit online.'; });
-window.__STUDIO_QA__ = { snapshot: () => ({ lastResult:{...lastResult},audioStatus,pendingQuestion:!!pendingQuestion,pendingVoice,state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, moving:state.moving, reaction:lastReaction, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered, chooser: chooser.snapshot(), activity: activityPlayer?.snapshot(), celebrations:[...celebrated] }) };
+window.__STUDIO_QA__ = { snapshot: () => ({ firstSpeechStartMs,firstSpokenWordMs,lastResult:{...lastResult},audioStatus,pendingQuestion:!!pendingQuestion,pendingVoice,state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, moving:state.moving, reaction:lastReaction, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered, chooser: chooser.snapshot(), activity: activityPlayer?.snapshot(), celebrations:[...celebrated] }) };

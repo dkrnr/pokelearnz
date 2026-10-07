@@ -6,9 +6,10 @@ import {createAnswerCache} from '../lib/answer-cache.mjs';
 import {createProviders} from '../lib/providers/index.mjs';
 import {authoredAnswer,knownAnswer,unknownAnswer} from '../lib/answer-bank.mjs';
 import {smallTalk} from '../lib/small-talk.mjs';
+import {readAnswer} from '../../answer-contract.js';
 import {reserveAttempt} from '../lib/quota.mjs';
 export const config={path:['/api/chat','/.netlify/functions/chat'],rateLimit:{windowLimit:10,windowSize:60,aggregateBy:['ip','domain']}};
-export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeoutMs=modelTimeoutMs,deadlineMs=brainDeadlineMs,env=process.env,cache=createAnswerCache({env}),bankLookup=knownAnswer}={}){
+function createJsonChat({fetcher=fetch,provider,reserve=reserveAttempt,timeoutMs=modelTimeoutMs,deadlineMs=brainDeadlineMs,env=process.env,cache=createAnswerCache({env}),bankLookup=knownAnswer}={}){
  // Best-effort warm-instance backoff; quotas remain authoritative and fail closed.
  let restUntil=0,restCode,restModel='none';
  return async(request,context={})=>{
@@ -83,6 +84,28 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
    if(code==='REQUEST_TIMEOUT'&&question)return authored(code);
    log(code,performance.now()-began,used,'answer',error?.status||503);return failure(new ApiError(code,error?.status||503));
   }finally{clearTimeout(timer);}
+ };
+}
+/** Stream only the final checked answer. Never speak raw, unvalidated provider tokens. */
+export function createChat(options={}){
+ const handler=createJsonChat(options);
+ return async(request,context={})=>{
+  if(!request.headers.get('accept')?.includes('application/x-ndjson'))return handler(request,context);
+  // Keep origin, consent and method rejection as normal HTTP errors.
+  try{guard(request);}catch(error){return failure(error);}
+  const encoder=new TextEncoder(),control=new AbortController();let cancelled=false;
+  const upstreamRequest=new Request(request,{signal:AbortSignal.any([request.signal,control.signal])});
+  const body=new ReadableStream({async start(controller){
+   const send=event=>{if(!cancelled&&!request.signal.aborted)controller.enqueue(encoder.encode(JSON.stringify(event)+'\n'));};
+   try{
+    const response=await handler(upstreamRequest,context),result=await response.json();
+    if(!response.ok){send({type:'error',code:result.code});return;}
+    const answer=readAnswer(result),sentences=answer.split(/(?<=[.!?])\s+/);
+    for(const [index,text]of sentences.entries())send({type:'sentence',index,text,source:result.source,kind:result.kind});
+    send({type:'done',...result});
+   }catch{send({type:'error',code:'RESTING'});}finally{if(!cancelled)controller.close();}
+  },cancel(){cancelled=true;control.abort();}});
+  return new Response(body,{headers:{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store, private','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY'}});
  };
 }
 export default createChat();

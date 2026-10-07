@@ -5,6 +5,7 @@ export const languages = {
   ta: { label: 'தமிழ் · draft', speech: 'ta-LK', reviewed: false },
 };
 export const en = {
+  stateListening:'Listening',stateThinking:'Thinking',stateSpeaking:'Speaking',interruptVoice:'Interrupt and talk',
   retryReply:'That took too long. You can try again or type.',audioSilent:'Your answer is here to read.',
   rateLimited:'Our little chat can rest. Our discoveries are here.',
   moving:'Moving',artwork:'Artwork',tapGiggle:'That tickles!',tapPeek:'Peek-a-boo!',tapSpin:'A little twirl!',tapWiggle:'Wiggle, wiggle!',tapStretch:'A lovely stretch!',
@@ -23,6 +24,7 @@ export const en = {
   goodbye:'Rest well. Our little discovery is done.', pauseTitle:'A lovely place to pause.',
 };
 export const si = {
+  stateListening:'සවන් දෙමින්',stateThinking:'සිතමින්',stateSpeaking:'කතා කරමින්',interruptVoice:'නවත්වා කතා කරන්න',
   retryReply:'එයට වැඩි වෙලාවක් ගියා. නැවත උත්සාහ කරන්න හෝ ලියන්න.',audioSilent:'ඔබේ පිළිතුර මෙතැන කියවන්න පුළුවන්.',
   rateLimited:'අපේ කතාබහට විවේකයක්. පුංචි සොයාගැනීම් මෙතැන තියෙනවා.',
   moving:'චලනය',artwork:'පින්තූරය',tapGiggle:'කිති කැවෙනවා!',tapPeek:'මෙන්න මම!',tapSpin:'පුංචි කැරකීමක්!',tapWiggle:'සෙලවෙමු!',tapStretch:'හොඳ දිගහැරීමක්!',
@@ -41,6 +43,7 @@ export const si = {
   goodbye:'හොඳින් විවේක ගන්න. අපේ පුංචි සොයාගැනීම අවසන්.', pauseTitle:'විවේකයට හොඳ තැනක්.',
 };
 export const ta = {
+  stateListening:'கேட்கிறேன்',stateThinking:'சிந்திக்கிறேன்',stateSpeaking:'பேசுகிறேன்',interruptVoice:'நிறுத்திப் பேசு',
   retryReply:'அதற்கு அதிக நேரம் எடுத்தது. மீண்டும் முயலுங்கள் அல்லது எழுதுங்கள்.',audioSilent:'உங்கள் பதிலை இங்கே படிக்கலாம்.',
   rateLimited:'நம் உரையாடல் ஓய்வெடுக்கலாம். சிறிய கண்டுபிடிப்புகள் இங்கே உள்ளன.',
   moving:'அசைவு',artwork:'ஓவியம்',tapGiggle:'கூச்சமாக இருக்கிறது!',tapPeek:'இதோ நான்!',tapSpin:'ஒரு சிறிய சுழல்!',tapWiggle:'அசை, அசை!',tapStretch:'நன்றாக நீட்டலாம்!',
