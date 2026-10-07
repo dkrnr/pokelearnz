@@ -1,8 +1,9 @@
-import fs from 'node:fs/promises';import {getModels} from '../netlify/lib/models.mjs';
-const response=await fetch('https://openrouter.ai/api/v1/models',{signal:AbortSignal.timeout(15000)});
-if(!response.ok)throw Error('Model catalog unavailable (HTTP '+response.status+')');
-const data=await response.json();if(!Array.isArray(data.data))throw Error('Invalid model catalog');
-const results=getModels().map(id=>{const found=data.data.find(model=>model.id===id);return {id,exists:!!found,free:!!found&&Number(found.pricing?.prompt)===0&&Number(found.pricing?.completion)===0,answerModel:!!found&&!/(?:guardrail|classifier|content safety|moderation model|embedding|reranker)/i.test([found.name,found.description].join(' ')),jsonFormat:!!found?.supported_parameters?.includes('response_format')};});
-console.log(JSON.stringify({checkedAt:new Date().toISOString(),models:results},null,2));
-if(process.env.MODEL_REPORT)await fs.writeFile(process.env.MODEL_REPORT,JSON.stringify({checkedAt:new Date().toISOString(),models:results},null,2)+'\n');
-if(results.some(model=>!model.exists||!model.free||!model.answerModel||!model.jsonFormat))process.exitCode=1;
+import fs from 'node:fs/promises';import {getModels} from '../netlify/lib/models.mjs';import {getGroqModels} from '../netlify/lib/providers/groq.mjs';
+const results=[];
+async function catalog(provider,url,headers={}){try{const r=await fetch(url,{headers,signal:AbortSignal.timeout(15000)});if(!r.ok){results.push({provider,catalogError:'HTTP_'+r.status});return [];}const d=await r.json();if(!Array.isArray(d.data))throw Error();return d.data;}catch{results.push({provider,catalogError:'CATALOG_UNAVAILABLE'});return [];}}
+const router=await catalog('openrouter','https://openrouter.ai/api/v1/models');
+for(const id of getModels()){const m=router.find(x=>x.id===id);results.push({provider:'openrouter',id,exists:!!m,free:!!m&&Number(m.pricing?.prompt)===0&&Number(m.pricing?.completion)===0,answerModel:!!m&&!/guardrail|classifier|content safety|moderation model|embedding|reranker/i.test([m.name,m.description].join(' ')),jsonFormat:!!m?.supported_parameters?.includes('response_format')});}
+if(process.env.GROQ_API_KEY){const groq=await catalog('groq','https://api.groq.com/openai/v1/models',{Authorization:`Bearer ${process.env.GROQ_API_KEY}`});for(const id of getGroqModels()){const m=groq.find(x=>x.id===id);results.push({provider:'groq',id,exists:!!m,active:!!m&&m.active!==false,answerModel:!!m&&!/guard|whisper|tts|compound|embed/i.test(id),format:id.startsWith('openai/gpt-oss-')?'strict json_schema; runtime output validation':'json_object; runtime output validation'});}}
+else results.push({provider:'groq',skipped:'KEY_NOT_CONFIGURED'});
+const report={checkedAt:new Date().toISOString(),catalogOnly:true,models:results};console.log(JSON.stringify(report,null,2));if(process.env.MODEL_REPORT)await fs.writeFile(process.env.MODEL_REPORT,JSON.stringify(report,null,2)+'\n');
+if(results.some(m=>m.catalogError||m.exists===false||m.free===false||m.answerModel===false||m.jsonFormat===false||m.active===false))process.exitCode=1;

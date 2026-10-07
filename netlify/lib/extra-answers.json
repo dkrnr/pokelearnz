@@ -1,0 +1,644 @@
+[
+  {
+    "id": "elephant-trunk",
+    "question": "Why do elephants have trunks?",
+    "text": "Elephants use trunks to smell and drink. A trunk can pick things up.",
+    "keywords": [
+      "elephant",
+      "trunk"
+    ]
+  },
+  {
+    "id": "penguin",
+    "question": "Can penguins fly?",
+    "text": "Penguins cannot fly in the air. Their wings help them swim.",
+    "keywords": [
+      "penguin",
+      "fly"
+    ]
+  },
+  {
+    "id": "dolphin",
+    "question": "How do dolphins breathe?",
+    "text": "Dolphins breathe air through a blowhole. They come up for each breath.",
+    "keywords": [
+      "dolphin",
+      "breathe"
+    ]
+  },
+  {
+    "id": "whale",
+    "question": "Are whales fish?",
+    "text": "Whales are not fish. They breathe air and feed milk.",
+    "keywords": [
+      "whale",
+      "fish"
+    ]
+  },
+  {
+    "id": "turtle",
+    "question": "Why do turtles have shells?",
+    "text": "A shell helps keep a turtle safe. It is part of its body.",
+    "keywords": [
+      "turtle",
+      "shell"
+    ]
+  },
+  {
+    "id": "snail",
+    "question": "How do snails move?",
+    "text": "A snail glides on one wide foot. Slime helps it slide along.",
+    "keywords": [
+      "snail",
+      "move"
+    ]
+  },
+  {
+    "id": "zebra",
+    "question": "Why do zebras have stripes?",
+    "text": "Each zebra has its own stripe pattern. Stripes may help keep flies away.",
+    "keywords": [
+      "zebra",
+      "stripe"
+    ]
+  },
+  {
+    "id": "giraffe",
+    "question": "What do giraffes eat?",
+    "text": "Giraffes eat leaves from tall trees. Their long necks help them reach.",
+    "keywords": [
+      "giraffe",
+      "eat"
+    ]
+  },
+  {
+    "id": "frog",
+    "question": "How do frogs grow?",
+    "text": "Frogs start as eggs in water. Young frogs grow legs as they change.",
+    "keywords": [
+      "frog",
+      "grow"
+    ]
+  },
+  {
+    "id": "spider",
+    "question": "How many legs do spiders have?",
+    "text": "Spiders have eight legs. Insects have six legs.",
+    "keywords": [
+      "spider",
+      "leg"
+    ]
+  },
+  {
+    "id": "ant",
+    "question": "Where do ants live?",
+    "text": "Many ants live in nests underground. They work in groups called colonies.",
+    "keywords": [
+      "ant",
+      "live"
+    ]
+  },
+  {
+    "id": "owl",
+    "question": "Why do owls hunt at night?",
+    "text": "Many owls hunt when it is dark. Sharp ears help them find food.",
+    "keywords": [
+      "owl",
+      "night"
+    ]
+  },
+  {
+    "id": "bat",
+    "question": "Are bats birds?",
+    "text": "Bats are not birds. They have fur and feed milk.",
+    "keywords": [
+      "bat",
+      "bird"
+    ]
+  },
+  {
+    "id": "kangaroo",
+    "question": "Why do kangaroos have pouches?",
+    "text": "A pouch holds a young kangaroo. It keeps the young one close.",
+    "keywords": [
+      "kangaroo",
+      "pouch"
+    ]
+  },
+  {
+    "id": "camel",
+    "question": "What is in a camel hump?",
+    "text": "A camel stores fat in its hump. It does not store water there.",
+    "keywords": [
+      "camel",
+      "hump"
+    ]
+  },
+  {
+    "id": "duck",
+    "question": "Why do ducks have webbed feet?",
+    "text": "Wide feet push against the water. This helps ducks swim.",
+    "keywords": [
+      "duck",
+      "feet"
+    ]
+  },
+  {
+    "id": "shark",
+    "question": "Do sharks have bones?",
+    "text": "Sharks have soft frames called cartilage. Our ears have this bendy stuff too.",
+    "keywords": [
+      "shark",
+      "bone"
+    ]
+  },
+  {
+    "id": "polar-bear",
+    "question": "Where do polar bears live?",
+    "text": "Polar bears live near the North Pole. They use sea ice to find food.",
+    "keywords": [
+      "polar",
+      "bear",
+      "live"
+    ]
+  },
+  {
+    "id": "chicken",
+    "question": "Where do eggs come from?",
+    "text": "Hens lay eggs. Some eggs can hatch into chicks.",
+    "keywords": [
+      "hen",
+      "egg"
+    ]
+  },
+  {
+    "id": "rabbit",
+    "question": "What do rabbits eat?",
+    "text": "Rabbits eat plants, such as grass. Their teeth keep growing.",
+    "keywords": [
+      "rabbit",
+      "eat"
+    ]
+  },
+  {
+    "id": "planet",
+    "question": "What is a planet?",
+    "text": "A planet moves around a star. Earth is the planet where we live.",
+    "keywords": [
+      "planet"
+    ]
+  },
+  {
+    "id": "sun",
+    "question": "What is the sun?",
+    "text": "The sun is a star near Earth. It gives us light and warmth.",
+    "keywords": [
+      "sun",
+      "what"
+    ]
+  },
+  {
+    "id": "mars",
+    "question": "Why is Mars red?",
+    "text": "Dust on Mars has rusty iron. That rust gives it a red color.",
+    "keywords": [
+      "mars",
+      "red"
+    ]
+  },
+  {
+    "id": "saturn",
+    "question": "Why does Saturn have rings?",
+    "text": "Rings around Saturn hold ice and rock. These bits move around the planet.",
+    "keywords": [
+      "saturn",
+      "ring"
+    ]
+  },
+  {
+    "id": "earth",
+    "question": "What shape is Earth?",
+    "text": "Earth is round like a ball. It is a bit wider at the middle.",
+    "keywords": [
+      "earth",
+      "shape"
+    ]
+  },
+  {
+    "id": "astronaut",
+    "question": "What does an astronaut do?",
+    "text": "An astronaut travels to space. They can study Earth from far above.",
+    "keywords": [
+      "astronaut"
+    ]
+  },
+  {
+    "id": "rocket",
+    "question": "How do rockets move?",
+    "text": "A rocket pushes hot gas behind it. That push moves the rocket forward.",
+    "keywords": [
+      "rocket",
+      "move"
+    ]
+  },
+  {
+    "id": "solar-system",
+    "question": "What is the solar system?",
+    "text": "The sun and its planets form a group. We call it the solar system.",
+    "keywords": [
+      "solar",
+      "system"
+    ]
+  },
+  {
+    "id": "eclipse",
+    "question": "What is an eclipse?",
+    "text": "One space body blocks light from another. A shadow can then fall on Earth.",
+    "keywords": [
+      "eclipse"
+    ]
+  },
+  {
+    "id": "meteor",
+    "question": "What is a shooting star?",
+    "text": "It is a small rock from space. It glows as it moves through air.",
+    "keywords": [
+      "shooting",
+      "star"
+    ]
+  },
+  {
+    "id": "constellation",
+    "question": "What is a constellation?",
+    "text": "Stars can seem to make a shape. People give these star groups names.",
+    "keywords": [
+      "constellation"
+    ]
+  },
+  {
+    "id": "satellite",
+    "question": "What is a satellite?",
+    "text": "A satellite goes around a space body. Our moon goes around Earth.",
+    "keywords": [
+      "satellite"
+    ]
+  },
+  {
+    "id": "heart",
+    "question": "What does the heart do?",
+    "text": "Your heart pumps blood through your body. Blood brings what your cells need.",
+    "keywords": [
+      "heart",
+      "do"
+    ]
+  },
+  {
+    "id": "lungs",
+    "question": "What do lungs do?",
+    "text": "Lungs help you breathe in air. They pass oxygen into your blood.",
+    "keywords": [
+      "lung",
+      "do"
+    ]
+  },
+  {
+    "id": "brain",
+    "question": "What does the brain do?",
+    "text": "Your brain helps you think and learn. It sends signals through your body.",
+    "keywords": [
+      "brain",
+      "do"
+    ]
+  },
+  {
+    "id": "bones",
+    "question": "Why do we have bones?",
+    "text": "Bones hold your body up. They help keep soft parts safe.",
+    "keywords": [
+      "bone",
+      "why"
+    ]
+  },
+  {
+    "id": "teeth",
+    "question": "What do teeth do?",
+    "text": "Teeth help cut and crush food. This makes it easier to eat.",
+    "keywords": [
+      "teeth",
+      "do"
+    ]
+  },
+  {
+    "id": "ears",
+    "question": "How do ears hear?",
+    "text": "Sound makes tiny parts in your ears move. Your brain turns signals into sounds.",
+    "keywords": [
+      "ear",
+      "hear"
+    ]
+  },
+  {
+    "id": "eyes",
+    "question": "How do eyes see?",
+    "text": "Eyes take in light. Your brain uses signals to make pictures.",
+    "keywords": [
+      "eye",
+      "see"
+    ]
+  },
+  {
+    "id": "skin",
+    "question": "What does skin do?",
+    "text": "Skin covers and protects your body. It helps you feel touch and warmth.",
+    "keywords": [
+      "skin",
+      "do"
+    ]
+  },
+  {
+    "id": "wash-hands",
+    "question": "Why should I wash my hands?",
+    "text": "Soap and water wash germs away. Clean hands help keep germs from spreading.",
+    "keywords": [
+      "wash",
+      "hand"
+    ]
+  },
+  {
+    "id": "breath",
+    "question": "Why do we breathe?",
+    "text": "Your body needs oxygen from the air. Breathing also lets waste gas leave.",
+    "keywords": [
+      "we",
+      "breathe"
+    ]
+  },
+  {
+    "id": "muscle",
+    "question": "How do muscles work?",
+    "text": "Muscles pull to move your body. They get shorter as they pull.",
+    "keywords": [
+      "muscle",
+      "work"
+    ]
+  },
+  {
+    "id": "taste",
+    "question": "How do we taste food?",
+    "text": "Tiny buds on your tongue sense tastes. Your nose helps with flavor too.",
+    "keywords": [
+      "taste",
+      "food"
+    ]
+  },
+  {
+    "id": "sneeze",
+    "question": "Why do we sneeze?",
+    "text": "A sneeze helps clear your nose. Air rushes out in a quick burst.",
+    "keywords": [
+      "sneeze"
+    ]
+  },
+  {
+    "id": "snow",
+    "question": "How does snow form?",
+    "text": "Water can freeze in cold clouds. Small ice bits join to make snowflakes.",
+    "keywords": [
+      "snow",
+      "form"
+    ]
+  },
+  {
+    "id": "wind",
+    "question": "What makes wind?",
+    "text": "Wind is air moving from place to place. Uneven warmth helps make air move.",
+    "keywords": [
+      "wind"
+    ]
+  },
+  {
+    "id": "thunder",
+    "question": "What makes thunder?",
+    "text": "Lightning heats the air very fast. The air expands and makes a loud sound.",
+    "keywords": [
+      "thunder"
+    ]
+  },
+  {
+    "id": "fog",
+    "question": "What is fog?",
+    "text": "Fog is a cloud near the ground. It holds tiny drops of water.",
+    "keywords": [
+      "fog"
+    ]
+  },
+  {
+    "id": "hail",
+    "question": "What is hail?",
+    "text": "Hail is made of balls of ice. They grow in strong storm clouds.",
+    "keywords": [
+      "hail"
+    ]
+  },
+  {
+    "id": "seasons",
+    "question": "Why do seasons change?",
+    "text": "Earth leans as it moves around the sun. This changes how much sunlight we get.",
+    "keywords": [
+      "season",
+      "change"
+    ]
+  },
+  {
+    "id": "dew",
+    "question": "What is dew?",
+    "text": "Cool air can leave drops on surfaces. We call these small drops dew.",
+    "keywords": [
+      "dew"
+    ]
+  },
+  {
+    "id": "puddle",
+    "question": "Why do puddles dry up?",
+    "text": "Water slowly turns into gas in the air. Warmth can make this happen faster.",
+    "keywords": [
+      "puddle",
+      "dry"
+    ]
+  },
+  {
+    "id": "rain-coat",
+    "question": "Why does a raincoat keep us dry?",
+    "text": "A raincoat has a layer that blocks water. Drops roll off its surface.",
+    "keywords": [
+      "raincoat",
+      "dry"
+    ]
+  },
+  {
+    "id": "desert",
+    "question": "What is a desert?",
+    "text": "A desert gets very little rain. Some deserts are hot and some are cold.",
+    "keywords": [
+      "desert"
+    ]
+  },
+  {
+    "id": "cactus",
+    "question": "How do cacti save water?",
+    "text": "Cacti store water in thick stems. A waxy skin helps keep it inside.",
+    "keywords": [
+      "cactus",
+      "water"
+    ]
+  },
+  {
+    "id": "flower",
+    "question": "Why do plants have flowers?",
+    "text": "Pollen helps plants make seeds. Bees move it from bloom to bloom.",
+    "keywords": [
+      "flower",
+      "why"
+    ]
+  },
+  {
+    "id": "root",
+    "question": "What do roots do?",
+    "text": "Roots hold a plant in place. They take in water from the soil.",
+    "keywords": [
+      "root",
+      "do"
+    ]
+  },
+  {
+    "id": "tree-rings",
+    "question": "What are tree rings?",
+    "text": "Many trees grow a new ring each year. Rings can show how a tree grew.",
+    "keywords": [
+      "tree",
+      "ring"
+    ]
+  },
+  {
+    "id": "fruit",
+    "question": "Why do plants make fruit?",
+    "text": "Fruit holds seeds. Animals can carry the seeds to new places.",
+    "keywords": [
+      "fruit"
+    ]
+  },
+  {
+    "id": "soil",
+    "question": "What is soil?",
+    "text": "Soil holds bits of rock and old plants. Many small living things live there.",
+    "keywords": [
+      "soil"
+    ]
+  },
+  {
+    "id": "mushroom",
+    "question": "Is a mushroom a plant?",
+    "text": "A mushroom is not a plant. It belongs to a group called fungi.",
+    "keywords": [
+      "mushroom",
+      "plant"
+    ]
+  },
+  {
+    "id": "sunflower",
+    "question": "Why are sunflowers called sunflowers?",
+    "text": "Their large flowers look like the sun. Young plants can turn toward sunlight.",
+    "keywords": [
+      "sunflower"
+    ]
+  },
+  {
+    "id": "pollen",
+    "question": "What is pollen?",
+    "text": "Pollen is a fine dust from flowers. It helps many plants make seeds.",
+    "keywords": [
+      "pollen"
+    ]
+  },
+  {
+    "id": "fern",
+    "question": "Do ferns have flowers?",
+    "text": "Ferns do not have flowers. They spread with tiny bits called spores.",
+    "keywords": [
+      "fern",
+      "flower"
+    ]
+  },
+  {
+    "id": "pikachu-type",
+    "question": "What type is Pikachu?",
+    "text": "That buddy is from a made-up world. It is an Electric type.",
+    "keywords": [
+      "pikachu",
+      "type"
+    ]
+  },
+  {
+    "id": "charmander-type",
+    "question": "What type is Charmander?",
+    "text": "That buddy is from a made-up world. It is a Fire type.",
+    "keywords": [
+      "charmander",
+      "type"
+    ]
+  },
+  {
+    "id": "squirtle-type",
+    "question": "What type is Squirtle?",
+    "text": "That buddy is from a made-up world. It is a Water type.",
+    "keywords": [
+      "squirtle",
+      "type"
+    ]
+  },
+  {
+    "id": "bulbasaur-type",
+    "question": "What type is Bulbasaur?",
+    "text": "That buddy is from a made-up world. It has a Grass type.",
+    "keywords": [
+      "bulbasaur",
+      "type"
+    ]
+  },
+  {
+    "id": "eevee",
+    "question": "What is Eevee?",
+    "text": "Eevee is from a made-up world. It can change into many forms.",
+    "keywords": [
+      "eevee"
+    ]
+  },
+  {
+    "id": "pokemon-real",
+    "question": "Are Pokemon real?",
+    "text": "Those buddies are from a made-up world. Real animals live in our world.",
+    "keywords": [
+      "pokemon",
+      "real"
+    ]
+  },
+  {
+    "id": "pokeball",
+    "question": "What is a Poke Ball?",
+    "text": "It is a ball in a made-up world. Stories use it to hold a buddy.",
+    "keywords": [
+      "poke",
+      "ball"
+    ]
+  },
+  {
+    "id": "two-three",
+    "question": "What is two plus three?",
+    "text": "Two plus three make five. We can count five fingers on one hand.",
+    "keywords": [
+      "two",
+      "plus",
+      "three"
+    ]
+  }
+]

@@ -23,10 +23,11 @@ export function inputDecision(text){
  return null;
 }
 export function parseQuestion(payload){
- if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).some(k=>!['question','buddyId'].includes(k)))throw new ApiError('BAD_INPUT',400);
+ if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).some(k=>!['question','buddyId','demo'].includes(k)))throw new ApiError('BAD_INPUT',400);
  if(typeof payload.question!=='string'||payload.question.trim().length<2||payload.question.length>300||/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(payload.question))throw new ApiError('BAD_INPUT',400);
  if(!Number.isInteger(payload.buddyId)||payload.buddyId<1||payload.buddyId>1025)throw new ApiError('BAD_INPUT',400);
- return {question:payload.question.trim(),buddy:catalog.find(b=>b.id===payload.buddyId)};
+ if('demo' in payload&&typeof payload.demo!=='boolean')throw new ApiError('BAD_INPUT',400);
+ return {question:payload.question.trim(),buddy:catalog.find(b=>b.id===payload.buddyId),demo:payload.demo===true};
 }
 /** Named rule codes identify false positives without logging rejected text. */
 export function outputRiskRules(value,{greeting=false}={}){

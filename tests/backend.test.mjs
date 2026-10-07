@@ -1,9 +1,10 @@
+const createChat=options=>makeChat({...options,bankLookup:()=>null,cache:null});
 import {test,before,after} from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-import {createChat,config as chatConfig} from '../netlify/functions/chat.mjs';import {createTranscribe,config as voiceConfig} from '../netlify/functions/transcribe.mjs';import health from '../netlify/functions/health.mjs';
+import {createChat as makeChat,config as chatConfig} from '../netlify/functions/chat.mjs';import {createTranscribe,config as voiceConfig} from '../netlify/functions/transcribe.mjs';import health from '../netlify/functions/health.mjs';
 import {inputDecision,safeOutput,lines} from '../netlify/lib/child-safety.mjs';import {models} from '../netlify/lib/models.mjs';import {createMemoryStore,reserve} from '../netlify/lib/quota.mjs';import {validateAudio} from '../netlify/lib/audio.mjs';
 import {getModels,getRouting} from '../netlify/lib/models.mjs';import {answerBank,authoredAnswer,unknownAnswer} from '../netlify/lib/answer-bank.mjs';
 const corpus=JSON.parse(await fs.readFile('tests/fixtures/adversarial.json','utf8')),env={...process.env},logs=[],originalLog=console.info;
-before(()=>{process.env.OPENROUTER_KEY='test-only-not-a-real-key';process.env.VALSEA_KEY='test-only-not-a-real-key';process.env.PAUSE_AI='false';delete process.env.DEMO_MODE;delete process.env.OPENROUTER_MODELS;delete process.env.AI_PRIVACY;delete process.env.AI_PROVIDER;console.info=value=>logs.push(JSON.parse(value));});
+before(()=>{process.env.OPENROUTER_KEY='test-only-not-a-real-key';process.env.VALSEA_KEY='test-only-not-a-real-key';process.env.PAUSE_AI='false';delete process.env.GROQ_API_KEY;delete process.env.DEMO_MODE;delete process.env.OPENROUTER_MODELS;delete process.env.AI_PRIVACY;delete process.env.AI_PROVIDER;console.info=value=>logs.push(JSON.parse(value));});
 after(()=>{console.info=originalLog;for(const key of Object.keys(process.env))if(!(key in env))delete process.env[key];Object.assign(process.env,env);});
 const noQuota=async()=>{};
 function request(payload={question:'Why are leaves green?',buddyId:25},options={}){return new Request('http://127.0.0.1:4178/api/chat',{method:'POST',headers:{Origin:'http://127.0.0.1:4178','X-PokeLearn-Consent':'1','Content-Type':'application/json',...options.headers},body:typeof payload==='string'?payload:JSON.stringify(payload),...options});}
@@ -62,7 +63,7 @@ test('voice validates/rebuilds multipart, fixed model/language/filename; sends o
  for(const text of ['child@example.com','I want to die','x'.repeat(301)]){const h=createTranscribe({reserve:noQuota,fetcher:async()=>new Response(JSON.stringify({text}))});const body=await (await h(await voiceRequest())).json();assert.equal(body.text,undefined);assert.notEqual(body.code,'OK');}
 });
 test('health reveals only boolean presence; all responses no-store; logs contain only codes, latency and fixed model IDs',async()=>{
- const response=await health(new Request('http://localhost/api/health'));assert.deepEqual(await response.json(),{openrouter:true,valsea:true});assert.match(response.headers.get('cache-control'),/no-store/);
+ const response=await health(new Request('http://localhost/api/health'));assert.deepEqual(await response.json(),{groq:false,openrouter:true,valsea:true});assert.match(response.headers.get('cache-control'),/no-store/);
  for(const row of logs){assert.deepEqual(Object.keys(row).sort(),['code','latencyMs','model','stage','status']);assert.equal(typeof row.latencyMs,'number');assert.ok(['none','valsea-transcribe',...models].includes(row.model));assert.doesNotMatch(JSON.stringify(row),/test-only|child@example|Why are leaves|private diagnostic|raw-secret/);}
 });
 test('permanent authentication/credit failures stop immediately; raw provider diagnostics never leave the server',async()=>{
@@ -79,12 +80,12 @@ test('config rejects paid/duplicate models and invalid privacy mode; strict is o
  assert.equal(getRouting({AI_PRIVACY:'strict'}).zdr,true);assert.equal(getRouting({AI_PRIVACY:'strict'}).data_collection,'deny');assert.equal(getRouting({}).data_collection,undefined);assert.throws(()=>getRouting({AI_PRIVACY:'allow'}));
 });
 test('authored demo bank stays behind guards and safety and never sends to a provider',async()=>{
- assert.equal(answerBank.length,22);for(const entry of answerBank)assert.ok(safeOutput(entry.text),entry.id);assert.ok(safeOutput(unknownAnswer));
+ assert.equal(answerBank.length,95);for(const entry of answerBank)assert.ok(safeOutput(entry.text),entry.id);assert.ok(safeOutput(unknownAnswer));
  assert.equal(authoredAnswer('Why is the sky blue?'),answerBank.find(x=>x.id==='sky').text);assert.equal(authoredAnswer('How do plants grow?'),answerBank.find(x=>x.id==='plants').text);assert.equal(authoredAnswer('A random unusual topic'),unknownAnswer);
  let calls=0;process.env.DEMO_MODE='true';const h=createChat({reserve:async()=>calls++,fetcher:async()=>{calls++;return ok(corpus.allowed[0]);}});
  for(const question of ['Why is the sky blue?','Unusual topic']){const body=await (await h(request({question,buddyId:25}))).json();assert.equal(body.source,question==='Unusual topic'?'fallback':'authored');assert.equal(body.answer,authoredAnswer(question));}
  assert.equal((await (await h(request({question:'I want to die',buddyId:25}))).json()).answer,lines.distress);
- assert.equal((await h(request(undefined,{headers:{Origin:'https://other.test'}}))).status,403);process.env.PAUSE_AI='true';assert.equal((await h(request())).status,503);process.env.PAUSE_AI='false';delete process.env.DEMO_MODE;assert.equal(calls,0);
+ assert.equal((await h(request(undefined,{headers:{Origin:'https://other.test'}}))).status,403);process.env.PAUSE_AI='true';assert.equal((await h(request())).status,503);process.env.PAUSE_AI='false';delete process.env.GROQ_API_KEY;delete process.env.DEMO_MODE;assert.equal(calls,0);
 });
 test('empty or low-confidence transcripts offer Type without forwarding a fabricated question',async()=>{
  for(const data of [{text:''},{text:'Invented words',segments:[{no_speech_prob:.9}]},{text:'Invented words',segments:[{avg_logprob:-2}]}]){
