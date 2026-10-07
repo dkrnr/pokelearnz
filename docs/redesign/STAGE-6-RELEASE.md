@@ -29,6 +29,15 @@ Source and generated HTML are separate; the final audits ran against the generat
 
 Remaining scene diagnostics include about 17 KiB unused CSS, blocking stylesheet/font dependencies, cache lifetimes and LCP about 2.9 seconds. The local test server has no compression, contributing document-latency diagnostics. Parents reports blocking font/CSS and main-thread/JS diagnostics despite no application scripts on that page; these diagnostic items need trace-level review, not a claim of parent-page script work. Scores are lab results, not real-user or production speed.
 
+Final Netlify preview mobile audit, same implementation commit, with `/parents/` audited directly to avoid the host's slash redirect:
+
+| Preview page | Performance | Accessibility | Best practices | SEO |
+|---|---:|---:|---:|---:|
+| `/` | 86 | 100 | 96 | 69 |
+| `/parents/` | 82 | 100 | 96 | 66 |
+
+The [deployed summary](STAGE-6-LIGHTHOUSE-PREVIEW.json) is the final run, not the better-scoring exploratory run (91/100/96/69 and 100/100/96/66). This variation shows the limits of a single lab measurement. Preview SEO is reduced by the verified platform header `x-robots-tag: noindex`; no application indexing directive is added. Best practices is reduced by a Chrome DevTools cookie issue from the injected `app.netlify.com/cdp` toolbar iframe. Netlify settings were not changed. Remaining deployed diagnostics include LCP (3.7 seconds main / 4.5 seconds parents), blocking dependencies, roughly 30 KiB cache-lifetime savings and 9 KiB image-delivery savings on main. Parents also reports about 3.8 seconds script evaluation despite no application scripts; toolbar/instrumentation impact needs trace-level review. Production hosting scores and indexing after an owner-approved merge remain unverified.
+
 ## Deployed evidence
 
 [Release PR #24](https://github.com/dkrnr/pokelearnz/pull/24) produced the automatic preview at `https://deploy-preview-24--pokelearnz.netlify.app/`, exact commit `e6894767ee45e21f8d5b1ea3526b5b63c4bc71b3`. The single live run sent three synthetic questions:
@@ -45,7 +54,7 @@ All expected response headers were present: CSP, HSTS (one year, includeSubDomai
 
 The targeted `_headers` fix permits only `https://app.netlify.com` as an embedded frame; the app still denies being framed, scripts remain self-only and no new wildcard is added. A named `FACT_QUASAR_AS_STAR` output rule rejects the observed misconception and invalidates it during cached-entry reads; prompt guidance and a strict-retry/cache regression cover recovery locally. The live rubric now checks output policy as well as transport shape. The policy is still not a general fact checker.
 
-A rebuilt-preview, zero-question CSP/header check is pending. No second live question run will be performed; a fresh corrected Groq answer is therefore unverified. Initial PR #24 CI and identity checks passed at the tested live commit; final head checks will be recorded separately.
+The rebuilt preview at commit `712d5162e8d240670fe150585fd7f208323c2ae9` passed a [zero-question CSP/header check](STAGE-6-CSP.json): all six headers were present and no CSP/runtime errors occurred across scene, chooser, activity and unsubmitted typing. No second live question run will be performed; a fresh corrected Groq answer is therefore unverified. Full GitHub CI and identity checks passed on the post-fix implementation commit `712d5162e8d240670fe150585fd7f208323c2ae9`. The final evidence/audit-URL commit changes documentation and the audit runner only; current PR checks show its latest status.
 
 ## Remaining boundaries
 

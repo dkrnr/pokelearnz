@@ -5,7 +5,7 @@ const directory=process.env.LIGHTHOUSE_DIR||'qa/artifacts/lighthouse';await fs.m
 try{
  chrome=await launch({chromePath:chromium.executablePath(),chromeFlags:['--headless=new','--no-sandbox','--disable-dev-shm-usage']});
  for(const route of ['/','/parents']){
-  const url=new URL(route,base).href;const result=await lighthouse(url,{port:chrome.port,output:['json','html'],logLevel:'error',onlyCategories:['performance','accessibility','best-practices','seo'],formFactor:'mobile'});
+  const url=new URL(route==='/'?route:'/parents/',base).href;const result=await lighthouse(url,{port:chrome.port,output:['json','html'],logLevel:'error',onlyCategories:['performance','accessibility','best-practices','seo'],formFactor:'mobile'});
   const name=route==='/'?'main':'parents';await fs.writeFile(path.join(directory,name+'.json'),result.report[0]);await fs.writeFile(path.join(directory,name+'.html'),result.report[1]);
   summary.push({page:route,url,scores:Object.fromEntries(Object.entries(result.lhr.categories).map(([id,c])=>[id,Math.round(c.score*100)])),remaining:Object.entries(result.lhr.audits).filter(([_,a])=>typeof a.score==='number'&&a.score<1&&a.scoreDisplayMode!=='manual').map(([id,a])=>({id,title:a.title,displayValue:a.displayValue||null})),warnings:result.lhr.runWarnings});
  }
