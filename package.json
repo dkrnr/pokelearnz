@@ -10,6 +10,7 @@
     "test:pwa": "node tests/final-qa.mjs",
     "screenshots": "node tests/v3-capture.mjs",
     "test:v3": "node tests/v3-smoke.mjs && node tests/v3-voice.mjs",
+    "test:voice": "node --test tests/voice.test.mjs && node --env-file-if-exists=.env scripts/test-voice.mjs",
     "screenshots:v3": "node tests/v3-capture.mjs",
     "test:animation": "node tests/v3-animation.mjs",
     "test:stage4": "node tests/stage4-browser.mjs",
