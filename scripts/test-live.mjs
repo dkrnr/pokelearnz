@@ -6,14 +6,15 @@ const browser=await chromium.launch(),results=[];let gateAutoSent=null;
 try{
  const page=await browser.newPage({serviceWorkers:'block'});await page.goto(url.href,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__STUDIO_QA__?.snapshot().catalog===1025,{}, {timeout:30000});
  for(const {question,facts}of questions){
-  const began=performance.now();let response;
-  const listener=r=>{if(new URL(r.url()).pathname.endsWith('/chat'))response=r;};page.on('response',listener);
+  const began=performance.now();let response;let sent=0;
+  const listener=r=>{if(new URL(r.url()).pathname.endsWith('/chat'))response=r;};page.on('response',listener);const requestListener=r=>{if(new URL(r.url()).pathname.endsWith('/chat'))sent++;};page.on('request',requestListener);
   await page.locator('#keyboardButton').click();await page.locator('#questionInput').fill(question);await page.locator('#questionForm button').click();
   if(await page.locator('#grownupDialog').isVisible()){
    const sum=(await page.locator('#gateQuestion').innerText()).match(/\((\d+) × (\d+)\) \+ (\d+)/);if(!sum)throw Error('Unsupported parental gate');
    await page.locator('#gateAnswer').fill(String(+sum[1]*+sum[2]+ +sum[3]));await page.locator('#unlockSetup').click();await page.locator('#onlineConsent').check();
-   await page.waitForTimeout(1800);gateAutoSent=!!response||['thinking','speaking'].includes((await page.evaluate(()=>window.__STUDIO_QA__.snapshot())).state);
-   if(!gateAutoSent){await page.locator('#grownupDialog [data-close]').click();await page.locator('#keyboardButton').click();await page.locator('#questionInput').fill(question);await page.locator('#questionForm button').click();}
+   await page.waitForFunction(()=>!window.__STUDIO_QA__.snapshot().pendingQuestion);
+   await page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/chat'),{timeout:18000}).catch(()=>{});
+   gateAutoSent=sent===1;
   }
   let row;
   try{
@@ -22,7 +23,7 @@ try{
    let validated=false;try{validated=readAnswer(body)===caption;}catch{}
    row={question,latencyMs:Math.round(performance.now()-began),state:snapshot.state,status:response?.status()||null,source:body.source||'unknown (legacy)',model:body.model||'unknown',code:body.code||'UNKNOWN',lastError:body.lastError||null,answer:caption,validated,pass:validated&&facts.test(caption),graceful:snapshot.state!=='thinking'&&!/User Safety/i.test(caption)};
   }catch{row={question,latencyMs:Math.round(performance.now()-began),pass:false,graceful:false,code:'UI_TIMEOUT'};}
-  results.push(row);console.log(JSON.stringify(row));page.off('response',listener);
+  results.push(row);console.log(JSON.stringify(row));page.off('response',listener);page.off('request',requestListener);
   if(['thinking','speaking','listening'].includes((await page.evaluate(()=>window.__STUDIO_QA__.snapshot())).state))await page.locator('#micButton').click();
   // Avoid draining the shared 8/minute quota. Ten synthetic prompts, no retries per prompt.
   await page.waitForTimeout(8000);

@@ -18,7 +18,7 @@ Open `http://127.0.0.1:4178/?mock=1`. Mock uses no microphone or providers. `/` 
 
 ## Local real functions
 
-Install the Netlify CLI locally or use an already installed `netlify`. No login/link/deployment is required for offline local development. Use [the blank example](.env.example) to add server-only settings to ignored `.env`; preserve existing keys if that file already exists and fill missing values privately. Set a **32+ character random `RATE_LIMIT_SALT`**; never use an API key as the salt. `ALLOWED_ORIGINS` must include the exact local origin and later the intended production origin. No wildcard. `PAUSE_AI=true` stops all provider access. Default global upstream-attempt cap is 200 per UTC day; shared-IP cap is 8 attempts per minute. Caps include chat retries and voice uploads.
+Install the Netlify CLI locally or use an already installed `netlify`. No login/link/deployment is required for offline local development. Use [the blank example](.env.example) to add server-only settings to ignored `.env`; preserve existing keys if that file already exists and fill missing values privately. Set a **32+ character random `RATE_LIMIT_SALT`**; never use an API key as the salt. Origins are limited to same-origin loopback development, the production site, and preview/branch hosts within `pokelearnz.netlify.app`. Other Netlify sites are rejected. `PAUSE_AI=true` stops all provider access. Default global upstream-attempt cap is 200 per UTC day; shared-IP cap is 8 attempts per minute. Caps include chat retries and voice uploads.
 
 ```sh
 npm run build

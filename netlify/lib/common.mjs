@@ -1,11 +1,22 @@
 export class ApiError extends Error {constructor(code,status=503){super(code);this.code=code;this.status=status;}}
 export function reply(body,status=200){return new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, private','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'}});}
+export function allowedOrigin(origin,requestUrl,env=process.env){
+ if(!origin)return false;
+ let parsed;try{parsed=new URL(origin);}catch{return false;}
+ // Origin headers contain only a serialized origin, never credentials, paths or queries.
+ if(parsed.origin!==origin)return false;
+ const local=['localhost','127.0.0.1','[::1]'];
+ if(local.includes(requestUrl.hostname))return local.includes(parsed.hostname)&&origin===requestUrl.origin;
+ const ownSite=value=>/^https:\/\/(?:pokelearnz|(?:deploy-preview-[1-9]\d*|[a-z0-9]+(?:-[a-z0-9]+)*)--pokelearnz)\.netlify\.app$/.test(value);
+ // Netlify build variables may not be available in functions. Trust their exact URLs
+ // only within this site's namespace, then use the same strict host fallback.
+ const configured=[env.URL,env.DEPLOY_PRIME_URL].filter(value=>value&&ownSite(value));
+ return configured.includes(origin)||ownSite(origin);
+}
 export function guard(request){
  if(request.method!=='POST')throw new ApiError('METHOD_NOT_ALLOWED',405);
  const origin=request.headers.get('origin'),url=new URL(request.url);
- const configured=[process.env.URL,process.env.DEPLOY_PRIME_URL,...(process.env.ALLOWED_ORIGINS||'https://pokelearnz.netlify.app').split(',')].filter(Boolean).map(value=>value.trim());
- const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
- if(!origin || !(configured.includes(origin)||(local&&origin===url.origin)))throw new ApiError('FORBIDDEN',403);
+ if(!allowedOrigin(origin,url))throw new ApiError('FORBIDDEN',403);
  if(request.headers.get('sec-fetch-site')==='cross-site')throw new ApiError('FORBIDDEN',403);
  if(request.headers.get('x-pokelearn-consent')!=='1')throw new ApiError('CONSENT_REQUIRED',403);
  if(/^(1|true|yes)$/i.test(process.env.PAUSE_AI||''))throw new ApiError('RESTING');
