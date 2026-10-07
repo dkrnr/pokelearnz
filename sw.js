@@ -4,7 +4,7 @@ importScripts('/sprite-cache.js');
 const SPRITES = 'pokelearn-sprites-v4-bytes';
 const SHELL = [
   '/', '/index.html', '/style.css', '/app.js', '/chooser.js', '/activity-player.js', '/authored-audio.js', '/activities.js', '/art.js', '/buddy.js', '/animated-coverage.js', '/sprite-cache.js', '/buddy-catalog.json',
-  '/locales.js', '/safety.js', '/manifest.webmanifest', '/assets/mark.svg',
+  '/locales.js', '/safety.js', '/answer-contract.js', '/manifest.webmanifest', '/assets/mark.svg',
   '/assets/fonts/ReadexPro-Regular.woff', '/assets/fonts/ReadexPro-Bold.woff',
   '/assets/icons/icon-192.png', '/assets/icons/icon-512.png', '/assets/icons/maskable-512.png', '/assets/icons/apple-touch-icon.png',
   ...__BUDDY_ASSETS__, ...__AUTHORED_AUDIO__,

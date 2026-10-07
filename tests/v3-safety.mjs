@@ -8,14 +8,14 @@ try{
 const {context,p}=await fresh(()=>localStorage.setItem('pokelearn_history','old-private-question'));
 assert.equal(await p.evaluate(()=>localStorage.getItem('pokelearn_history')),null);
 const responses=['Leaves use light to make food.','Come back tomorrow.','Collect them all.','You lost.','Keep chatting.','Daily goals help you.','Turn on notifications.','These beautiful shiny leaves gently use bright sunlight daily.',''];let answer,captured;
-await p.route('**/.netlify/functions/chat',r=>{captured=r.request().postDataJSON();return r.fulfill({contentType:'application/json',body:JSON.stringify({choices:[{message:{content:answer}}]})});});
+await p.route('**/.netlify/functions/chat',r=>{captured=r.request().postDataJSON();return r.fulfill({contentType:'application/json',body:JSON.stringify({answer:answer,source:'ai',model:'fixture',code:'OK'})});});
 for(answer of responses){await type(p);await p.waitForFunction(()=>['error','speaking'].includes(window.__STUDIO_QA__.snapshot().state));assert.equal((await snapshot(p)).state,answer===responses[0]?'speaking':'error');assert.deepEqual(Object.keys(captured).sort(),['buddyId','question']);assert.equal(captured.buddyId,25);assert.equal(typeof captured.question,'string');assert.equal(await p.locator('#keyboardDialog').isVisible(),false);await p.locator('#micButton').click();}
 assert.equal(await p.evaluate(()=>JSON.stringify(localStorage).includes('Why do leaves')),false);await context.close();console.log('PASS migration removes legacy question data; fresh question/ID-only requests; bounded answers reject pressure/long/empty output without histories or automatic follow-ups');
 for(const action of ['stop','sleep','grownups','buddy']){
  const {context,p}=await fresh();let pending,release;await p.route('**/.netlify/functions/chat',r=>new Promise(resolve=>{pending=r;release=resolve;}));
  const sent=p.waitForRequest('**/.netlify/functions/chat');await type(p);await sent;
  if(action==='stop')await p.locator('#micButton').click();if(action==='sleep')await p.locator('#finish').click();if(action==='grownups')await p.locator('#grownupOpen').click();if(action==='buddy'){await p.locator('#changeBuddy').click();await p.locator('#buddySearch').fill('bulbasaur');await p.locator('#buddyGrid button').click();}
- await pending.fulfill({contentType:'application/json',body:JSON.stringify({choices:[{message:{content:'LATE RESPONSE.'}}]})}).catch(()=>{});release();await p.waitForTimeout(100);
+ await pending.fulfill({contentType:'application/json',body:JSON.stringify({answer:'LATE RESPONSE.',source:'ai',model:'fixture',code:'OK'})}).catch(()=>{});release();await p.waitForTimeout(100);
  assert.doesNotMatch(await p.locator('#captionText').innerText(),/LATE/);assert.equal((await snapshot(p)).requestActive,false);await context.close();
 }
 console.log('PASS late provider responses cannot undo Stop, Sleep, grown-up opening or buddy change');

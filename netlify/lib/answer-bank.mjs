@@ -1,12 +1,14 @@
 /** Authored science answers. Specific question patterns avoid arbitrary substring matches. */
 export const answerBank=Object.freeze([
+ {id:'axolotl',match:/\baxolotls?\b.{0,25}\b(?:eat|food|diet)\b/i,text:'Axolotls eat worms, bugs, and small fish. They suck food into their mouths.'},
+ {id:'octopus',match:/\boctop(?:us|uses)\b.{0,25}\b(?:three|3) hearts\b/i,text:'Two hearts pump blood through the gills. One pumps blood around the body. This helps it take in oxygen.'},
  {id:'sky',match:/\bsky\b.{0,20}\bblue\b|\bblue\b.{0,20}\bsky\b/i,text:'Sunlight has many colors. Air spreads blue light across the sky.'},
  {id:'plants',match:/\bplants?\b.{0,25}\bgrow\b|\bgrow\b.{0,25}\bplants?\b/i,text:'Plants need light, water, and air. Roots take water from the soil.'},
  {id:'rain',match:/\b(?:why|how|where)\b.{0,25}\b(?:rain|rains|rainfall)\b/i,text:'Clouds hold tiny drops of water. Heavy drops fall as rain.'},
  {id:'moon',match:/\bmoon\b.{0,25}\b(?:shine|shines|light|glow)\b/i,text:'The moon does not make light. It reflects light from the sun.'},
  {id:'rainbow',match:/\b(?:why|how|what)\b.{0,25}\brainbows?\b/i,text:'Sunlight passes through drops of water. The drops split light into many colors.'},
- {id:'leaves',match:/\bleaves?\b.{0,20}\b(?:green|light|food)\b/i,text:'Leaves use light to make food. A green part helps catch the light.'},
- {id:'fish',match:/\bfish\b.{0,20}\b(?:breathe|breathes|breathing)\b/i,text:'Fish use gills to breathe. Gills take air from the water.'},
+ {id:'leaves',match:/\bleaves?\b.{0,20}\b(?:green|light|food)\b/i,text:'Leaves bounce green light back to us. They use other light to make food.'},
+ {id:'fish',match:/\bfish\b.{0,20}\b(?:breathe|breathes|breathing)\b/i,text:'Fish use gills to breathe. Gills take oxygen from the water.'},
  {id:'birds',match:/\bbirds?\b.{0,20}\b(?:fly|flies|flying)\b/i,text:'Wings push air down as birds flap. That push helps lift them up.'},
  {id:'bees',match:/\bbees?\b.{0,25}\b(?:honey|flowers)\b/i,text:'Bees gather sweet juice from flowers. They turn it into honey.'},
  {id:'magnets',match:/\b(?:how|why|what)\b.{0,20}\bmagnets?\b/i,text:'Magnets pull some kinds of metal. They can push other magnets away.'},
@@ -22,4 +24,5 @@ export const answerBank=Object.freeze([
  {id:'math',match:/\b(?:two (?:and|plus) two|2\s*\+\s*2)\b/i,text:'Two and two make four. Four is an even number.'}
 ]);
 export const unknownAnswer='I do not know that yet. A trusted grown-up can help us learn.';
-export function authoredAnswer(question){return answerBank.find(item=>item.match.test(question))?.text||unknownAnswer;}
+export function knownAnswer(question){return answerBank.find(item=>item.match.test(question));}
+export function authoredAnswer(question){return knownAnswer(question)?.text||unknownAnswer;}

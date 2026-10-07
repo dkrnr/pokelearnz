@@ -30,7 +30,7 @@ try {
     const transcribe = route.request().url().endsWith('transcribe');
     await route.fulfill({ contentType:'application/json', body:JSON.stringify(transcribe
       ? { text:'Why do leaves need light?' }
-      : { choices:[{ message:{ content:'Leaves use light to make food.' } }] }) });
+      : {answer:'Leaves use light to make food.',source:'ai',model:'fixture',code:'OK'}) });
   });
   await page.goto(base, { waitUntil:'domcontentloaded' });
   await page.waitForFunction(() => window.__STUDIO_QA__?.snapshot().catalog === 1025);

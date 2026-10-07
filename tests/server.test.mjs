@@ -39,7 +39,7 @@ test("API method guard and missing-key response require no provider call", async
     headers: { "Content-Type": "application/json",Origin:base,"X-PokeLearn-Consent":"1" },
     body: '{"question":"What is a quasar?","buddyId":25}',
   });
-  assert.equal(r.status, 503);
+  assert.equal(r.status, 200);
   assert.match(r.headers.get("cache-control"), /no-store/);
-  assert.equal((await r.json()).code,"RESTING");
+  assert.equal((await r.json()).source,"fallback");
 });

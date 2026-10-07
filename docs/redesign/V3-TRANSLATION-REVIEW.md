@@ -9,3 +9,5 @@ Stage 2 machine-translated keys awaiting native-speaker review: `plantProp`, `fi
 Stage 3 Part A: `moving`, `artwork`, `tapGiggle`, `tapPeek`, `tapSpin`, `tapWiggle`, `tapStretch` in SI/TA are machine-translated drafts, not human-reviewed. Type names and generation labels remain English with pictograms/color. Every new type button has a word plus visual mark; color alone is never the label.
 
 Stage 3 Part B: `rateLimited` SI/TA captions are machine-translated drafts. The server's deterministic safeguarding/rest/private-data replies remain English, as do generated science answers. Regex safeguarding coverage in SI/TA is limited to a few distress/sensitive keywords and is not a language-safety audit.
+
+Stage 5: `retryReply` and `audioSilent` in locales.js are machine-translated Sinhala/Tamil drafts requiring human review. No safety certification is implied.

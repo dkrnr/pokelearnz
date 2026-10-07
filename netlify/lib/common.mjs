@@ -23,13 +23,19 @@ export async function readJson(request,limit=8192){
  if(request.headers.get('content-type')?.split(';')[0]!=='application/json')throw new ApiError('BAD_INPUT',400);
  try{return JSON.parse((await readLimited(request,limit)).toString('utf8'));}catch(error){if(error instanceof ApiError)throw error;throw new ApiError('BAD_INPUT',400);}
 }
-export function log(code,latencyMs,model='none'){
+export function log(code,latencyMs,model='none',stage='answer',status=200){
  // Deliberately never include exception messages, URLs, request bodies, headers, audio, IP or response text.
- console.info(JSON.stringify({code,latencyMs:Math.round(latencyMs),model}));
+ console.info(JSON.stringify({stage,model,status,code,latencyMs:Math.round(latencyMs)}));
 }
 export function failure(error){return reply({code:error instanceof ApiError?error.code:'RESTING'},error instanceof ApiError?error.status:503);}
 export async function providerJson(response,limit=65536){
- if(!response.ok){let privacy=false;try{const diagnostic=JSON.parse((await readLimited(response,8192)).toString('utf8'));privacy=response.status===404&&/(?:data policy|zero.?data.?retention|\bzdr\b|privacy)/i.test(diagnostic?.error?.message||'');}catch{}const codes={400:'PROVIDER_REJECTED',401:'PROVIDER_AUTH',402:'PROVIDER_CREDIT',403:'PROVIDER_AUTH',404:'PROVIDER_UNAVAILABLE',429:'RATE_LIMITED'};throw new ApiError(privacy?'PROVIDER_PRIVACY_UNAVAILABLE':codes[response.status]||'PROVIDER_FAILED',response.status===429?429:502);}
+ if(!response.ok){let privacy=false,daily=false;try{const diagnostic=JSON.parse((await readLimited(response,8192)).toString('utf8'));const message=diagnostic?.error?.message||'';privacy=response.status===404&&/(?:data policy|zero.?data.?retention|\bzdr\b|privacy)/i.test(message);daily=response.status===429&&/(?:daily|per.day|free-models-per-day)/i.test(message);}catch{}const codes={400:'PROVIDER_REJECTED',401:'PROVIDER_AUTH',402:'PROVIDER_CREDIT',403:'PROVIDER_AUTH',404:'PROVIDER_UNAVAILABLE',429:'RATE_LIMITED'};throw new ApiError(daily?'DAILY_LIMIT':privacy?'PROVIDER_PRIVACY_UNAVAILABLE':codes[response.status]||'PROVIDER_FAILED',response.status===429?429:502);}
  try{return JSON.parse((await readLimited(response,limit)).toString('utf8'));}catch(error){if(error instanceof ApiError)throw error;throw new ApiError('PROVIDER_FAILED',502);}
 }
-export const brainReply=(content,code='OK',details={})=>reply({code,...details,choices:[{message:{role:'assistant',content}}]});
+export const brainReply=(answer,code='OK',details={})=>reply({code,source:'safety',model:'none',lastError:null,...details,answer});
+/** Abort also races completion, so a broken adapter that ignores signal cannot hold the turn. */
+export async function abortable(operation,signal){
+ if(signal.aborted)throw new ApiError('REQUEST_TIMEOUT',504);
+ let abort;const stopped=new Promise((_,reject)=>{abort=()=>reject(new ApiError('REQUEST_TIMEOUT',504));signal.addEventListener('abort',abort,{once:true});});
+ try{return await Promise.race([Promise.resolve().then(operation),stopped]);}finally{signal.removeEventListener('abort',abort);}
+}

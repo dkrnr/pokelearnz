@@ -1421,3 +1421,6 @@ body {
 @media(max-width:600px){.scene-tools{gap:7px}.scene-tools .sticker{padding:6px 8px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.buddy-tap[data-trick],.buddy-cell.previewing .sprite-frame{animation:none!important}}
 @media(min-width:900px) and (max-height:900px){.scene-tools{justify-content:flex-start}.scene-tools .sleep{margin-left:auto}}
+#debugSource{padding:8px;border:3px solid currentColor;font-weight:700}
+#debugSource[data-source=ai]{background:#daf5dc;color:#145221}
+#debugSource[data-source=authored]{background:#dcecff;color:#183f75}

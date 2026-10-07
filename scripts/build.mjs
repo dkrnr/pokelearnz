@@ -21,6 +21,7 @@ for (const name of [
   "pokemonPersonalities.json",
   "locales.js",
   "safety.js",
+  "answer-contract.js",
   "sw.js",
   "manifest.webmanifest",
 ])
