@@ -51,6 +51,7 @@ test('atomic daily and shared-IP quotas do not overshoot under concurrent reques
 });
 test('media byte/magic/type/duration validation handles WebM Opus and normal/fragmented MP4 AAC',async()=>{
  for(const [file,mime]of [['chrome.webm','audio/webm'],['safari.m4a','audio/mp4'],['audio.m4a','audio/mp4']]){const audio=await validateAudio(await fs.readFile('tests/fixtures/'+file),mime);assert.ok(audio.duration>1&&audio.duration<1.2);}
+ for(const [file,mime]of [['too-short.webm','audio/webm'],['too-short.m4a','audio/mp4']])await assert.rejects(validateAudio(await fs.readFile('tests/fixtures/'+file),mime),error=>error.code==='TYPE_INSTEAD');
  for(const mime of ['audio/webm','audio/mp4','text/plain'])await assert.rejects(validateAudio(Buffer.from('invalid file'),mime));
  await assert.rejects(validateAudio(Buffer.alloc(2*1024*1024+1),'audio/webm'),error=>error.status===413);
  const long=await fs.readFile('tests/fixtures/chrome.webm');const duration=long.indexOf(Buffer.from([0x44,0x89,0x88]));assert.ok(duration>0);long.writeDoubleBE(46000,duration+3);await assert.rejects(validateAudio(long,'audio/webm'),error=>error.code==='TYPE_INSTEAD');
