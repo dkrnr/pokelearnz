@@ -1,6 +1,6 @@
 # Stage 5 — core-loop reliability
 
-Work is on `backend/hardening`, draft [PR #10](https://github.com/dkrnr/pokelearn/pull/10). The standalone root and origin were confirmed as `/performance/projects/dkrnr/pokelearn` / `dkrnr/pokelearn`. No main changes, merge, force-push, deployment command, Netlify setting change or account change. Private `.env` was read only by explicit local-provider tests, never printed, edited or staged. User-owned untracked notes/research were left alone.
+Work is on `backend/hardening`, draft [PR #10](https://github.com/dkrnr/pokelearnz/issues/10). The standalone root and origin were confirmed as `/performance/projects/dkrnr/pokelearn` / `dkrnr/pokelearn`. No main changes, merge, force-push, deployment command, Netlify setting change or account change. Private `.env` was read only by explicit local-provider tests, never printed, edited or staged. User-owned untracked notes/research were left alone.
 
 ## Axolotl failure and root cause
 

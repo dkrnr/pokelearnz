@@ -2,7 +2,7 @@
 
 > Latest continuation: the small-talk fix is pushed and the rebuilt preview completed its live test with **8/10 passing**. The greeting and gate auto-send pass; upstream DAILY_LIMIT caused two unknown fallbacks. See [the current recheck report](V3-STAGE-6-RECHECK.md). The missing-salt result below is historical and has been superseded by the user setting it. Subsequent Stage 6 work remains gated.
 
-Checked 2026-10-07. Work is on `redesign/kid-friendly-v3` for [PR #9](https://github.com/dkrnr/pokelearn/pull/9). [PR #10](https://github.com/dkrnr/pokelearn/pull/10) was confirmed merged into this branch at `9f640af45da017fa9af8b6134937018939ba15ec`. `git fetch`, repository-root and GitHub authentication checks passed after granting the tools access outside the sandbox. The initial sandbox failures were environmental, not an invalid GitHub login.
+Checked 2026-10-07. Work is on `redesign/kid-friendly-v3` for [PR #9](https://github.com/dkrnr/pokelearnz/issues/9). [PR #10](https://github.com/dkrnr/pokelearnz/issues/10) was confirmed merged into this branch at `9f640af45da017fa9af8b6134937018939ba15ec`. `git fetch`, repository-root and GitHub authentication checks passed after granting the tools access outside the sandbox. The initial sandbox failures were environmental, not an invalid GitHub login.
 
 ## Changes
 
@@ -40,6 +40,6 @@ The preview HTML response observed during Step 0 had Content-Security-Policy, mi
 
 ## Scope held at the live gate
 
-The user required a passing live run before Step 1. The run failed, so static pages/privacy policies, SEO/social image, Lighthouse tooling, the interaction CSP audit, portfolio README/ARCHITECTURE/DECISIONS work were not started. [Issue #16](https://github.com/dkrnr/pokelearn/issues/16) and [issue #21](https://github.com/dkrnr/pokelearn/issues/21) remain open. PR #9 and both issues are updated with this evidence and blocker.
+The user required a passing live run before Step 1. The run failed, so static pages/privacy policies, SEO/social image, Lighthouse tooling, the interaction CSP audit, portfolio README/ARCHITECTURE/DECISIONS work were not started. [Issue #16](https://github.com/dkrnr/pokelearnz/issues/16) and [issue #21](https://github.com/dkrnr/pokelearnz/issues/21) remain open. PR #9 and both issues are updated with this evidence and blocker.
 
 Risks and limitations: this remains a university demo with unavailable preview answers; the arithmetic gate is not authenticated parental consent; free providers may retain/train on prompts; physical-device and provider retention checks remain outstanding. Existing local/backend regressions passing must not be interpreted as a working live service or public-launch approval. Pre-existing untracked local handoff/research files were left untouched.

@@ -84,4 +84,4 @@ Pushed Stage 2 implementation milestones:
 - `c97cce0` — punctuation, accent, gender-symbol and padded-number search, with numeric IDs matched exactly.
 - The report/screenshots checkpoint is the commit containing this file.
 
-[Compare v2 → v3 on GitHub](https://github.com/dkrnr/pokelearn/compare/redesign/kid-friendly-v2...redesign/kid-friendly-v3). No GitHub CLI was used. Stopped after Stage 2 as requested.
+[Compare v2 → v3 on GitHub](https://github.com/dkrnr/pokelearnz/compare/redesign/kid-friendly-v2...redesign/kid-friendly-v3). No GitHub CLI was used. Stopped after Stage 2 as requested.

@@ -1,5 +1,7 @@
 # PokeLearn
 
+Source repository: [dkrnr/pokelearnz](https://github.com/dkrnr/pokelearnz). Historical PRs #1–#10 are preserved as closed archive issues; their original reviews, checks and event history are not recreated. The issue numbers and development reports remain available.
+
 A voice-first game for ages 6–9: choose any of 1,025 Pokémon as a teacher, tap the mic and talk. Persistent captions, keyboard fallback, six finite authored activities as scene props, and a calm Sleep ending. Moving / Artwork switches confirmed animated GIFs and official artwork; reduced motion stays static. No streaks, counters, reminders, notifications, autoplay or endless follow-ups.
 
 The UI checkpoint is on `redesign/kid-friendly-v3`. This `backend/hardening` branch starts from that checkpoint and adds separately reviewable server safeguards. No deployment/merge or Netlify setting change. See [Stage 4 development and repository report](docs/redesign/V3-STAGE-4.md), [Part A coverage/screens/performance](docs/redesign/V3-STAGE-3-A.md) and [Part B findings/tests/limits](docs/redesign/V3-STAGE-3-B.md).

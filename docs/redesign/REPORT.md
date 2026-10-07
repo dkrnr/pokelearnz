@@ -43,7 +43,7 @@ Open `http://127.0.0.1:4178`. Local mock: `http://127.0.0.1:4178/?mock=1`. For b
 
 Every milestone was pushed with `git push -u origin redesign/kid-friendly-v2`. SSH Git authentication succeeds. `gh auth status` reports invalid authentication for the configured GitHub accounts, so a draft PR cannot be opened through `gh` in this session. No authentication settings or remotes were changed.
 
-Compare URL for creating a draft PR into main: https://github.com/dkrnr/pokelearn/compare/main...redesign/kid-friendly-v2
+Compare URL for creating a draft PR into main: https://github.com/dkrnr/pokelearnz/compare/main...redesign/kid-friendly-v2
 
 No Netlify branch preview URL was verified. The likely branch hostname could not be accessed, and authenticated deployment metadata is unavailable. This is not a claim that no preview exists.
 

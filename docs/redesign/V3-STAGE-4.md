@@ -74,13 +74,13 @@ The offline adversarial corpus remains enforced; adding the new follow-up case d
 
 The repository is standalone at `/performance/projects/dkrnr/pokelearn` with origin `git@github-dkrnr:dkrnr/pokelearn.git`. Initial sandboxed `gh` diagnostics looked invalid because network/keyring access was restricted; a network-enabled check authenticated the existing `dkrnr` account. No login, token, SSH-key or account setting was changed. `gh repo set-default dkrnr/pokelearn` set the local repository default; every repository command/API endpoint named this repository explicitly. Every `gh api` request payload was printed before sending it.
 
-- [Draft PR #9 — UI](https://github.com/dkrnr/pokelearn/pull/9): `redesign/kid-friendly-v3` → `main`.
-- [Draft PR #10 — backend](https://github.com/dkrnr/pokelearn/pull/10): `backend/hardening` → `redesign/kid-friendly-v3`.
+- [Draft PR #9 — UI](https://github.com/dkrnr/pokelearnz/issues/9): `redesign/kid-friendly-v3` → `main`.
+- [Draft PR #10 — backend](https://github.com/dkrnr/pokelearnz/issues/10): `backend/hardening` → `redesign/kid-friendly-v3`.
 - Added `.github/workflows/ci.yml` to both working branches: pushes to main/v3/backend and PRs into main/v3; Node 24, `npm ci`, Chromium installation, build and every available deterministic test. Job/check name is **CI**, with contents-read-only permissions, no AI keys and no deployment step. Live smoke/catalog/audit tools remain explicit developer diagnostics, not CI calls.
 - The shared `scripts/test-all.mjs` starts an isolated local server, removes provider configuration/keys from child-process environments, runs all available unit/browser suites, and stops its own server. Optional entries let the UI branch run its complete suite without importing backend-only tests. Screenshot generators and live-provider tools are not regression tests.
 - Added PR and issue templates, minimal `SECURITY.md` and branch-flow `CONTRIBUTING.md` on both branches. Only CI/repository scaffolding was added to v3; no backend merge/cherry-pick occurred.
 - Created eight labels: `area:ui`, `area:backend`, `area:safety`, `area:content`, `area:voice`, `area:seo`, `area:release`, `priority:high`.
-- Created [Uni demo](https://github.com/dkrnr/pokelearn/milestone/1) and [Production-ready](https://github.com/dkrnr/pokelearn/milestone/2) milestones.
+- Created [Uni demo](https://github.com/dkrnr/pokelearnz/milestone/1) and [Production-ready](https://github.com/dkrnr/pokelearnz/milestone/2) milestones.
 - Created the twelve issues below, each with acceptance criteria and a milestone.
 
 ### Main protection applied and verified
@@ -102,18 +102,18 @@ Secret scanning and secret-scanning push protection were already **enabled** and
 
 ## Remaining work
 
-- [#11 — Test real tablets and mobile recording end to end](https://github.com/dkrnr/pokelearn/issues/11)
-- [#12 — Run supervised kid usability testing](https://github.com/dkrnr/pokelearn/issues/12)
-- [#13 — Human-review Sinhala and Tamil interface and safety](https://github.com/dkrnr/pokelearn/issues/13)
-- [#14 — Record and review authored activity narration](https://github.com/dkrnr/pokelearn/issues/14)
-- [#15 — Evaluate realtime or streaming voice](https://github.com/dkrnr/pokelearn/issues/15)
-- [#16 — Add SEO and parent-facing privacy pages](https://github.com/dkrnr/pokelearn/issues/16)
-- [#17 — Choose and verify a private or paid provider before public launch](https://github.com/dkrnr/pokelearn/issues/17)
-- [#18 — Review Valsea policy and child-service suitability](https://github.com/dkrnr/pokelearn/issues/18)
-- [#19 — Verify rate limits and quotas in production](https://github.com/dkrnr/pokelearn/issues/19)
-- [#20 — Verify monitoring and cost caps](https://github.com/dkrnr/pokelearn/issues/20)
-- [#21 — Verify deployed CSP and security headers](https://github.com/dkrnr/pokelearn/issues/21)
-- [#22 — Close moderation, privacy-detection and science-quality gaps](https://github.com/dkrnr/pokelearn/issues/22)
+- [#11 — Test real tablets and mobile recording end to end](https://github.com/dkrnr/pokelearnz/issues/11)
+- [#12 — Run supervised kid usability testing](https://github.com/dkrnr/pokelearnz/issues/12)
+- [#13 — Human-review Sinhala and Tamil interface and safety](https://github.com/dkrnr/pokelearnz/issues/13)
+- [#14 — Record and review authored activity narration](https://github.com/dkrnr/pokelearnz/issues/14)
+- [#15 — Evaluate realtime or streaming voice](https://github.com/dkrnr/pokelearnz/issues/15)
+- [#16 — Add SEO and parent-facing privacy pages](https://github.com/dkrnr/pokelearnz/issues/16)
+- [#17 — Choose and verify a private or paid provider before public launch](https://github.com/dkrnr/pokelearnz/issues/17)
+- [#18 — Review Valsea policy and child-service suitability](https://github.com/dkrnr/pokelearnz/issues/18)
+- [#19 — Verify rate limits and quotas in production](https://github.com/dkrnr/pokelearnz/issues/19)
+- [#20 — Verify monitoring and cost caps](https://github.com/dkrnr/pokelearnz/issues/20)
+- [#21 — Verify deployed CSP and security headers](https://github.com/dkrnr/pokelearnz/issues/21)
+- [#22 — Close moderation, privacy-detection and science-quality gaps](https://github.com/dkrnr/pokelearnz/issues/22)
 
 ## Verification and open limits
 

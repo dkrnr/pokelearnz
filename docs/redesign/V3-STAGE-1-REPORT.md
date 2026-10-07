@@ -43,6 +43,6 @@ The six authored activities and prior v2 browser/PWA test scripts are preserved,
 - `0abb1ca`: Pokémon scene, chooser, mock/live frontend voice flow and source/translation notes, committed/pushed.
 - Final evidence commit: Stage 1 verification scripts, visual review, screenshots and this report.
 
-Compare: https://github.com/dkrnr/pokelearn/compare/redesign/kid-friendly-v2...redesign/kid-friendly-v3
+Compare: https://github.com/dkrnr/pokelearnz/compare/redesign/kid-friendly-v2...redesign/kid-friendly-v3
 
 Stopped after Stage 1. No gh, merge, force push, history rewrite, deployment or Netlify setting change. Wait for the user's “continue” before Stage 2.
