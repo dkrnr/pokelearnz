@@ -1,0 +1,19 @@
+{
+  "25-official.webp": {
+    "source": "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/25.png",
+    "upstream": "PokeAPI/sprites",
+    "transform": "ImageMagick WebP quality 82; 475\u00d7475; original transparency retained",
+    "sourceBytes": 118057,
+    "outputBytes": 20588,
+    "notice": "Unofficial fan project. Artwork belongs to its respective rights holders."
+  },
+  "moving25": {
+    "source": "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/versions/generation-v/black-white/animated/25.gif",
+    "bytes": 23958,
+    "nativeSize": [
+      50,
+      46
+    ],
+    "use": "Single locally bundled default animation; all others remain CDN images."
+  }
+}

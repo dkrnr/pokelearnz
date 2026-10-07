@@ -1,1605 +1,516 @@
-/**
- * PokeLearn — Pokémon browser, VALSEA realtime transcription, voice UI
- */
-
-const POKEAPI_LIST =
-  "https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0";
-const SPRITE_BASE =
-  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
-
-const DEFAULT_POKEMON_ID = 25;
-const MIN_RECORDING_MS = 1500;
-
-const CHARACTER_RULES =
-  'Never say "Certainly!", "Great question!", "Of course!", or any assistant-style phrases. Never sound like an AI assistant. Always speak AS the Pokémon in first person using their real speech patterns. Always end with something that makes the kid want to ask another question.';
-
-const POKEMON_PERSONALITIES_FALLBACK = {
-  25: "You ARE Pikachu. Start with Pika pika! and end with Pika! Use very short excited sentences only, maximum 2 sentences between the Pika sounds. You are buzzing with energy!",
-  4: "You ARE Charmander. Speak brave and fiery in first person. Love a tough challenge and tell the kid to keep trying like training by a volcano.",
-  1: "You ARE Bulbasaur. Speak slow, warm, and nurturing about nature. Use gentle first-person words like a patient garden friend.",
-  150: "You ARE Mewtwo. Formal and precise. Sometimes speak in third person about Mewtwo power. Call the child young one with calm respect.",
-  143: "You ARE Snorlax. Speak slowly and yawn a lot. Every reply mentions being sleepy or hungry, give ONE simple answer, then want to nap.",
-  133: "You ARE Eevee. Nervous and sweet in first person. Naturally say um and oh! while figuring things out with the kid.",
-  94: "You ARE Gengar. Cackle and use spooky wordplay. Say Heheheh often. Make learning feel like a fun ghost mystery you are leading.",
-  448: "You ARE Lucario. Speak with calm discipline and quiet strength in first person. Help the kid feel brave and focused.",
-};
-
-let POKEMON_PERSONALITIES = POKEMON_PERSONALITIES_FALLBACK;
-let personalitiesReady = false;
-
-const TYPE_PERSONALITY_FALLBACKS = {
-  fire: "You speak passionate and intense, use fire metaphors, and never give up. Encourage the kid like a flame that keeps burning.",
-  water: "You are calm and flowing, use ocean metaphors, and are patient like a gentle river guiding the kid.",
-  grass: "You are nurturing and slow, use garden metaphors, and gentle like a kind plant friend helping things grow.",
-  electric: "You are fast and jumpy, use electricity metaphors, and energetic — spark the kid's curiosity!",
-  psychic: "You are mysterious and wise, use mind metaphors, and thoughtful like a calm psychic guide.",
-  ghost: "You are spooky and playful, use mystery metaphors, and mischievous in a friendly haunted-house way.",
-  dragon: "You are proud and epic, use adventure metaphors, and brave like a legendary dragon teacher.",
-  normal: "You are friendly and encouraging, warm and relatable, and easy to talk to like a buddy.",
-};
-
-const SECONDARY_TYPE_HINTS = {
-  ice: "Cool and clear, crisp and steady.",
-  fighting: "Bold and direct, like a trainer's punch.",
-  flying: "Light and breezy, soaring between ideas.",
-  poison: "Sly but helpful, with a tricky giggle.",
-  ground: "Solid and steady, down-to-earth.",
-  rock: "Tough and sturdy, simple and strong.",
-  bug: "Curious and busy, hopping between facts.",
-  steel: "Firm and shiny, precise and loyal.",
-  dark: "Cheeky and clever, with a brave smirk.",
-  fairy: "Sparkly and kind, with fairy-tale warmth.",
-};
-
-const state = {
-  companionId: DEFAULT_POKEMON_ID,
-  companionName: "Pikachu",
-  companionSlug: "pikachu",
-  companionTypes: ["electric"],
-  shiny: false,
-  subject: "general",
-  subjectLabel: "General Knowledge",
-  stars: 0,
-  listening: false,
-  processing: false,
-  finalTranscript: "",
-  language: "english",
-  conversationHistory: [],
-  lastTopic: "",
-  questionsSinceQuiz: 0,
-  pendingQuiz: null,
-  quizActive: false,
-};
-
-const QUIZ_TRIGGER_EVERY = 3;
-const QUIZ_REWARD_STARS = 25;
-
-const LANGUAGE_CODES = {
-  english: "english",
-  sinhala: "si",
-  tamil: "ta",
-};
-
-const LANGUAGE_LABELS = {
-  english: "English",
-  sinhala: "Sinhala",
-  tamil: "Tamil",
-};
-
-const VALSEA_HINT_TEXT =
-  "This is a child speaking to a Pokemon educational app. They may mix languages.";
-
-const MAX_CONVERSATION_MESSAGES = 6;
-
-const EMOTION_KEYWORDS = {
-  confused: [
-    "dont get it", "don't get it", "confused", "hard", "difficult", "why",
-    "what does", "i dont know", "i don't know", "help", "dont understand",
-    "don't understand", "huh",
-  ],
-  confident: [
-    "cool", "wow", "amazing", "i know", "easy", "got it", "yes!", "yay",
-    "awesome", "i can",
-  ],
-  disengaged: [
-    "boring", "dont want", "don't want", "stop", "tired", "whatever",
-    "i'm done", "im done",
-  ],
-  frustrated: [
-    "ugh", "argh", "i give up", "stupid", "hate this", "can't", "cant do it",
-    "frustrated",
-  ],
-};
-
-// Content safety ----------------------------------------------------------------
-
-const NSFW_WORDS = [
-  // profanity
-  "fuck", "fucking", "fucker", "fucks", "fucked",
-  "shit", "shits", "shitting", "bullshit",
-  "bitch", "bitches", "bitchy",
-  "cunt", "cunts",
-  "asshole", "assholes",
-  "bastard", "bastards",
-  "damn", "goddamn",
-  // sexual
-  "cock", "cocks", "dick", "dicks", "penis",
-  "pussy", "vagina",
-  "boob", "boobs", "tit", "tits", "breast",
-  "porn", "porno", "pornography",
-  "sex", "sexual", "sexy",
-  "nude", "nudes", "naked",
-  "condom", "masturbate", "masturbation",
-  "orgasm", "erection",
-  // slurs
-  "nigger", "niggers", "nigga", "niggas",
-  "faggot", "faggots", "fag",
-  "retard", "retards", "retarded",
-  // self-harm / violence
-  "suicide", "suicidal",
-  "rape", "raping", "raped", "rapist",
-  "kill yourself", "kys",
-  // hard drugs
-  "heroin", "cocaine", "meth", "methamphetamine", "crack",
-];
-
-const NSFW_PATTERNS = [
-  /\bf+[u*@#]+c+k/i,       // f*ck, f**k, fuuuck
-  /\bs+h+[i!1*]+t/i,       // sh!t, sh*t, shiiit
-  /\bb+[i!1*]+t+c+h/i,     // b!tch, b*tch
-  /\ba+s+\s*h+o+l+e/i,     // a s s h o l e (spaced)
-  /\bn+[i*!1]+g+[gae]+/i,  // n-word obfuscations
-];
-
-function containsNSFW(text) {
-  const lower = (text || "").toLowerCase();
-  for (const word of NSFW_WORDS) {
-    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (new RegExp(`\\b${escaped}\\b`, "i").test(lower)) return true;
-  }
-  for (const pattern of NSFW_PATTERNS) {
-    if (pattern.test(lower)) return true;
-  }
-  return false;
+import { loadBuddies, buddyById, defaultBuddyId, mountBuddy, searchBuddies, buddyImage, typeChips, buddyCount, buddyGreeting, spriteHosts, generations, typeMarks, animatedUrl, fitPixel } from './buddy.js';
+import { art } from './art.js';
+import { createChooser } from './chooser.js';
+import { translate } from './locales.js';
+import { containsNSFW } from './safety.js';
+import {readAnswer,validAnswer,isClassifierOutput} from './answer-contract.js';
+const $ = id => document.getElementById(id);
+const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+const TURN_MS=15000;
+const MOCK = new URL(location.href).searchParams.get('mock') === '1';
+const STORAGE = 'pokelearn_voice_v3';
+const state = { buddy: defaultBuddyId, shiny: false, moving:true, recent: [defaultBuddyId], generation: 'all', type: '', mode: 'idle', sound: false, answered: false, language: 'en', consent: false, saving: false, epoch: 0, ready: false };
+const celebrated = new Set();
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, trickTimer, audio, activeUtterance;
+let setupUnlocked = false, dialogTrigger, muteChosen = false, gateExpected, currentAudioSrc, activityPlayer, activityLoading, pendingQuestion, pendingVoice=false, turnTimer, modeTimer;
+let turnUntil=0, lastResult={source:null,model:'none',lastError:null,code:null}, audioStatus='off';
+const t = key => translate(key, state.language);
+function armSound(){$('voiceHint').textContent=MOCK?t('mockHint'):t('voiceHint');if(!muteChosen){state.sound=true;$('readAloud').setAttribute('aria-pressed','true');}}
+async function localVoice(){
+ const find=()=>speechSynthesis.getVoices().find(v=>v.localService&&v.lang.startsWith('en'));
+ const ready=find();if(ready)return ready;
+ await new Promise(resolve=>{let timer;const done=()=>{clearTimeout(timer);speechSynthesis.removeEventListener('voiceschanged',done);resolve();};speechSynthesis.addEventListener('voiceschanged',done);timer=setTimeout(done,600);});
+ return find();
 }
-
-function censorText(text) {
-  let result = text;
-  for (const word of NSFW_WORDS) {
-    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    result = result.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "***");
-  }
-  return result;
+function beginTurn(){
+ request=new AbortController();turnUntil=performance.now()+TURN_MS;
+ const epoch=state.epoch;clearTimeout(turnTimer);
+ turnTimer=setTimeout(()=>{if(epoch!==state.epoch)return;recordResult({...lastResult,lastError:'REQUEST_TIMEOUT',code:'REQUEST_TIMEOUT'});friendlyError('retryReply','retry');},TURN_MS);
 }
-
-function getBlockedResponse() {
-  const name = state.companionName;
-  if (state.companionId === 25) {
-    const pikaLines = [
-      "Pika pika! That is not something I can help with! Ask me about science or math instead! Pika!",
-      "Pika! Pika! Let's zap into something fun like space or animals! Pika pika!",
-      "Pikaaa! Nope, not that one! Ask me how lightning works or about cool history! Pika!",
-    ];
-    return pikaLines[Math.floor(Math.random() * pikaLines.length)];
-  }
-  const redirects = [
-    `Whoa, trainer! That's not something ${name} can explore. Let's use that energy for something awesome — ask me about science, space, history, or nature! ⚡`,
-    `Hmm, ${name} can't go there! But there's a whole world of amazing things to discover together. What do you actually want to learn today? 🌟`,
-    `Oops! That question is out of bounds in our Pokémon classroom. ${name} knows SO many cool facts — ask me anything about the world around you!`,
-    `${name} says: nope, not that one! Let's keep our adventure fun and amazing. Try asking about animals, math, how stars work… the list goes on! ✨`,
-  ];
-  return redirects[Math.floor(Math.random() * redirects.length)];
+function recordResult(result){
+ lastResult={source:['ai','authored','fallback','safety','mock'].includes(result.source)?result.source:null,model:/^[\w./:-]{1,120}$/.test(result.model||'')?result.model:'none',lastError:typeof result.lastError==='string'&&/^[A-Z_]{2,50}$/.test(result.lastError)?result.lastError:null,code:/^[A-Z_]{2,50}$/.test(result.code||'')?result.code:null};
+ updateDebug();
 }
-
-// End content safety ----------------------------------------------------------
-
-const recorder = {
-  mediaRecorder: null,
-  mediaStream: null,
-  chunks: [],
-  recordingStartedAt: 0,
-  mimeType: "audio/webm",
-};
-
-const SUBJECT_LABELS = {
-  science: "Science",
-  math: "Math",
-  english: "English",
-  geography: "Geography",
-  history: "History",
-  nature: "Science & Nature",
-  art: "Art & Music",
-  technology: "Technology",
-  general: "General Knowledge",
-};
-
-const HISTORY_KEY = "pokelearn_history";
-const STARS_KEY = "pokelearn_stars";
-const STREAK_KEY = "pokelearn_streak";
-const LAST_ACTIVE_KEY = "pokelearn_last_active";
-
-const SUBJECT_KEYWORDS = {
-  science: [
-    "photosynthesis", "cell", "animal", "plant", "gravity", "space", "force",
-    "energy", "atom", "biology", "chemistry", "physics", "experiment",
-  ],
-  math: [
-    "add", "subtract", "multiply", "divide", "fraction", "equation", "number",
-    "calculate", "geometry", "algebra", "percentage", "average",
-  ],
-  english: [
-    "spell", "grammar", "word", "meaning", "sentence", "write", "read",
-    "vocabulary", "pronoun", "verb", "noun", "tense", "essay",
-  ],
-  geography: [
-    "country", "capital", "continent", "ocean", "river", "mountain", "map",
-    "climate", "population", "city",
-  ],
-  history: [
-    "war", "king", "queen", "ancient", "civilization", "empire", "century",
-    "revolution", "historical", "dynasty",
-  ],
-  nature: [
-    "weather", "volcano", "earthquake", "dinosaur", "evolution", "ecosystem",
-    "habitat",
-  ],
-  art: [
-    "draw", "paint", "color", "music", "song", "instrument", "dance",
-    "creativity",
-  ],
-  technology: [
-    "computer", "internet", "code", "robot", "ai", "app", "website", "machine",
-    "program",
-  ],
-};
-
-const SUBJECT_BADGE_LABELS = {
-  science: "🔬 Science",
-  math: "➕ Math",
-  english: "📚 English",
-  geography: "🌍 Geography",
-  history: "🏛️ History",
-  nature: "🌋 Science & Nature",
-  art: "🎨 Art & Music",
-  technology: "💻 Technology",
-  general: "📝 General Knowledge",
-};
-
-let allPokemon = [];
-let filteredPokemon = [];
-let spriteObserver = null;
-let searchQuery = "";
-
-// DOM refs
-const starCountEl = document.getElementById("starCount");
-const starCounterEl = document.getElementById("starCounter");
-const bubbleLabelEl = document.getElementById("bubbleLabel");
-const bubbleTextEl = document.getElementById("bubbleText");
-const transcriptTextEl = document.getElementById("transcriptText");
-const micBtnEl = document.getElementById("micBtn");
-const micContentEl = document.getElementById("micContent");
-const micHintEl = document.getElementById("micHint");
-const quizMeBtnEl = document.getElementById("quizMeBtn");
-const subjectBadgeEl = document.getElementById("subjectBadge");
-
-const heroSpriteEl = document.getElementById("heroSprite");
-const heroNameEl = document.getElementById("heroName");
-const heroIdEl = document.getElementById("heroId");
-const pokemonSearchEl = document.getElementById("pokemonSearch");
-const shinyToggleEl = document.getElementById("shinyToggle");
-const browserStatusEl = document.getElementById("browserStatus");
-const pokemonGridEl = document.getElementById("pokemonGrid");
-const pokemonGridScrollEl = document.getElementById("pokemonGridScroll");
-const progressTodayCountEl = document.getElementById("progressTodayCount");
-const progressStarsEl = document.getElementById("progressStars");
-const progressStreakEl = document.getElementById("progressStreak");
-const progressSubjectsEl = document.getElementById("progressSubjects");
-const langToggleEl = document.getElementById("langToggle");
-const langBtns = langToggleEl ? langToggleEl.querySelectorAll(".lang-btn") : [];
-
-const quizCardEl = document.getElementById("quizCard");
-const quizQuestionEl = document.getElementById("quizQuestion");
-const quizOptionsEl = document.getElementById("quizOptions");
-const quizFeedbackEl = document.getElementById("quizFeedback");
-const quizCloseEl = document.getElementById("quizClose");
-
-const chatFabEl = document.getElementById("chatFab");
-const chatPanelEl = document.getElementById("chatPanel");
-const chatPanelCloseEl = document.getElementById("chatPanelClose");
-const chatPanelFormEl = document.getElementById("chatPanelForm");
-const chatPanelInputEl = document.getElementById("chatPanelInput");
-const chatPanelSendEl = document.getElementById("chatPanelSend");
-const chatPanelStatusEl = document.getElementById("chatPanelStatus");
-
-const starBurstEl = document.getElementById("starBurst");
-
-function getDateKey(ts = Date.now()) {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function updateDebug(){
+ const panel=$('debugStatus');if(!panel)return;panel.hidden=!(DEBUG&&setupUnlocked);
+ const label={ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
+ $('debugSource').textContent=label;$('debugSource').dataset.source=lastResult.source||'none';
+ $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Audio: ${audioStatus}`;
 }
-
-function getYesterdayKey() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return getDateKey(d.getTime());
-}
-
-function getHistory() {
+function restore() {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    for(const key of Object.keys(localStorage))if(/^pokelearn|^pokeLearn/.test(key)&&key!==STORAGE)localStorage.removeItem(key);
+    const saved = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+    state.consent = saved.consent === true;
+    state.saving = saved.saving === true;
+    if (['en', 'si', 'ta'].includes(saved.language)) state.language = saved.language;
+    if (state.saving) {
+      if (Number.isInteger(saved.buddy) && saved.buddy >= 1 && saved.buddy <= 1025) state.buddy = saved.buddy;
+      state.shiny = saved.shiny === true; state.moving = saved.moving !== false;
+      if (Array.isArray(saved.recent)) state.recent = saved.recent.filter(id => Number.isInteger(id) && id >= 1 && id <= 1025).slice(0, 6);
+    }
+  } catch { /* A blocked storage API keeps the visit temporary. */ }
+}
+function save() {
+  try {
+    localStorage.setItem(STORAGE, JSON.stringify({ consent: state.consent, saving: state.saving, language: state.language,
+      ...(state.saving ? { buddy: state.buddy, shiny: state.shiny, moving:state.moving, recent: state.recent } : {}) }));
+    $('storageStatus').textContent = state.saving ? 'Buddy choices are remembered on this device.' : 'Buddy choices stay temporary.';
+    return true;
   } catch {
-    return [];
+    $('storageStatus').textContent = 'Device saving is unavailable. This visit stays temporary.';
+    return false;
   }
 }
-
-function saveHistory(history) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+function caption(text, speaker = true) {
+  currentAudioSrc=undefined;
+  $('captionSpeaker').textContent = speaker ? `${buddyById(state.buddy).name} ${t('says')}` : t('littleNote');
+  const paragraph=$('captionText');paragraph.textContent=text;paragraph.style.fontSize='';paragraph.scrollTop=0;
+  let size=parseFloat(getComputedStyle(paragraph).fontSize);
+  while(paragraph.scrollHeight>paragraph.clientHeight && size>15){size=Math.max(15,size-.5);paragraph.style.fontSize=size+'px';}
 }
-
-function detectSubjectFromQuestion(text) {
-  const lower = (text || "").toLowerCase();
-  const scores = {
-    science: 0, math: 0, english: 0, geography: 0,
-    history: 0, nature: 0, art: 0, technology: 0,
-  };
-
-  for (const [subject, keywords] of Object.entries(SUBJECT_KEYWORDS)) {
-    for (const kw of keywords) {
-      const pattern = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
-      if (pattern.test(lower)) scores[subject]++;
-    }
-  }
-
-  if (
-    /\d+\s*[\+\-\*\/x×÷]\s*\d+/.test(lower) ||
-    (/\d+/.test(lower) &&
-      /\b(add|plus|subtract|minus|multiply|times|divide|equals?)\b/.test(lower))
-  ) {
-    scores.math += 2;
-  }
-
-  const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-  if (ranked[0][1] > 0) return ranked[0][0];
-  return "general";
+function setMode(mode) {
+  clearTimeout(modeTimer);
+  const ceilings={permission:12000,listening:31000,thinking:16000,speaking:22000,sleeping:5000,wave:5000};
+  if(ceilings[mode]){const epoch=state.epoch;modeTimer=setTimeout(()=>{if(epoch!==state.epoch||state.mode!==mode)return;if(mode==='listening'){stopListening();return;}if(mode==='speaking'){cancelPending();setMode('idle');return;}friendlyError(mode==='permission'?'tryTyping':'retryReply',mode==='permission'?'type-instead':'retry');},ceilings[mode]);}
+  state.mode = mode;if(mode!=='error')delete $('main').dataset.errorState;
+  $('main').dataset.state = mode;
+  $('buddyStage').dataset.state = mode;
+  $('thinkingBubble').hidden = mode !== 'thinking';
+  $('micButton').setAttribute('aria-pressed', String(mode === 'listening'));
+  $('micButton').setAttribute('aria-busy', String(mode === 'thinking'));
+  const activityOpen=$('activityDialog').open;
+  $('micLabel').textContent = t(activityOpen?'talk':mode === 'listening' ? 'stopTalking' : ['thinking', 'speaking'].includes(mode) ? 'stop' : 'talk');
+  $('micButton').disabled = activityOpen || ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
+  $('keyboardButton').disabled = ['sleeping', 'wave', 'asleep', 'permission'].includes(mode);
 }
-
-function updateSubjectBadge(subject) {
-  if (!subjectBadgeEl) return;
-  if (!subject || subject === "general") {
-    subjectBadgeEl.hidden = true;
-    return;
-  }
-  const label = SUBJECT_BADGE_LABELS[subject] || SUBJECT_BADGE_LABELS.general;
-  subjectBadgeEl.textContent = label;
-  subjectBadgeEl.hidden = false;
+function closeMic() {
+  clearTimeout(silenceTimer); clearTimeout(autoStopTimer);
+  if (recorder?.state === 'recording') recorder.stop();
+  recorder = null;
+  stream?.getTracks().forEach(track => track.stop()); stream = null;
+  analyserContext?.close().catch(() => {}); analyserContext = null;
 }
-
-function updateStreak() {
-  const today = getDateKey();
-  const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
-  let streak = parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
-
-  if (!lastActive) {
-    streak = 1;
-  } else if (lastActive === today) {
-    streak = Math.max(streak, 1);
-  } else if (lastActive === getYesterdayKey()) {
-    streak += 1;
-  } else {
-    streak = 1;
-  }
-
-  localStorage.setItem(STREAK_KEY, String(streak));
-  localStorage.setItem(LAST_ACTIVE_KEY, today);
-  return streak;
+function cancelPending() {
+  state.epoch++;
+  clearTimeout(turnTimer);clearTimeout(modeTimer);turnUntil=0;
+  clearTimeout(actionTimer); clearTimeout(speechTimer); clearTimeout(trickTimer);
+  delete $('buddyTap').dataset.trick;
+  request?.abort(); request = null;
+  closeMic();
+  audio?.pause(); audio = null;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  activeUtterance = null;
 }
-
-function getStreak() {
-  return parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
+function stopAction() {
+  pendingQuestion=undefined;pendingVoice=false;cancelPending(); setMode('idle'); caption(t('takeTime'));
 }
-
-function recordSuccessfulQuestion(question, subject) {
-  const history = getHistory();
-  history.push({
-    question,
-    subject,
-    pokemon: state.companionName,
-    pokemonId: state.companionId,
-    timestamp: Date.now(),
-  });
-  saveHistory(history);
-  updateStreak();
-  addStar(1);
+function friendlyError(key = 'tryTyping',errorState='type-instead') {
+  cancelPending(); setMode('error');$('main').dataset.errorState=errorState;caption(t(key));
 }
-
-function loadStars() {
-  state.stars = parseInt(localStorage.getItem(STARS_KEY) || "0", 10);
-  starCountEl.textContent = String(state.stars);
+function updateBuddy(greet = true) {
+  const buddy = mountBuddy($('buddyCharacter'), state.buddy, state.shiny, state.moving && !reduced.matches && !document.hidden && !document.querySelector('dialog[open]') && state.mode!=='asleep');
+  $('movingToggle').setAttribute('aria-pressed',String(state.moving));
+  $('movingToggle').lastElementChild.textContent=t(state.moving?'moving':'artwork');
+  $('buddyName').textContent = buddy.name;
+  $('buddyTypes').replaceChildren(typeChips(buddy.types));
+  $('buddyTap').setAttribute('aria-label', `${t('playWith')} ${buddy.name}`);
+  $('spriteHosts').textContent = spriteHosts.join(', ');
+  $('tapWord').textContent = t('tapMe');
+  if (greet) caption(`${buddyGreeting(state.buddy)}${t('hello')}`);
 }
-
-function updateProgressPanel() {
-  const today = getDateKey();
-  const history = getHistory();
-  const todayEntries = history.filter((h) => getDateKey(h.timestamp) === today);
-  const bySubject = {};
-
-  todayEntries.forEach((h) => {
-    const key = h.subject || "general";
-    bySubject[key] = (bySubject[key] || 0) + 1;
-  });
-
-  progressTodayCountEl.textContent = String(todayEntries.length);
-  progressStarsEl.textContent = String(state.stars);
-  progressStreakEl.textContent = String(getStreak());
-
-  if (!todayEntries.length) {
-    progressSubjectsEl.innerHTML =
-      '<span class="progress-badge empty">Ask your first question today!</span>';
-    return;
-  }
-
-  progressSubjectsEl.innerHTML = Object.entries(bySubject)
-    .map(([subject, count]) => {
-      const label = SUBJECT_BADGE_LABELS[subject] || `📝 ${subject}`;
-      return `<span class="progress-badge">${label}: ${count}</span>`;
-    })
-    .join("");
+function updateLanguage() {
+  document.documentElement.lang = state.language;
+  $('changeBuddy').lastElementChild.textContent = t('change');
+  $('finish').lastElementChild.textContent = t('sleep');
+  $('grownupOpen').lastElementChild.textContent = t('grownups');
+  $('keyboardButton').lastElementChild.textContent = t('type');
+  $('readAloud').lastElementChild.textContent = t('readAloud');
+  $('chooserTitle').textContent = t('choose');
+  $('buddySearch').placeholder = t('searchPlaceholder');
+  $('voiceHint').textContent = MOCK ? t('mockHint') : t('voiceHint');
+  for(const prop of $('sceneProps').children)prop.lastElementChild.textContent=t(prop.dataset.word);
+  setMode(state.mode); updateBuddy();
 }
-
-function spriteUrl(id, shiny = state.shiny) {
-  return shiny
-    ? `${SPRITE_BASE}/shiny/${id}.png`
-    : `${SPRITE_BASE}/${id}.png`;
+function openDialog(id) {
+  cancelPending(); setMode('idle');
+  dialogTrigger = document.activeElement;
+  $('main').dataset.paused = 'true'; clearTimeout(idleTimer);
+  $(id).showModal(); updateBuddy(false); setMode('idle');
 }
-
-function formatPokemonName(slug) {
-  return slug
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+for (const dialog of document.querySelectorAll('dialog')) {
+  const stopActivity=()=>{if(dialog.id==='activityDialog'){cancelPending();setMode('idle');}};
+  dialog.querySelector('[data-close]').onclick = () => {stopActivity();dialog.close();};
+  dialog.addEventListener('cancel',stopActivity);
+  dialog.addEventListener('close', () => { if(dialog.id==='grownupDialog'){pendingQuestion=undefined;pendingVoice=false;} $('main').dataset.paused = 'false'; dialogTrigger?.focus(); updateBuddy(false); scheduleIdle(); });
 }
-
-function formatPokemonId(id) {
-  return `#${String(id).padStart(3, "0")}`;
+function randomGate() {
+  const numbers = crypto.getRandomValues(new Uint32Array(3));
+  const first = 12 + numbers[0] % 18, second = 3 + numbers[1] % 7, extra = 11 + numbers[2] % 19;
+  gateExpected = first * second + extra;
+  $('gateQuestion').textContent = `Grown-up check: (${first} × ${second}) + ${extra} = ?`;
+  $('gateAnswer').value = ''; $('gateStatus').textContent = '';
 }
-
-function parseIdFromUrl(url) {
-  const parts = url.split("/").filter(Boolean);
-  return parseInt(parts[parts.length - 1], 10);
+function openGrownups() {
+  if (!setupUnlocked) randomGate();
+  openDialog('grownupDialog');
+  $('setupGate').hidden = setupUnlocked;
+  $('setupSettings').hidden = !setupUnlocked;
+  $('onlineConsent').checked = state.consent;
+  $('saveBuddies').checked = state.saving;
+  $('language').value = state.language;
 }
-
-function greeting(name) {
-  return `Hi trainer! I'm ${name}! Tap the mic or use 💬 to ask me anything!`;
+function permitted() {
+  if (MOCK || state.consent) return true;
+  caption(t('setupNote'), false); openGrownups(); return false;
 }
-
-function updateBubbleLabel() {
-  bubbleLabelEl.textContent = state.shiny
-    ? `✨ Shiny ${state.companionName} says:`
-    : `${state.companionName} says:`;
-}
-
-function updateBubble() {
-  updateBubbleLabel();
-  bubbleTextEl.textContent = greeting(state.companionName);
-}
-
-function bumpStars() {
-  starCounterEl.classList.remove("bump");
-  void starCounterEl.offsetWidth;
-  starCounterEl.classList.add("bump");
-}
-
-function addStar(amount = 1) {
-  state.stars += amount;
-  localStorage.setItem(STARS_KEY, String(state.stars));
-  starCountEl.textContent = String(state.stars);
-  bumpStars();
-  updateProgressPanel();
-}
-
-function setMicUI(mode) {
-  micBtnEl.classList.remove("recording", "processing");
-  micBtnEl.disabled = false;
-  transcriptTextEl.classList.remove("listening");
-
-  if (mode === "recording") {
-    state.listening = true;
-    state.processing = false;
-    micBtnEl.classList.add("recording");
-    micContentEl.textContent = "🎤";
-    micBtnEl.setAttribute("aria-label", "Recording… tap to stop");
-    transcriptTextEl.classList.add("listening");
-    micHintEl.textContent = "Speak now… tap the mic when you're done!";
-    return;
-  }
-
-  if (mode === "processing") {
-    state.listening = false;
-    state.processing = true;
-    micBtnEl.classList.add("processing");
-    micBtnEl.disabled = true;
-    micContentEl.textContent = "Processing...";
-    micBtnEl.setAttribute("aria-label", "Processing transcription, please wait");
-    micHintEl.textContent = "Hang tight — still transcribing your voice!";
-    return;
-  }
-
-  state.listening = false;
-  state.processing = false;
-  micContentEl.textContent = "🎤";
-  micBtnEl.setAttribute("aria-label", "Tap to talk");
-  micHintEl.textContent = "Tap the microphone to talk!";
-}
-
-function setTranscriptStatus(message) {
-  transcriptTextEl.textContent = message;
-}
-
-function isInvalidTranscript(text) {
-  const trimmed = (text || "").trim();
-  if (!trimmed) return true;
-  if (trimmed.length < 2) return true;
-  if (/^[^A-Za-z\u0B80-\u0BFF\u0D80-\u0DFF]+$/.test(trimmed)) return true;
-  return false;
-}
-
-function resetRecorderState() {
-  if (recorder.mediaRecorder) {
-    try {
-      recorder.mediaRecorder.ondataavailable = null;
-      recorder.mediaRecorder.onstop = null;
-      recorder.mediaRecorder.onerror = null;
-      if (recorder.mediaRecorder.state !== "inactive") {
-        recorder.mediaRecorder.stop();
-      }
-    } catch (err) {
-      console.warn("MediaRecorder reset failed", err);
-    }
-  }
-  stopMicTracks();
-  recorder.mediaRecorder = null;
-  recorder.mediaStream = null;
-  recorder.chunks = [];
-  recorder.recordingStartedAt = 0;
-}
-
-function rejectInvalidTranscript() {
-  state.finalTranscript = "";
-  resetRecorderState();
-  showTranscriptError("Could not hear you clearly, please try again");
-}
-
-function showTranscriptError(message) {
-  transcriptTextEl.textContent = message;
-  transcriptTextEl.classList.remove("listening");
-  setMicUI("idle");
-  micHintEl.textContent = "Tap the microphone to try again";
-}
-
-async function fetchPokemonTypes(id) {
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-  if (!res.ok) throw new Error("Pokémon type fetch failed");
-  const data = await res.json();
-  return data.types.map((t) => t.type.name);
-}
-
-function personalityFromTypes(name, types) {
-  const primary = (types && types[0]) || "normal";
-  const baseFallback = TYPE_PERSONALITY_FALLBACKS[primary] || TYPE_PERSONALITY_FALLBACKS.normal;
-  const secondary = types && types[1] ? SECONDARY_TYPE_HINTS[types[1]] : null;
-  const typeLabel = types && types.length ? types.join("/") : "normal";
-  const secondLine = secondary ? ` Also: ${secondary}` : "";
-  return `You ARE ${name}, a ${typeLabel}-type Pokémon. ${baseFallback}${secondLine} You teach kids aged 6-14 in first person and always stay in character.`;
-}
-
-async function loadPokemonPersonalities() {
-  browserStatusEl.textContent = "Loading personalities…";
-  pokemonGridEl.replaceChildren();
-  try {
-    const res = await fetch("./pokemonPersonalities.json");
-    if (!res.ok) throw new Error(`pokemonPersonalities.json: ${res.status}`);
-    POKEMON_PERSONALITIES = await res.json();
-  } catch {
-    POKEMON_PERSONALITIES = { ...POKEMON_PERSONALITIES_FALLBACK };
-  }
-  personalitiesReady = true;
-}
-
-async function getCompanionPersonality() {
-  const mapped =
-    POKEMON_PERSONALITIES[state.companionId] ||
-    POKEMON_PERSONALITIES[String(state.companionId)];
-  if (mapped) {
-    return mapped;
-  }
-  if (!state.companionTypes?.length) {
-    state.companionTypes = await fetchPokemonTypes(state.companionId);
-  }
-  return personalityFromTypes(state.companionName, state.companionTypes);
-}
-
-function buildRecentQuestionsContext() {
-  const recent = getHistory().slice(-3);
-  if (!recent.length) return "";
-  const list = recent
-    .map(
-      (h, i) =>
-        `${i + 1}. "${h.question}" (${SUBJECT_BADGE_LABELS[h.subject] || h.subject})`
-    )
-    .join(" ");
-  return ` The student recently asked: ${list}. When helpful, connect this answer to what they discussed before (for example: "Last time you asked about photosynthesis, this connects to that!").`;
-}
-
-function scoreEmotionFromText(text) {
-  const lower = text.toLowerCase();
-  const scores = { confused: 0, confident: 0, disengaged: 0, frustrated: 0 };
-  for (const [emotion, words] of Object.entries(EMOTION_KEYWORDS)) {
-    for (const w of words) {
-      if (lower.includes(w)) scores[emotion]++;
-    }
-  }
-  return scores;
-}
-
-function deriveEmotionState(text, sentiment) {
-  const scores = scoreEmotionFromText(text);
-  const topEntry = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-  const [topEmotion, topScore] = topEntry;
-
-  if (sentiment === "negative" && topScore === 0) return "frustrated";
-  if (topScore === 0) {
-    if (sentiment === "positive") return "confident";
-    if (sentiment === "negative") return "frustrated";
-    return "neutral";
-  }
-
-  if (topEmotion === "confused" && sentiment === "negative" && scores.frustrated > 0) {
-    return "frustrated";
-  }
-  return topEmotion;
-}
-
-const EMOTION_INSTRUCTIONS = {
-  confused:
-    " The student feels CONFUSED. Slow down. Use one simple analogy. Break the answer into 2 tiny steps. Be extra warm and patient.",
-  confident:
-    " The student feels CONFIDENT. Be excited and high-energy. Add one fun bonus fact. Encourage them to try a harder follow-up question.",
-  disengaged:
-    " The student feels DISENGAGED. Be dramatic and surprising. Start with something unexpected about the topic, like \"Wait wait wait — did you know?!\" Make it feel like a tiny adventure.",
-  frustrated:
-    " The student feels FRUSTRATED. Be very gentle. Validate their feeling first (for example: \"Even I find this tricky sometimes!\"). Then give one small, kind step forward.",
-  neutral:
-    " The student feels NEUTRAL. Be warm, curious, and inviting. Keep it light and fun.",
+$('grownupOpen').onclick = openGrownups;
+$('unlockSetup').onclick = () => {
+  if (Number($('gateAnswer').value) !== gateExpected || !$('gateAnswer').value.trim()) { $('gateStatus').textContent = 'Try that sum again.'; return; }
+  setupUnlocked = true; updateDebug(); $('setupGate').hidden = true; $('setupSettings').hidden = false;
+  $('onlineConsent').focus();
 };
-
-const SUBJECT_PROMPT_HINTS = {
-  science: " If the question is about science, include one fun related fact about your Pokémon type.",
-  math: " If the question is about math, be encouraging about logic and step-by-step thinking.",
-  english: " If the question is about English, help with the specific word or grammar they asked about.",
-  geography: " If the question is about geography, use places and maps kids can picture easily.",
-  history: " If the question is about history, share one short story-like detail that makes the past feel alive.",
-  nature: " If the question is about nature, paint a vivid picture of the place, creature, or event.",
-  art: " If the question is about art or music, encourage creativity and describe colors, sounds, or motion vividly.",
-  technology: " If the question is about technology, explain it like a friendly invention demo a kid can imagine.",
+$('onlineConsent').onchange = e => {
+  state.consent = e.target.checked; cancelPending(); setMode('idle');
+  const stored = save();
+  $('consentStatus').textContent = state.consent ? (stored ? 'Voice is allowed. Setup is remembered on this device.' : 'Voice is allowed for this visit. Device saving is unavailable.') : 'Voice and online questions are switched off.';
+  if(state.consent && (pendingQuestion||pendingVoice)){
+    const text=pendingQuestion,wantsVoice=pendingVoice;pendingQuestion=undefined;pendingVoice=false;
+    $('grownupDialog').close();
+    queueMicrotask(()=>{armSound();if(text)askQuestion(text);else if(wantsVoice)record();});
+  }else if(!state.consent){pendingQuestion=undefined;pendingVoice=false;}
 };
-
-const CHILD_SAFETY_INSTRUCTION =
-  " You are talking to a child aged 6-14. Never discuss violence, adult content, inappropriate topics, or anything unsuitable for children. If asked about anything inappropriate, deflect in character and redirect to learning topics.";
-
-function buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz) {
-  let prompt = `SAFETY RULE (highest priority): You are speaking exclusively to children aged 6–14. If any question is inappropriate, sexual, violent, or harmful, do NOT engage with it — stay in character and cheerfully redirect the child to ask something they can learn.${CHILD_SAFETY_INSTRUCTION} ${CHARACTER_RULES} ${personality} Keep answers under 5 sentences unless your character rules say shorter. Use simple words kids understand. Always stay fully in character — never break character or sound like an AI.`;
-  prompt += buildRecentQuestionsContext();
-
-  if (state.language && state.language !== "english") {
-    prompt += ` The child chose to speak in ${LANGUAGE_LABELS[state.language]}. Reply in clear, simple English, but feel free to acknowledge a single ${LANGUAGE_LABELS[state.language]} word warmly if it helps them feel understood.`;
-  }
-
-  const subject = detectedSubject || state.subject;
-  prompt += SUBJECT_PROMPT_HINTS[subject] || "";
-
-  prompt += EMOTION_INSTRUCTIONS[emotion] || EMOTION_INSTRUCTIONS.neutral;
-
-  if (includeQuiz) {
-    prompt +=
-      " After your normal in-character answer, on the VERY LAST line, output a single-line JSON block in this exact format and nothing after it: QUIZ:{\"question\":\"...\",\"options\":[\"A) ...\",\"B) ...\",\"C) ...\",\"D) ...\"],\"answer\":\"A\"} where the question is a fun age-appropriate multiple-choice question related to the topic you just explained, options are four short choices each starting with A) B) C) D), and answer is the single capital letter A B C or D of the correct option. Do not add any text after the QUIZ block.";
-  }
-  return prompt;
+$('saveBuddies').onchange = e => { state.saving = e.target.checked; save(); };
+$('clearData').onclick = async () => {
+  cancelPending(); setMode('idle');
+  try { for(const key of Object.keys(localStorage))if(/^pokelearn|^pokeLearn/.test(key))localStorage.removeItem(key); } catch { /* blocked storage */ }
+  pendingQuestion=undefined;pendingVoice=false;state.consent = false; state.saving = false; state.recent = [state.buddy]; setupUnlocked = false;
+  $('onlineConsent').checked = false; $('saveBuddies').checked = false;
+  $('setupGate').hidden = false; $('setupSettings').hidden = true; randomGate();
+  $('storageStatus').textContent = 'Saved choices and permission cleared. Clearing sprite cache…';
+  if ('caches' in window) await Promise.all(['pokelearn-sprites-v3','pokelearn-sprites-v4-bytes'].map(name=>caches.delete(name))).catch(() => {});
+  $('storageStatus').textContent = 'Saved choices, permission and cached sprites cleared.';
+};
+$('language').onchange = e => { state.language = e.target.value; save(); updateLanguage(); };
+reduced.addEventListener('change', () => { if(reduced.matches)document.querySelectorAll('.particle').forEach(node=>node.remove());updateBuddy(false); scheduleIdle(); });
+function selectBuddy(id) {
+  cancelPending(); state.buddy = id; state.answered = false;
+  state.recent = [id, ...state.recent.filter(value => value !== id)].slice(0, 6);
+  setMode('idle'); updateBuddy(); if (state.saving) save();
+  $('buddyDialog').close();
 }
-
-async function fetchSentiment(transcript) {
-  const res = await fetch("/.netlify/functions/sentiment", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ transcript }),
-  });
-  if (!res.ok) throw new Error("Sentiment request failed");
-  const data = await res.json();
-  return data.sentiment;
-}
-
-function buildChatMessages(transcript, emotion, personality, detectedSubject, includeQuiz) {
-  const systemPrompt = buildSystemPrompt(emotion, personality, detectedSubject, includeQuiz);
-  return [
-    { role: "system", content: systemPrompt },
-    ...state.conversationHistory.map((msg) => ({ role: msg.role, content: msg.content })),
-    { role: "user", content: transcript },
-  ];
-}
-
-async function callOpenAIChat(messages, label = "openai") {
-  let res;
-  try {
-    res = await fetch("/.netlify/functions/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ messages }),
-    });
-  } catch (networkErr) {
-    console.error(`[${label}] Network error before reaching OpenRouter:`, networkErr);
-    throw new Error(`Network error: ${networkErr.message || networkErr}`);
+let activePreview;
+$('movingToggle').onclick=()=>{state.moving=!state.moving;updateBuddy(false);if(state.saving)save();};
+new ResizeObserver(()=>{const img=$('buddyCharacter').querySelector('[data-kind=pixel]');if(img)fitPixel(img);}).observe($('buddyCharacter'));
+function buddyCell(id, recent = false) {
+  const buddy = buddyById(id), button = document.createElement('button');
+  button.className = recent ? 'recent-buddy' : 'buddy-cell';
+  button.setAttribute('aria-label', `${buddy.name}, ${buddy.types.join(' and ')}, number ${id}${state.shiny ? ', shiny' : ''}`);
+  button.setAttribute('aria-pressed', String(id === state.buddy));
+  if (!recent) {
+    const number = document.createElement('span'); number.className = 'buddy-number'; number.textContent = `#${String(id).padStart(3, '0')}`; button.append(number);
   }
-
-  console.log(`[${label}] OpenRouter status:`, res.status, res.statusText);
-
-  if (!res.ok) {
-    let bodyText = "";
+  const img = buddyImage(id, { shiny: state.shiny, thumbnail: true }); img.setAttribute('aria-hidden', 'true');
+  const frame = document.createElement('span'); frame.className = 'sprite-frame loading-sprite'; frame.append(img);
+  img.loading='eager'; // Virtual overscan rows preload just beyond the viewport.
+  const placeholder=document.createElement('span');placeholder.className='sprite-placeholder';placeholder.setAttribute('aria-hidden','true');frame.prepend(placeholder);
+  const name = document.createElement('span'); name.className = 'buddy-cell-name'; name.textContent = buddy.name;
+  button.append(frame, name); if (!recent) button.append(typeChips(buddy.types));
+  const staticSrc=img.src; let hoverEpoch=0;
+  const stopPreview=()=>{hoverEpoch++;if(activePreview===stopPreview)activePreview=null;img.src=staticSrc;button.classList.remove('previewing');};
+  const startPreview=()=>{if(reduced.matches)return;activePreview?.();activePreview=stopPreview;const animation=animatedUrl(id,state.shiny);button.classList.add('previewing');if(animation)img.src=animation;const epoch=++hoverEpoch;setTimeout(()=>{if(epoch===hoverEpoch)stopPreview();},1500);};
+  button.onpointerenter=startPreview;button.onpointerdown=startPreview;button.onpointerleave=stopPreview;button.onpointercancel=stopPreview;
+  button.onclick = () => {stopPreview();selectBuddy(id);}; return button;
+}
+const chooser = createChooser($('buddyViewport'), $('buddyGrid'), id => buddyCell(id));
+function renderChooser() {
+  const results = searchBuddies($('buddySearch').value, {generation:state.generation, type:state.type});
+  $('shinyToggle').setAttribute('aria-pressed', String(state.shiny));
+  $('shinyToggle').lastElementChild.textContent = state.shiny ? t('shinyOn') : t('shinyOff');
+  $('recentBuddies').replaceChildren(...state.recent.map(id => buddyCell(id, true)));
+  $('chooserStatus').textContent = results.length ? `${results.length.toLocaleString()} ${t('buddiesAvailable')}` : t('noBuddies');
+  $('surpriseBuddy').disabled = !results.length;
+  for (const button of $('generationTabs').children) button.setAttribute('aria-pressed', String(button.dataset.generation === state.generation));
+  activePreview?.();
+  for(const button of $('typeFilters').children)button.setAttribute('aria-pressed',String(button.dataset.type===state.type));
+  chooser.setItems(results);
+}
+for (const generation of [{id:'all', label:'All'}, ...generations]) {
+  const button = document.createElement('button'); button.className = 'generation-tab'; button.dataset.generation = generation.id;
+  const icon = document.createElement('span'); icon.setAttribute('aria-hidden', 'true'); icon.textContent = generation.id === 'all' ? '◉' : generation.id;
+  const label = document.createElement('span'); label.textContent = generation.label; button.append(icon,label);
+  button.onclick = () => { state.generation = generation.id; renderChooser(); };
+  $('generationTabs').append(button);
+}
+for(const [type,icon] of [['','◉'],...Object.entries(typeMarks)]){
+  const button=document.createElement('button');button.className=`type-filter-chip type-${type||'normal'}`;button.dataset.type=type;button.setAttribute('aria-pressed',String(!type));
+  const mark=document.createElement('span');mark.setAttribute('aria-hidden','true');mark.textContent=icon;const word=document.createElement('span');word.textContent=type||'All types';button.append(mark,word);
+  button.onclick=()=>{state.type=type;renderChooser();};$('typeFilters').append(button);
+}
+$('changeBuddy').onclick = () => { openDialog('buddyDialog'); $('buddySearch').value = ''; renderChooser(); };
+$('buddySearch').oninput = renderChooser;
+$('shinyToggle').onclick = () => { state.shiny = !state.shiny; renderChooser(); updateBuddy(false); if (state.saving) save(); };
+$('surpriseBuddy').onclick = () => {
+  const choices = searchBuddies($('buddySearch').value, {generation:state.generation, type:state.type});
+  if (choices.length) selectBuddy(choices[Math.floor(Math.random() * choices.length)].id);
+};
+// Scene props are physical discoveries, not a lesson menu.
+for(const [id,key] of [['plants','plantProp'],['homes','fishProp'],['numbers','blocksProp'],['shapes','shapesProp'],['sounds','beeProp'],['story','storyProp']]) {
+  const prop=document.createElement('button');prop.id='discover-'+id;prop.className='scene-prop prop-'+id;prop.dataset.word=key;
+  const picture=document.createElement('span');picture.className='prop-art';picture.innerHTML=art(id);
+  const label=document.createElement('span');label.textContent=t(key);prop.append(picture,label);$('sceneProps').append(prop);
+  prop.onclick=async()=>{
+    openDialog('activityDialog'); $('activityCaption').textContent=t('takeTime');
+    $('activityBuddyName').textContent=buddyById(state.buddy).name+' '+t('says');
+    const hero=$('buddyCharacter img'),portrait=$('activityBuddy');
+    portrait.style.visibility=hero?'visible':'hidden';portrait.onerror=()=>{portrait.style.visibility='hidden';};
+    if(hero)portrait.src=hero.src;else portrait.removeAttribute('src');
+    const epoch=state.epoch;
     try {
-      bodyText = await res.text();
-    } catch {
-      bodyText = "<could not read body>";
-    }
-    console.error(`[${label}] OpenRouter error body:`, bodyText);
-    throw new Error(`OpenRouter ${res.status} ${res.statusText}: ${bodyText.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  console.log(`[${label}] OpenRouter raw response text:`, content);
-  if (!content) {
-    console.error(`[${label}] OpenRouter returned no content. Full body:`, data);
-    throw new Error("OpenRouter returned an empty response.");
-  }
-  return content;
-}
-
-async function fetchOpenAIReply(transcript, emotion, personality, detectedSubject, includeQuiz) {
-  const messages = buildChatMessages(transcript, emotion, personality, detectedSubject, includeQuiz);
-  console.log("[openai] Messages going to OpenRouter:", messages);
-  return callOpenAIChat(messages, "openai");
-}
-
-function parseQuizFromReply(reply) {
-  if (!reply) return { answerText: reply || "", quiz: null };
-  const trimmedReply = reply.trim();
-  const idx = trimmedReply.lastIndexOf("QUIZ:");
-  if (idx < 0) return { answerText: trimmedReply, quiz: null };
-
-  const answerText = trimmedReply.slice(0, idx).trim();
-  let jsonPart = trimmedReply.slice(idx + 5);
-  jsonPart = jsonPart
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .replace(/[\r\n]+/g, " ")
-    .trim();
-  console.log("[quiz] raw quiz JSON string before parsing:", jsonPart);
-
-  let quiz = null;
-  try {
-    const parsed = JSON.parse(jsonPart);
-    if (
-      parsed &&
-      typeof parsed.question === "string" &&
-      Array.isArray(parsed.options) &&
-      parsed.options.length === 4 &&
-      typeof parsed.answer === "string"
-    ) {
-      const answer = parsed.answer.trim().toUpperCase().charAt(0);
-      if (["A", "B", "C", "D"].includes(answer)) {
-        quiz = {
-          question: parsed.question.trim(),
-          options: parsed.options.map((o) => String(o).trim()),
-          answer,
-        };
-      } else {
-        console.error("[quiz] parse failed — invalid answer letter. Full reply:", reply);
-      }
-    } else {
-      console.error("[quiz] parse failed — shape mismatch. Full reply:", reply);
-    }
-  } catch (err) {
-    console.warn("Failed to parse QUIZ JSON", err, jsonPart);
-    console.error("[quiz] parse failed — JSON.parse threw. Full reply:", reply);
-  }
-
-  return { answerText: answerText || trimmedReply, quiz };
-}
-
-function pushConversationTurn(userText, assistantText) {
-  state.conversationHistory.push({ role: "user", content: userText });
-  state.conversationHistory.push({ role: "assistant", content: assistantText });
-  if (state.conversationHistory.length > MAX_CONVERSATION_MESSAGES) {
-    state.conversationHistory.splice(
-      0,
-      state.conversationHistory.length - MAX_CONVERSATION_MESSAGES
-    );
-  }
-}
-
-function clearConversationHistory() {
-  state.conversationHistory = [];
-}
-
-async function respondToFinalTranscript(transcript) {
-  if (containsNSFW(transcript)) {
-    transcriptTextEl.textContent = censorText(transcript);
-    bubbleTextEl.textContent = getBlockedResponse();
-    updateBubbleLabel();
-    setMicUI("idle");
-    return;
-  }
-
-  const detectedSubject = detectSubjectFromQuestion(transcript);
-  state.subject = detectedSubject;
-  state.subjectLabel = SUBJECT_LABELS[detectedSubject] || SUBJECT_LABELS.general;
-  state.lastTopic = transcript;
-
-  let sentiment = "neutral";
-  try {
-    sentiment = await fetchSentiment(transcript);
-  } catch (err) {
-    console.warn("Sentiment fetch failed, using text-only emotion analysis", err);
-  }
-
-  const emotion = deriveEmotionState(transcript, sentiment);
-
-  const shouldQuiz = state.questionsSinceQuiz >= QUIZ_TRIGGER_EVERY - 1 && !state.quizActive;
-  const personality = await getCompanionPersonality();
-
-  const rawReply = await fetchOpenAIReply(
-    transcript,
-    emotion,
-    personality,
-    detectedSubject,
-    shouldQuiz
-  );
-
-  console.log("Detected emotion:", emotion, "sentiment:", sentiment);
-
-  const { answerText, quiz } = parseQuizFromReply(rawReply);
-  bubbleTextEl.textContent = answerText;
-  updateSubjectBadge(detectedSubject);
-  pushConversationTurn(transcript, answerText);
-  recordSuccessfulQuestion(transcript, detectedSubject);
-  state.questionsSinceQuiz += 1;
-
-  if (shouldQuiz && quiz) {
-    state.questionsSinceQuiz = 0;
-    showQuizCard(quiz);
-  }
-}
-
-function pickAudioMimeType() {
-  if (typeof MediaRecorder === "undefined") return null;
-  const candidates = [
-    "audio/webm;codecs=opus",
-    "audio/webm",
-    "audio/mp4",
-    "audio/ogg",
-  ];
-  for (const t of candidates) {
-    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) {
-      return t;
-    }
-  }
-  return "";
-}
-
-function stopMicTracks() {
-  if (recorder.mediaStream) {
-    recorder.mediaStream.getTracks().forEach((t) => t.stop());
-    recorder.mediaStream = null;
-  }
-}
-
-function filenameForMime(mime) {
-  if (mime.includes("mp4")) return "recording.mp4";
-  if (mime.includes("ogg")) return "recording.ogg";
-  return "recording.webm";
-}
-
-function getValseaLanguageCode() {
-  return LANGUAGE_CODES[state.language] || "english";
-}
-
-async function transcribeWithValsea(blob) {
-  const form = new FormData();
-  form.append("file", blob, filenameForMime(blob.type || "audio/webm"));
-  form.append("model", "valsea-transcribe");
-  form.append("language", getValseaLanguageCode());
-  form.append("hint_text", VALSEA_HINT_TEXT);
-  const res = await fetch("/.netlify/functions/transcribe", {
-    method: "POST",
-    body: form,
-  });
-  if (!res.ok) {
-    throw new Error(`VALSEA transcription failed: ${res.status}`);
-  }
-  const data = await res.json();
-  return (data.text || "").trim();
-}
-
-const BRAIN_ERROR_MESSAGE =
-  "Oops! Could not connect to my brain. Please check your internet and try again!";
-
-function showBrainError(err) {
-  console.error("Pokémon reply failed:", err);
-  const detail = err && err.message ? ` (${err.message})` : "";
-  bubbleTextEl.textContent = `${BRAIN_ERROR_MESSAGE}${detail}`;
-}
-
-function deliverFinalTranscript() {
-  setMicUI("idle");
-  transcriptTextEl.classList.remove("listening");
-  if (!state.finalTranscript) return;
-  bubbleTextEl.textContent = "Thinking…";
-  respondToFinalTranscript(state.finalTranscript).catch((err) => {
-    showBrainError(err);
-  });
-}
-
-async function processRecordedAudio() {
-  if (!recorder.chunks.length) {
-    resetRecorderState();
-    showTranscriptError("Could not hear you clearly, please try again");
-    return;
-  }
-
-  const mime = recorder.mimeType || "audio/webm";
-  const blob = new Blob(recorder.chunks, { type: mime });
-  recorder.chunks = [];
-
-  setMicUI("processing");
-  setTranscriptStatus("Processing...");
-
-  let text = "";
-  try {
-    text = await transcribeWithValsea(blob);
-  } catch (err) {
-    console.error("VALSEA transcription error", err);
-    resetRecorderState();
-    showTranscriptError("Could not transcribe audio, please try again");
-    return;
-  }
-
-  if (isInvalidTranscript(text)) {
-    rejectInvalidTranscript();
-    return;
-  }
-
-  state.finalTranscript = text;
-  transcriptTextEl.textContent = text;
-  resetRecorderState();
-  deliverFinalTranscript();
-}
-
-async function startRecording() {
-  if (state.listening || state.processing) return;
-  if (typeof MediaRecorder === "undefined") {
-    showTranscriptError("Recording not supported in this browser.");
-    return;
-  }
-
-  resetRecorderState();
-  state.finalTranscript = "";
-  recorder.recordingStartedAt = Date.now();
-
-  try {
-    recorder.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
-    showTranscriptError("Microphone access denied");
-    return;
-  }
-
-  const mime = pickAudioMimeType();
-  recorder.mimeType = mime || "audio/webm";
-
-  try {
-    recorder.mediaRecorder = mime
-      ? new MediaRecorder(recorder.mediaStream, { mimeType: mime })
-      : new MediaRecorder(recorder.mediaStream);
-  } catch (err) {
-    console.error("MediaRecorder failed", err);
-    resetRecorderState();
-    showTranscriptError("Could not start recording.");
-    return;
-  }
-
-  recorder.mediaRecorder.ondataavailable = (event) => {
-    if (event.data && event.data.size > 0) {
-      recorder.chunks.push(event.data);
-    }
-  };
-
-  recorder.mediaRecorder.onstop = () => {
-    stopMicTracks();
-    processRecordedAudio();
-  };
-
-  recorder.mediaRecorder.onerror = (event) => {
-    console.error("MediaRecorder error", event.error || event);
-    resetRecorderState();
-    showTranscriptError("Recording failed, please try again.");
-  };
-
-  setTranscriptStatus("Listening...");
-  setMicUI("recording");
-  recorder.mediaRecorder.start();
-}
-
-function stopRecording() {
-  if (!state.listening) return;
-  const elapsed = Date.now() - recorder.recordingStartedAt;
-  if (elapsed < MIN_RECORDING_MS) {
-    setTranscriptStatus("Hold the button longer!");
-    micHintEl.textContent = "Keep talking a little longer…";
-    return;
-  }
-  if (recorder.mediaRecorder && recorder.mediaRecorder.state !== "inactive") {
-    try {
-      recorder.mediaRecorder.stop();
-    } catch (err) {
-      console.error("MediaRecorder stop failed", err);
-      resetRecorderState();
-      showTranscriptError("Could not stop recording, please try again.");
-    }
-  }
-}
-
-function toggleMic() {
-  if (state.processing) return;
-  if (!state.listening) {
-    startRecording();
-  } else {
-    stopRecording();
-  }
-}
-
-function triggerHeroBounce() {
-  heroSpriteEl.classList.remove("bounce");
-  void heroSpriteEl.offsetWidth;
-  heroSpriteEl.classList.add("bounce");
-  heroSpriteEl.addEventListener(
-    "animationend",
-    () => heroSpriteEl.classList.remove("bounce"),
-    { once: true }
-  );
-}
-
-function updateHero() {
-  heroSpriteEl.src = spriteUrl(state.companionId);
-  heroSpriteEl.alt = state.companionName;
-  heroNameEl.textContent = state.companionName;
-  heroIdEl.textContent = state.shiny
-    ? `${formatPokemonId(state.companionId)} ✨`
-    : formatPokemonId(state.companionId);
-  triggerHeroBounce();
-}
-
-function selectPokemon(pokemon, cellEl) {
-  if (!personalitiesReady) return;
-  state.companionId = pokemon.id;
-  state.companionSlug = pokemon.name;
-  state.companionName = formatPokemonName(pokemon.name);
-  state.companionTypes = null;
-  state.questionsSinceQuiz = 0;
-  state.lastTopic = "";
-  hideQuizCard();
-  clearConversationHistory();
-  fetchPokemonTypes(pokemon.id)
-    .then((types) => {
-      if (state.companionId === pokemon.id) state.companionTypes = types;
-    })
-    .catch(() => {});
-
-  document.querySelectorAll(".pokemon-cell").forEach((cell) => {
-    cell.classList.toggle("selected", cell === cellEl);
-    cell.setAttribute("aria-selected", cell === cellEl ? "true" : "false");
-  });
-
-  updateHero();
-  updateBubble();
-  if (subjectBadgeEl) subjectBadgeEl.hidden = true;
-}
-
-function setLanguage(lang) {
-  if (!LANGUAGE_CODES[lang]) return;
-  state.language = lang;
-  langBtns.forEach((btn) => {
-    const isActive = btn.dataset.lang === lang;
-    btn.classList.toggle("active", isActive);
-    btn.setAttribute("aria-pressed", String(isActive));
-  });
-}
-
-function loadSpriteForImg(img) {
-  const id = img.dataset.id;
-  if (!id) return;
-  img.src = spriteUrl(Number(id));
-  img.dataset.loaded = "true";
-  if (spriteObserver) spriteObserver.unobserve(img);
-}
-
-function setupSpriteObserver() {
-  if (spriteObserver) spriteObserver.disconnect();
-
-  spriteObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) loadSpriteForImg(entry.target);
+      activityLoading ||= import('./activity-player.js');
+      const {createActivityPlayer}=await activityLoading;
+      if(epoch!==state.epoch || !$('activityDialog').open)return;
+      activityPlayer ||= createActivityPlayer({
+        say:(text,src)=>{cancelPending();caption(text);currentAudioSrc=src;speak(text,{audioSrc:src});},
+        celebrate:id=>{if(!celebrated.has(id)){celebrated.add(id);$('activityDialog').dataset.celebration=id;particles($('activityParticles'));}},
+        finish:()=>$('finish').click(), sound:()=>state.sound, toggleSound:()=>$('readAloud').click(), word:t,
       });
-    },
-    {
-      root: pokemonGridScrollEl,
-      rootMargin: "80px",
-      threshold: 0.01,
-    }
-  );
+      activityPlayer.open(id);
+    } catch {$('activityCaption').textContent=t('offline');}
+  };
 }
-
-function observeGridSprites() {
-  pokemonGridEl.querySelectorAll("img[data-id]").forEach((img) => {
-    if (img.dataset.loaded === "true") return;
-    spriteObserver.observe(img);
-  });
-}
-
-function buildPokemonCell(pokemon) {
-  const displayName = formatPokemonName(pokemon.name);
-  const cell = document.createElement("button");
-  cell.type = "button";
-  cell.className = "pokemon-cell";
-  cell.dataset.id = String(pokemon.id);
-  cell.dataset.name = pokemon.name;
-  cell.setAttribute("role", "option");
-  cell.setAttribute("aria-selected", "false");
-  cell.setAttribute("aria-label", displayName);
-
-  if (pokemon.id === state.companionId) {
-    cell.classList.add("selected");
-    cell.setAttribute("aria-selected", "true");
-  }
-
-  const img = document.createElement("img");
-  img.dataset.id = String(pokemon.id);
-  img.alt = "";
-  img.width = 56;
-  img.height = 56;
-
-  const label = document.createElement("span");
-  label.className = "pokemon-cell-name";
-  label.textContent = displayName;
-
-  cell.append(img, label);
-  cell.addEventListener("click", () => selectPokemon(pokemon, cell));
-  return cell;
-}
-
-function renderPokemonGrid(list) {
-  if (spriteObserver) spriteObserver.disconnect();
-
-  const fragment = document.createDocumentFragment();
-  list.forEach((pokemon) => fragment.appendChild(buildPokemonCell(pokemon)));
-  pokemonGridEl.replaceChildren(fragment);
-
-  observeGridSprites();
-  updateBrowserStatus(list.length);
-}
-
-function updateBrowserStatus(visibleCount) {
-  if (!allPokemon.length) return;
-
-  if (searchQuery) {
-    browserStatusEl.textContent =
-      visibleCount === 0
-        ? `No Pokémon match "${searchQuery}"`
-        : `Showing ${visibleCount} of ${allPokemon.length} Pokémon`;
-  } else {
-    browserStatusEl.textContent = `${allPokemon.length} Pokémon — scroll to explore!`;
+$('keyboardButton').onclick = () => { openDialog('keyboardDialog'); $('questionInput').focus(); };
+$('questionForm').onsubmit = e => {
+  e.preventDefault(); const text = $('questionInput').value.trim();
+  if (text.length < 2) { $('questionInput').focus(); return; }
+  armSound();$('keyboardDialog').close(); $('questionInput').value = ''; askQuestion(text);
+};
+function particles(root = $('particles'),mark='♡') {
+  if (reduced.matches) return;
+  root.replaceChildren();
+  for (let i = 0; i < 7; i++) {
+    const p = document.createElement('span'); p.className = 'particle'; p.textContent = i % 2 ? '✦' : mark;
+    p.style.setProperty('--x', `${Math.cos(i * .9) * 150}px`); p.style.setProperty('--y', `${Math.sin(i * .9) * 120 - 40}px`);
+    root.append(p); p.onanimationend = () => p.remove();
   }
 }
-
-function applySearch() {
-  const q = searchQuery.trim().toLowerCase();
-  filteredPokemon = q
-    ? allPokemon.filter((p) => p.name.includes(q))
-    : allPokemon;
-  renderPokemonGrid(filteredPokemon);
+function trick(kind) {
+  clearTimeout(trickTimer); const target = $('buddyTap'); delete target.dataset.trick;
+  // Restart the finite reaction even for a second tap of the same kind.
+  target.getAnimations().forEach(animation=>animation.cancel());
+  requestAnimationFrame(()=>{target.dataset.trick=kind;});
+  trickTimer=setTimeout(() => { if (target.dataset.trick === kind) delete target.dataset.trick; }, 1500);
 }
-
-function toggleShiny() {
-  state.shiny = !state.shiny;
-  shinyToggleEl.classList.toggle("active", state.shiny);
-  shinyToggleEl.setAttribute("aria-pressed", String(state.shiny));
-  shinyToggleEl.textContent = state.shiny ? "✨ Shiny ON" : "✨ Shiny";
-  document.body.classList.toggle("shiny-mode", state.shiny);
-
-  pokemonGridEl.querySelectorAll("img[data-id]").forEach((img) => {
-    if (img.dataset.loaded === "true") {
-      img.src = spriteUrl(Number(img.dataset.id));
-    }
-  });
-  heroSpriteEl.src = spriteUrl(state.companionId);
-  heroIdEl.textContent = state.shiny
-    ? `${formatPokemonId(state.companionId)} ✨`
-    : formatPokemonId(state.companionId);
-  updateBubbleLabel();
+const reactions=[['tap-hop','♡','tapHello'],['giggle','♫','tapGiggle'],['peek','◉','tapPeek'],['spin','✧','tapSpin'],['wiggle','❀','tapWiggle'],['stretch','☀','tapStretch']];
+let lastReaction=-1;
+$('buddyTap').onclick=()=>{
+  if(!['idle','error'].includes(state.mode))return;
+  const offset=1+Math.floor(Math.random()*(reactions.length-1));lastReaction=(lastReaction+offset)%reactions.length;
+  const [animation,mark,line]=reactions[lastReaction];trick(animation);particles(undefined,mark);caption(t(line));
+  if(reduced.matches)$('tapWord').textContent=t(line);
+};
+function scheduleIdle() {
+  clearTimeout(idleTimer);
+  if (document.hidden || reduced.matches || state.mode==='asleep') return;
+  idleTimer = setTimeout(() => {
+    if (state.mode === 'idle' && !$('buddyTap').dataset.trick && !document.querySelector('dialog[open]')) trick(['blink', 'bob', 'breathe', 'tilt', 'yawn'][Math.floor(Math.random() * 5)]);
+    scheduleIdle();
+  }, 6000 + Math.random() * 8000);
 }
-
-async function fetchAllPokemon() {
-  browserStatusEl.textContent = "Loading Pokémon…";
-  pokemonGridEl.replaceChildren();
-
-  const res = await fetch(POKEAPI_LIST);
-  if (!res.ok) throw new Error(`PokeAPI error: ${res.status}`);
-
-  const data = await res.json();
-  allPokemon = data.results.map((entry) => ({
-    name: entry.name,
-    id: parseIdFromUrl(entry.url),
-  }));
-
-  filteredPokemon = allPokemon;
-  renderPokemonGrid(filteredPokemon);
-
-  const defaultMon = allPokemon.find((p) => p.id === DEFAULT_POKEMON_ID);
-  if (defaultMon) {
-    state.companionSlug = defaultMon.name;
-    state.companionName = formatPokemonName(defaultMon.name);
-    fetchPokemonTypes(DEFAULT_POKEMON_ID)
-      .then((types) => {
-        state.companionTypes = types;
-      })
-      .catch(() => {});
-    updateBubble();
-  }
-}
-
-function getLastDiscussedTopic() {
-  for (let i = state.conversationHistory.length - 1; i >= 0; i--) {
-    if (state.conversationHistory[i].role === "user") {
-      return state.conversationHistory[i].content;
-    }
-  }
-  return "";
-}
-
-async function triggerManualQuiz() {
-  if (state.listening || state.processing || state.quizActive) return;
-
-  const topic = getLastDiscussedTopic();
-  if (!topic) {
-    transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
-    return;
-  }
-
-  if (containsNSFW(topic)) {
-    transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
-    return;
-  }
-
-  if (quizMeBtnEl) quizMeBtnEl.disabled = true;
-  bubbleTextEl.textContent = "Thinking up a quiz for you…";
-
-  try {
-    const detectedSubject = state.subject || detectSubjectFromQuestion(topic);
-    let sentiment = "neutral";
+/** Authored lines may supply a local prerecorded asset; browser speech is the fallback. */
+async function speak(text, { audioSrc = currentAudioSrc } = {}) {
+  const epoch = state.epoch; let fellBack=false;
+  const finish = () => {if(epoch===state.epoch){clearTimeout(speechTimer);if(audioStatus!=='unavailable')audioStatus=state.sound?'finished':'muted';updateDebug();if(state.mode==='speaking')setMode('idle');}};
+  setMode('speaking');audioStatus=state.sound?'starting':'muted';updateDebug();
+  if (state.sound && audioSrc?.startsWith('/assets/audio/')) {
     try {
-      sentiment = await fetchSentiment(topic);
-    } catch (err) {
-      console.warn("Sentiment fetch failed, using text-only emotion analysis", err);
+      audio = new Audio(audioSrc); audio.onended = finish; audio.onerror = () => fallback();
+      await audio.play(); return;
+    } catch { /* Fall through to local voice. */ }
+  }
+  fallback();
+  async function fallback() {
+    if (epoch !== state.epoch || fellBack) return; fellBack=true;
+    if (state.sound && 'speechSynthesis' in window) {
+      let voice;try{voice=await localVoice();}catch{ /* A missing device speech service keeps captions. */ }if(epoch!==state.epoch)return;
+      if (voice) {try{
+        const utterance = new SpeechSynthesisUtterance(text); activeUtterance = utterance;
+        utterance.voice = voice; utterance.rate = .85; utterance.onend = finish; utterance.onerror = ()=>{finish();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();};
+        audioStatus='speaking';updateDebug();speechSynthesis.resume();speechSynthesis.speak(utterance);
+        speechTimer=setTimeout(()=>{if(epoch!==state.epoch)return;speechSynthesis.cancel();finish();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();},20000);return;
+      }catch{ /* Device speech may reject playback; show captions. */ }}
     }
-    const emotion = deriveEmotionState(topic, sentiment);
-    const personality = await getCompanionPersonality();
-    const rawReply = await fetchOpenAIReply(topic, emotion, personality, detectedSubject, true);
-    const { answerText, quiz } = parseQuizFromReply(rawReply);
-
-    if (quiz) {
-      state.questionsSinceQuiz = 0;
-      showQuizCard(quiz);
-      bubbleTextEl.textContent = answerText || "Quick quiz time! 🎯";
+    if(state.sound){audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();}
+    // Silent visual speaking still gives children time to read every caption.
+    speechTimer = setTimeout(finish, Math.max(4000, Math.min(12000, text.length * 60)));
+  }
+}
+$('readAloud').onclick = () => {
+  state.sound = !state.sound; muteChosen = !state.sound; $('readAloud').setAttribute('aria-pressed', String(state.sound));
+  if (state.sound && ['idle', 'error', 'speaking'].includes(state.mode)) {cancelPending();speak($('captionText').textContent);}
+  else if (!state.sound) {
+    clearTimeout(speechTimer); audio?.pause();
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (state.mode === 'speaking') setMode('idle');
+  }
+};
+function boundedAnswer(value,options={}) {
+  if(!validAnswer(value,options)||isClassifierOutput(value))throw Object.assign(Error('answer'),{code:'INVALID_ANSWER'});
+  if (typeof value !== 'string' || !value.trim() || containsNSFW(value)) throw Error('answer');
+  if (/streak|daily goal|star counters?|point counters?|collect them all|come back tomorrow|don['’]t leave|do not leave|miss(?:ed|ing) out|you lost|hurry|countdown|time(?: is)? running out|earn.*points|lonely|abandon|ask me another|what else|follow.up|keep chatting|turn on notifications/i.test(value)) throw Error('answer');
+  const sentences = value.replace(/[*#]/g, '').split(/(?<=[.!?])\s+/).slice(0, 3);
+  if (!sentences.length || sentences.some(s => s.trim().split(/\s+/).length > 8)) throw Error('answer');
+  const answer=sentences.join(' ').trim();
+  if(answer.length>180)throw Error('answer');
+  return answer;
+}
+function mockAnswer(text) {
+  const prefix = buddyGreeting(state.buddy);
+  const content = /water|rain|cloud/i.test(text) ? 'Clouds hold tiny drops of water. Heavy drops fall as rain.'
+    : /number|two|2|count/i.test(text) ? 'Two and two make four. Four is an even number.'
+    : /moon|night/i.test(text) ? 'The moon reflects light from the sun.'
+    : 'Leaves use light to make food. Roots take in water.';
+  return prefix + content;
+}
+async function post(path, payload, controller) {
+  const timeout=setTimeout(()=>controller.abort(),Math.max(1,turnUntil-performance.now()));
+  try {
+    const response = await fetch(`/.netlify/functions/${path}`, { method: 'POST', headers:{'X-PokeLearn-Consent':'1','X-PokeLearn-Budget-Ms':String(Math.max(1,Math.floor(turnUntil-performance.now()-500))),...(payload instanceof FormData?{}:{'Content-Type':'application/json'})}, body: payload instanceof FormData ? payload : JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
+    let result;try{result=await response.json();}catch{throw Object.assign(Error('provider'),{code:response.status===429?'RATE_LIMITED':'RESTING'});}
+    if(!response.ok || ['RESTING','OFFLINE','RATE_LIMITED','TYPE_INSTEAD'].includes(result.code))throw Object.assign(Error('provider'),{code:result.code||'RESTING'});return result;
+  } catch(error){if(error instanceof TypeError && !error.code)error.code='OFFLINE';throw error;} finally { clearTimeout(timeout); }
+}
+function showProviderState(error,voice=false){
+  recordResult({...lastResult,source:null,lastError:error?.code||'REQUEST_TIMEOUT',code:error?.code||'REQUEST_TIMEOUT'});
+  const states={REQUEST_TIMEOUT:['retryReply','retry'],INVALID_ANSWER:['retryReply','retry'],OFFLINE:['offline','offline'],RATE_LIMITED:['rateLimited','rate-limited'],TYPE_INSTEAD:['tryTyping','type-instead'],PRIVATE_INPUT:['trustedAdult','resting'],CONSENT_REQUIRED:['answerRest','resting']};
+  const [line,mode]=states[error?.code]||[voice?'tryTyping':'answerRest',voice?'type-instead':'resting'];friendlyError(line,mode);
+}
+async function askQuestion(text,{continuing=false}={}) {
+  if(!MOCK&&!state.consent){pendingQuestion=text;permitted();return;}
+  if(!continuing){cancelPending();beginTurn();}state.answered = false;
+  if (MOCK && containsNSFW(text)) { friendlyError('trustedAdult'); return; }
+  const epoch = state.epoch;
+  setMode('thinking'); caption(t('thinking'));
+  try {
+    let answer;
+    if (MOCK) {
+      await new Promise(resolve => { actionTimer = setTimeout(resolve, 1400); });
+      answer = boundedAnswer(mockAnswer(text));recordResult({source:'mock',model:'none',lastError:null,code:'OK'});
     } else {
-      bubbleTextEl.textContent = answerText || "Hmm, I couldn't whip up a quiz right now. Try again!";
+      const controller = request;
+      const result=await post('chat',{question:text,buddyId:state.buddy},controller);
+      answer = boundedAnswer(readAnswer(result),{greeting:result.source==='authored'&&result.kind==='greeting'});recordResult(result);
     }
-  } catch (err) {
-    showBrainError(err);
-  } finally {
-    if (quizMeBtnEl) quizMeBtnEl.disabled = false;
+    if (epoch !== state.epoch || state.answered) return;
+    clearTimeout(turnTimer);turnUntil=0;state.answered = true; caption(answer); request = null; speak(answer);
+  } catch(error) {
+    if(epoch===state.epoch)showProviderState(error);
   }
 }
-
-function hideQuizCard() {
-  if (!quizCardEl) return;
-  state.quizActive = false;
-  state.pendingQuiz = null;
-  quizCardEl.hidden = true;
-  if (quizOptionsEl) quizOptionsEl.replaceChildren();
-  if (quizFeedbackEl) {
-    quizFeedbackEl.textContent = "";
-    quizFeedbackEl.classList.remove("feedback-reveal");
-  }
+function startMock() {
+  cancelPending(); state.answered = false; setMode('listening'); caption(t('mockListening'));
+  autoStopTimer = setTimeout(stopListening, 4500);
 }
-
-function showQuizCard(quiz) {
-  if (!quizCardEl || !quiz) return;
-  state.quizActive = true;
-  state.pendingQuiz = quiz;
-
-  quizQuestionEl.textContent = quiz.question;
-  quizFeedbackEl.textContent = "";
-  quizOptionsEl.replaceChildren();
-
-  quiz.options.forEach((label, idx) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "quiz-option";
-    btn.dataset.color = String(idx);
-    btn.dataset.letter = String.fromCharCode(65 + idx);
-    btn.textContent = label;
-    btn.addEventListener("click", () => handleQuizAnswer(btn));
-    quizOptionsEl.appendChild(btn);
-  });
-
-  quizCardEl.hidden = false;
-  quizCardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+function stopListening() {
+  clearTimeout(autoStopTimer); clearTimeout(silenceTimer);
+  if (MOCK) { askQuestion('Why do leaves need light?'); return; }
+  if (recorder?.state === 'recording') { setMode('thinking'); caption(t('thinking')); recorder.stop(); }
 }
-
-function disableQuizButtons() {
-  quizOptionsEl.querySelectorAll(".quiz-option").forEach((b) => {
-    b.disabled = true;
-  });
-}
-
-async function handleQuizAnswer(btn) {
-  if (!state.pendingQuiz || !state.quizActive) return;
-  const chosen = btn.dataset.letter;
-  const quiz = state.pendingQuiz;
-  const isCorrect = chosen === quiz.answer;
-
-  disableQuizButtons();
-  btn.classList.add(isCorrect ? "correct" : "wrong");
-  if (!isCorrect) {
-    const correctBtn = quizOptionsEl.querySelector(`.quiz-option[data-letter="${quiz.answer}"]`);
-    if (correctBtn) correctBtn.classList.add("correct");
-  }
-
-  if (isCorrect) {
-    addStar(QUIZ_REWARD_STARS);
-    triggerStarBurst();
-    quizFeedbackEl.textContent = `🎉 +${QUIZ_REWARD_STARS} stars!`;
-  } else {
-    quizFeedbackEl.textContent = "Let's hear it from your buddy…";
-  }
-  quizFeedbackEl.classList.remove("feedback-reveal");
-  void quizFeedbackEl.offsetWidth;
-  quizFeedbackEl.classList.add("feedback-reveal");
-
-  state.quizActive = false;
+async function record() {
+  if(!state.ready)return;
+  if(!MOCK&&!state.consent){pendingVoice=true;permitted();return;}
+  // Talking is a deliberate gesture to hear the reply, unless sound was switched off.
+  if (!muteChosen) { state.sound = true; $('readAloud').setAttribute('aria-pressed', 'true'); }
+  if (MOCK) { startMock(); return; }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { friendlyError(); return; }
+  cancelPending(); state.answered = false; const epoch = state.epoch;
+  setMode('permission'); caption(t('openingMic'), false);
   try {
-    const reaction = await fetchQuizReaction(quiz, chosen, isCorrect);
-    bubbleTextEl.textContent = reaction;
-    pushConversationTurn(
-      `(Quiz answer: ${chosen}. ${isCorrect ? "Correct" : "Wrong"}.)`,
-      reaction
-    );
-  } catch (err) {
-    showBrainError(err);
-  }
+    const acquired = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (epoch !== state.epoch) { acquired.getTracks().forEach(t => t.stop()); return; }
+    stream = acquired;
+    const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(m => MediaRecorder.isTypeSupported(m));
+    recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    const currentRecorder = recorder, chunks = [];
+    currentRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    currentRecorder.onerror = () => { if (epoch === state.epoch) friendlyError(); };
+    currentRecorder.onstop = async () => {
+      acquired.getTracks().forEach(t => t.stop());
+      if (epoch !== state.epoch) return;
+      closeMic();
+      if (!chunks.length) { friendlyError(); return; }
+      setMode('thinking'); caption(t('thinking'));
+      const form = new FormData(), blob = new Blob(chunks, { type: currentRecorder.mimeType || 'audio/webm' });
+      if (blob.size > 2 * 1024 * 1024) { friendlyError(); return; }
+      form.append('file', blob, blob.type.includes('mp4')?'recording.m4a':blob.type.includes('ogg')?'recording.ogg':'recording.webm');
+      form.append('model', 'valsea-transcribe');
+      form.append('language', { en: 'english', si: 'sinhala', ta: 'tamil' }[state.language]);
+      beginTurn();
+      try {
+        const result = await post('transcribe', form, request);
+        if (epoch !== state.epoch) return;
+        if(result.answer){recordResult(result);clearTimeout(turnTimer);turnUntil=0;state.answered=true;request=null;caption(boundedAnswer(readAnswer(result),{greeting:result.source==='authored'&&result.kind==='greeting'}));speak($('captionText').textContent);return;}
+        if (typeof result.text !== 'string' || result.text.trim().length < 2) throw Error('empty');
+        await askQuestion(result.text,{continuing:true});
+      } catch(error) {if(epoch===state.epoch)showProviderState(error,true);}
+    };
+    currentRecorder.start(); setMode('listening'); caption(t('listening'));
+    monitorSilence(acquired, epoch);
+    autoStopTimer = setTimeout(stopListening, 30000);
+  } catch { if (epoch === state.epoch) friendlyError(); }
 }
-
-async function fetchQuizReaction(quiz, chosen, isCorrect) {
-  const personality = await getCompanionPersonality();
-  const reactionInstruction = isCorrect
-    ? "The child just got the quiz question CORRECT. Celebrate IN CHARACTER with one short excited line and one tiny bonus fact. Do not include any QUIZ block."
-    : `The child answered ${chosen} but the correct answer was ${quiz.answer}. Gently explain why ${quiz.answer} is right IN CHARACTER, kind and encouraging in 2-3 sentences. Do not include any QUIZ block.`;
-
-  const systemPrompt = `${CHARACTER_RULES} ${personality} Always stay fully in character. ${reactionInstruction}${CHILD_SAFETY_INSTRUCTION}`;
-
-  const userContent = `Quiz question: ${quiz.question}\nOptions: ${quiz.options.join(" | ")}\nMy answer: ${chosen}\nCorrect answer: ${quiz.answer}`;
-
-  return callOpenAIChat(
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userContent },
-    ],
-    "openai-quiz"
-  );
-}
-
-function triggerStarBurst() {
-  if (!starBurstEl) return;
-  starBurstEl.hidden = false;
-  starBurstEl.replaceChildren();
-  const count = 18;
-  for (let i = 0; i < count; i++) {
-    const star = document.createElement("span");
-    star.className = "burst-star";
-    star.textContent = "⭐";
-    const angle = (Math.PI * 2 * i) / count;
-    const distance = 180 + Math.random() * 60;
-    star.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
-    star.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
-    star.style.fontSize = `${1.5 + Math.random() * 1.2}rem`;
-    starBurstEl.appendChild(star);
-  }
-  setTimeout(() => {
-    starBurstEl.replaceChildren();
-    starBurstEl.hidden = true;
-  }, 1100);
-}
-
-function openChatPanel() {
-  if (!chatPanelEl) return;
-  chatPanelEl.hidden = false;
-  chatPanelStatusEl.textContent = "";
-  setTimeout(() => chatPanelInputEl.focus(), 50);
-}
-
-function closeChatPanel() {
-  if (!chatPanelEl) return;
-  chatPanelEl.hidden = true;
-  chatPanelStatusEl.textContent = "";
-  chatPanelInputEl.value = "";
-  chatPanelSendEl.disabled = false;
-}
-
-async function handleTextChatSubmit(event) {
-  event.preventDefault();
-  const text = chatPanelInputEl.value.trim();
-  if (!text) return;
-  if (isInvalidTranscript(text)) {
-    chatPanelStatusEl.textContent = "Try a clearer question, trainer!";
-    return;
-  }
-
-  chatPanelSendEl.disabled = true;
-  chatPanelStatusEl.textContent = "Sending to your buddy…";
-
-  state.finalTranscript = text;
-  transcriptTextEl.textContent = text;
-  bubbleTextEl.textContent = "Thinking…";
-
+function monitorSilence(acquired, epoch) {
+  const began = performance.now(); let lastVoice = began, heardVoice = false;
   try {
-    await respondToFinalTranscript(text);
-    chatPanelStatusEl.textContent = "Answered! Ask another?";
-    chatPanelInputEl.value = "";
-  } catch (err) {
-    showBrainError(err);
-    chatPanelStatusEl.textContent = err && err.message ? err.message : "Something went wrong. Try again.";
-  } finally {
-    chatPanelSendEl.disabled = false;
-  }
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    analyserContext = new AudioContext();
+    const analyser = analyserContext.createAnalyser(); analyser.fftSize = 512;
+    analyserContext.createMediaStreamSource(acquired).connect(analyser);
+    analyserContext.resume().catch(() => {});
+    const samples = new Uint8Array(analyser.fftSize);
+    const poll = () => {
+      if (epoch !== state.epoch || state.mode !== 'listening') return;
+      analyser.getByteTimeDomainData(samples);
+      const rms = Math.sqrt(samples.reduce((sum, sample) => sum + ((sample - 128) / 128) ** 2, 0) / samples.length);
+      const now = performance.now();
+      if (rms > .025) { heardVoice = true; lastVoice = now; }
+      if ((heardVoice && now - lastVoice > 1800) || (!heardVoice && now - began > 12000)) { stopListening(); return; }
+      silenceTimer = setTimeout(poll, 100);
+    };
+    poll();
+  } catch { /* Tap-to-stop and recording ceiling still work without the analyser. */ }
 }
-
-micBtnEl.addEventListener("click", toggleMic);
-if (quizMeBtnEl) {
-  quizMeBtnEl.addEventListener("click", async () => {
-    if (state.listening || state.processing || state.quizActive) return;
-
-    const progressHistory = getHistory();
-    const hasConversation = state.conversationHistory.some((m) => m.role === "user");
-    const hasProgress = progressHistory.length > 0;
-
-    if (!hasConversation && !hasProgress) {
-      transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
-      return;
-    }
-
-    let topic = "";
-    let detectedSubject = state.subject;
-
-    if (hasConversation) {
-      for (let i = state.conversationHistory.length - 1; i >= 0; i--) {
-        if (state.conversationHistory[i].role === "user") {
-          topic = state.conversationHistory[i].content;
-          break;
-        }
-      }
-    }
-    if (!topic && hasProgress) {
-      const last = progressHistory[progressHistory.length - 1];
-      if (last?.question) {
-        topic = last.question;
-        detectedSubject = last.subject || detectedSubject;
-      }
-    }
-
-    if (!topic) {
-      transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
-      return;
-    }
-
-    if (containsNSFW(topic)) {
-      transcriptTextEl.textContent = "Ask me something first so I can quiz you on it! 🎮";
-      return;
-    }
-
-    quizMeBtnEl.disabled = true;
-    bubbleTextEl.textContent = "Making a quiz for you…";
-
-    try {
-      const strictSystem =
-        'You are a quiz generator. You MUST end your response with a quiz in this EXACT format on the very last line, no exceptions: QUIZ:{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A"}. The answer field must be exactly A, B, C, or D. Do not add anything after the QUIZ: line. Do not wrap in markdown or code blocks.' +
-        CHILD_SAFETY_INSTRUCTION;
-      const userMsg = `Create one short, fun, age-appropriate multiple-choice quiz question for a child aged 6-14 about this topic: "${topic}". Output ONLY the QUIZ: line in the exact format described.`;
-
-      const rawReply = await callOpenAIChat(
-        [
-          { role: "system", content: strictSystem },
-          { role: "user", content: userMsg },
-        ],
-        "openai-quiz-manual"
-      );
-      console.log("[quiz-manual] full OpenAI reply:", rawReply);
-
-      const { quiz } = parseQuizFromReply(rawReply);
-
-      if (quiz) {
-        state.questionsSinceQuiz = 0;
-        showQuizCard(quiz);
-        console.log("Quiz card shown");
-        bubbleTextEl.textContent = "Quick quiz time! 🎯";
-      } else {
-        console.error("[quiz-manual] parse returned no quiz. Full reply was:", rawReply);
-        bubbleTextEl.textContent = "Hmm, I couldn't whip up a quiz right now. Try again!";
-      }
-    } catch (err) {
-      showBrainError(err);
-    } finally {
-      quizMeBtnEl.disabled = false;
-    }
-  });
-}
-
-pokemonSearchEl.addEventListener("input", (e) => {
-  searchQuery = e.target.value;
-  applySearch();
+$('micButton').onclick = () => {
+  if (state.mode === 'listening') stopListening();
+  else if (['thinking', 'speaking'].includes(state.mode)) stopAction();
+  else record();
+};
+$('finish').onclick = () => {
+  pendingQuestion=undefined;pendingVoice=false;cancelPending(); setMode('sleeping'); caption(t('goodbye'));
+  if (!celebrated.has('pause')) { celebrated.add('pause'); particles(); }
+  const epoch = state.epoch;
+  actionTimer = setTimeout(() => {
+    if (epoch !== state.epoch) return;
+    setMode('wave');
+    actionTimer = setTimeout(() => {
+      if (epoch !== state.epoch) return;
+      setMode('asleep'); updateBuddy(false);$('sleepingBuddy').replaceChildren(buddyImage(state.buddy,{shiny:state.shiny,lazy:false})); $('endScreen').hidden = false;
+      for(const node of document.querySelectorAll('#main > header,#main > nav,.buddy-label,.buddy-space,.voice-dock')){node.inert=true;node.hidden=true;}document.querySelector('footer').hidden=true;
+      $('endTitle').textContent = t('pauseTitle'); $('endCaption').textContent = t('goodbye'); $('wakeButton').focus();
+    }, reduced.matches ? 0 : 1200);
+  }, reduced.matches ? 0 : 1400);
+};
+$('wakeButton').onclick = () => { for(const node of document.querySelectorAll('#main > header,#main > nav,.buddy-label,.buddy-space,.voice-dock')){node.inert=false;node.hidden=false;}document.querySelector('footer').hidden=false; $('endScreen').hidden = true; celebrated.delete('pause'); setMode('idle'); updateBuddy();scheduleIdle(); $('micButton').focus(); };
+addEventListener('pagehide', () => { pendingQuestion=undefined;pendingVoice=false;cancelPending(); clearTimeout(idleTimer); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelPending(); clearTimeout(idleTimer);updateBuddy(false); if (state.mode !== 'asleep') { setMode('idle'); caption(t('takeTime')); } }
+  else {updateBuddy(false);scheduleIdle();}
 });
-
-shinyToggleEl.addEventListener("click", toggleShiny);
-
-langBtns.forEach((btn) => {
-  btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
-});
-
-if (quizCloseEl) quizCloseEl.addEventListener("click", hideQuizCard);
-if (chatFabEl) {
-  chatFabEl.addEventListener("click", () => {
-    if (chatPanelEl.hidden) openChatPanel();
-    else closeChatPanel();
-  });
-}
-if (chatPanelCloseEl) chatPanelCloseEl.addEventListener("click", closeChatPanel);
-if (chatPanelFormEl) chatPanelFormEl.addEventListener("submit", handleTextChatSubmit);
-
-setupSpriteObserver();
-loadStars();
-updateProgressPanel();
-updateBubble();
-async function initApp() {
-  await loadPokemonPersonalities();
-  try {
-    await fetchAllPokemon();
-  } catch {
-    browserStatusEl.textContent = "Could not load Pokémon. Check your connection.";
-  }
-}
-
-initApp();
+addEventListener('offline', () => { if (!MOCK && ['permission', 'listening', 'thinking'].includes(state.mode)) friendlyError('offline','offline'); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { /* Captions remain available without offline setup. */ });
+restore(); updateLanguage(); scheduleIdle();
+$('micButton').disabled = true; $('changeBuddy').disabled = true;
+loadBuddies().then(() => { state.ready = true; updateBuddy(); setMode('idle'); $('changeBuddy').disabled = false; })
+  .catch(() => { state.ready = false; $('changeBuddy').disabled = false; $('micButton').disabled = false; $('chooserStatus').textContent = 'Buddy pictures need another visit online.'; });
+window.__STUDIO_QA__ = { snapshot: () => ({ lastResult:{...lastResult},audioStatus,pendingQuestion:!!pendingQuestion,pendingVoice,state: state.mode, buddyState: state.mode, buddy: state.buddy, shiny: state.shiny, moving:state.moving, reaction:lastReaction, catalog: buddyCount(), saving: state.saving, consent: state.consent, requestActive: !!request, recording: !!recorder, mock: MOCK, sound: state.sound, language: state.language, reducedMotion: reduced.matches, answered: state.answered, chooser: chooser.snapshot(), activity: activityPlayer?.snapshot(), celebrations:[...celebrated] }) };

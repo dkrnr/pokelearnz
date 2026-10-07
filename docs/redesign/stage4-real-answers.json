@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-10-06T16:42:46.729Z",
+  "synthetic": true,
+  "results": [
+    {
+      "question": "Why is the sky blue?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 936,
+      "answer": "Sunlight hits air. Air scatters blue light. Blue reaches our eyes."
+    },
+    {
+      "question": "How do plants grow?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 2985,
+      "answer": "Plants need sun, water, and soil. Roots drink water, leaves catch light. They grow tall and strong."
+    },
+    {
+      "question": "Why does it rain?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 761,
+      "answer": "Clouds hold tiny drops of water. Heavy drops fall as rain."
+    },
+    {
+      "question": "Why does the moon shine?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 808,
+      "answer": "The moon shines by reflecting sunlight. It does not make its own light. We see the bright part facing us."
+    },
+    {
+      "question": "How do rainbows form?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 564,
+      "answer": "Sunlight bends in raindrops. Light splits into colors. We see a rainbow arc."
+    },
+    {
+      "question": "Why are leaves green?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 1449,
+      "answer": "Leaves are green. They use green light to make food. Sunlight helps them grow."
+    },
+    {
+      "question": "How do fish breathe?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 1124,
+      "answer": "Fish take water in through their mouths. Gills pull oxygen from the water. Water flows out the gill slits."
+    },
+    {
+      "question": "How do birds fly?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 618,
+      "answer": "Birds flap wings. Wings push air down. Air pushes birds up."
+    },
+    {
+      "question": "Why does ice melt?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 4344,
+      "answer": "Ice gets warm. Warmth makes ice turn to water."
+    },
+    {
+      "question": "What are stars?",
+      "status": 200,
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "latencyMs": 912,
+      "answer": "Stars are bright balls of gas. They shine by burning fuel inside. They look small from far away."
+    }
+  ]
+}

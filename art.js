@@ -1,0 +1,12 @@
+/** Small original vector scenes; decorative counterparts to spoken lesson names. */
+const scenes = {
+  plants: `<path d="M45 112h110l-13 59H58z" fill="#e9814d"/><path d="M100 115V63" stroke="#24694d" stroke-width="9"/><path d="M100 88C50 89 53 41 53 41c44-3 47 47 47 47" fill="#449d62"/><path d="M102 69c3-45 47-42 47-42s3 39-47 42" fill="#91bb47"/><circle cx="158" cy="34" r="18" fill="#fbc849"/><path d="M42 142h113" stroke="#bc5735" stroke-width="4"/>`,
+  homes: `<path d="M0 125q50-22 100 0t100 0v75H0z" fill="#62bada"/><path d="M45 80q42-48 85 0-43 48-85 0" fill="#ee8c56"/><path d="m127 80 34-26v52z" fill="#ee8c56"/><circle cx="67" cy="74" r="5" fill="#283a49"/><path d="M33 171q-8-45 5-61m131 63q11-40-2-61" stroke="#337c69" stroke-width="8" fill="none"/><circle cx="146" cy="30" r="7" fill="#fff"/><circle cx="160" cy="49" r="5" fill="#fff"/>`,
+  numbers: `<rect x="28" y="105" width="61" height="61" rx="12" fill="#e88046"/><rect x="97" y="105" width="61" height="61" rx="12" fill="#368878"/><rect x="64" y="36" width="61" height="61" rx="12" fill="#e9b23e"/><circle cx="59" cy="136" r="6" fill="#fff"/><circle cx="95" cy="67" r="6" fill="#fff"/><circle cx="113" cy="123" r="6" fill="#fff"/><circle cx="143" cy="153" r="6" fill="#fff"/>`,
+  shapes: `<circle cx="55" cy="66" r="31" fill="#d294c6"/><path d="m135 31 40 68H95z" fill="#eeb946"/><rect x="64" y="111" width="65" height="65" rx="9" fill="#7c9ed6"/>`,
+  sounds: `<ellipse cx="117" cy="95" rx="36" ry="28" fill="#e4ae36"/><path d="M105 71v48m21-47v46" stroke="#614b33" stroke-width="10"/><ellipse cx="104" cy="57" rx="17" ry="28" transform="rotate(-30 104 57)" fill="#fff"/><ellipse cx="138" cy="56" rx="17" ry="28" transform="rotate(30 138 56)" fill="#fff"/><circle cx="86" cy="91" r="5" fill="#263949"/><path d="M52 110q-28 13-7 39" stroke="#97722d" stroke-width="3" fill="none" stroke-dasharray="5 5"/><text x="142" y="170" font-size="49" font-family="sans-serif" font-weight="bold" fill="#77532c">B</text>`,
+  story: `<path d="M25 50q41-13 75 7 34-20 75-7v111q-41-9-75 9-34-18-75-9z" fill="#fffdf6" stroke="#ab6686" stroke-width="6"/><path d="M100 59v106" stroke="#ab6686" stroke-width="5"/><path d="M42 82h40m-40 20h29m47 33h39" stroke="#dbc0bf" stroke-width="5" stroke-linecap="round"/><path d="M140 114V85m0 17q-22-1-21-18 20 0 21 18m0-9q19-1 19-19-19 0-19 19" fill="#51965b" stroke="#51965b" stroke-width="3"/>`,
+};
+export function art(id) {
+  return `<svg class="lesson-art" viewBox="0 0 200 200" aria-hidden="true" focusable="false">${scenes[id] || scenes.plants}</svg>`;
+}

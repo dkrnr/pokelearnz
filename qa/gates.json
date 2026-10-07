@@ -1,0 +1,288 @@
+{
+  "revision": "d65fa8221e976c8d25cb017df8d0719897442eeb299fe4474d7b0a8844eae3d4",
+  "supportsSinhala": true,
+  "sectionSelector": ".activity-content",
+  "languages": [
+    {
+      "code": "en",
+      "url": "/?lang=en",
+      "ready": "html[lang='en']"
+    },
+    {
+      "code": "si",
+      "url": "/?lang=si",
+      "ready": "html[lang='si']"
+    }
+  ],
+  "states": [
+    {
+      "name": "default"
+    },
+    {
+      "name": "experiment",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        }
+      ]
+    },
+    {
+      "name": "light",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "click",
+          "selector": "#tool-light"
+        }
+      ]
+    },
+    {
+      "name": "water",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "click",
+          "selector": "#tool-water"
+        }
+      ]
+    },
+    {
+      "name": "both",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "click",
+          "selector": "#tool-light"
+        },
+        {
+          "type": "click",
+          "selector": "#tool-water"
+        }
+      ]
+    },
+    {
+      "name": "check",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "click",
+          "selector": "#checkActivity"
+        }
+      ]
+    },
+    {
+      "name": "retry",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "click",
+          "selector": "#checkActivity"
+        },
+        {
+          "type": "click",
+          "selector": "#answer-onlyWater"
+        }
+      ]
+    },
+    {
+      "name": "recap",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "click",
+          "selector": "#checkActivity"
+        },
+        {
+          "type": "click",
+          "selector": "#answer-both"
+        }
+      ]
+    },
+    {
+      "name": "finished",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#finish"
+        }
+      ]
+    },
+    {
+      "name": "buddy-picker",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#buddyOpen"
+        }
+      ]
+    },
+    {
+      "name": "shiny",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#buddyOpen"
+        },
+        {
+          "type": "check",
+          "selector": "#shinyToggle"
+        },
+        {
+          "type": "click",
+          "selector": "#buddyDialog [data-close]"
+        }
+      ]
+    },
+    {
+      "name": "grownups",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#grownupOpen"
+        }
+      ]
+    },
+    {
+      "name": "install",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#installOpen"
+        }
+      ]
+    },
+    {
+      "name": "question-focused",
+      "actions": [
+        {
+          "type": "focus",
+          "selector": "#questionInput"
+        }
+      ]
+    },
+    {
+      "name": "grownups-about",
+      "actions": [
+        {
+          "type": "click",
+          "selector": "#grownupOpen"
+        },
+        {
+          "type": "click",
+          "selector": "#aboutSettings > summary"
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "Complete an authored plant discovery with keyboard",
+      "actions": [
+        {
+          "type": "focus",
+          "selector": "#discover-plants"
+        },
+        {
+          "type": "press",
+          "selector": "#discover-plants",
+          "value": "Enter"
+        },
+        {
+          "type": "click",
+          "selector": "#tool-light"
+        },
+        {
+          "type": "click",
+          "selector": "#tool-water"
+        },
+        {
+          "type": "click",
+          "selector": "#checkActivity"
+        },
+        {
+          "type": "click",
+          "selector": "#answer-both"
+        },
+        {
+          "type": "click",
+          "selector": "#completeActivity"
+        },
+        {
+          "type": "expect",
+          "selector": "#discovery",
+          "attribute": {
+            "name": "data-phase",
+            "value": "finished"
+          }
+        }
+      ]
+    }
+  ],
+  "scrollspy": null,
+  "noScrollspyReason": "Single finite learning workspace; no scroll chapter navigation.",
+  "maxButtonsPerSection": 3,
+  "eagerImages": [
+    {
+      "selector": "#brandMark",
+      "reason": "Initially visible identity mark"
+    },
+    {
+      "selector": "#heroSprite",
+      "reason": "Initially visible companion; reserved dimensions"
+    },
+    {
+      "selector": "#buddy-image-25",
+      "reason": "Picker images inserted only when its visible dialog opens; all six fit in the declared initial picker state"
+    },
+    {
+      "selector": "#buddy-image-1",
+      "reason": "Picker images inserted only when its visible dialog opens; all six fit in the declared initial picker state"
+    },
+    {
+      "selector": "#buddy-image-4",
+      "reason": "Picker images inserted only when its visible dialog opens; all six fit in the declared initial picker state"
+    },
+    {
+      "selector": "#buddy-image-7",
+      "reason": "Picker images inserted only when its visible dialog opens; all six fit in the declared initial picker state"
+    },
+    {
+      "selector": "#buddy-image-133",
+      "reason": "Picker images inserted only when its visible dialog opens; all six fit in the declared initial picker state"
+    },
+    {
+      "selector": "#buddy-image-143",
+      "reason": "Picker images inserted only when its visible dialog opens; all six fit in the declared initial picker state"
+    }
+  ],
+  "backgrounds": [],
+  "baselinePolicy": "first-proof",
+  "approvedSections": [],
+  "baselines": [],
+  "budgets": {
+    "initialBytes": 2097152,
+    "totalBytes": 8388608,
+    "lcpMs": 2500,
+    "cls": 0.1,
+    "longTaskMs": 500
+  }
+}

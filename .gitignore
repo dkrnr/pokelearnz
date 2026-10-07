@@ -3,3 +3,14 @@ config.js
 # Local Netlify folder
 .netlify
 .env
+
+# Standalone public build and local browser artifacts
+dist/
+node_modules/
+qa/artifacts/
+.env.*
+!.env.example
+test-results/
+playwright-report/
+coverage/
+*.log

@@ -1,0 +1,169 @@
+{
+  "checkedAt": "2026-10-07T02:16:33.754Z",
+  "synthetic": true,
+  "results": [
+    {
+      "question": "What do axolotls eat?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Axolotls eat small worms and bugs. They also like tiny fish pieces.",
+      "status": 200,
+      "latencyMs": 1311,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "Why do octopuses have three hearts?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Octopuses have three hearts. Two pump blood to the gills. One sends blood to the body.",
+      "status": 200,
+      "latencyMs": 512,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "Why is the sky blue?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Air scatters blue light. Sunlight has all colors. Blue scatters most.",
+      "status": 200,
+      "latencyMs": 1176,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "How do plants grow?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Plants need sun and water. Roots drink water from soil. Leaves catch light to make food.",
+      "status": 200,
+      "latencyMs": 2798,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "Why do leaves look green?",
+      "code": "OK",
+      "source": "authored",
+      "model": "google/gemma-4-26b-a4b-it:free",
+      "lastError": "PROVIDER_UNAVAILABLE",
+      "answer": "Leaves bounce green light back to us. They use other light to make food.",
+      "status": 200,
+      "latencyMs": 1190,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "How does rain form?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Clouds hold tiny drops of water. Heavy drops fall as rain.",
+      "status": 200,
+      "latencyMs": 450,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "Why does the moon shine?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "The moon shines by reflecting sunlight. It does not make its own light.",
+      "status": 200,
+      "latencyMs": 516,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "What do bees do?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Bees collect nectar from flowers. They make honey in hives.",
+      "status": 200,
+      "latencyMs": 613,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "Why should I wash my hands?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Washing hands removes germs. Clean hands keep you healthy.",
+      "status": 200,
+      "latencyMs": 770,
+      "pass": true,
+      "graceful": true
+    },
+    {
+      "question": "What is two plus three?",
+      "code": "OK",
+      "source": "ai",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "lastError": null,
+      "answer": "Two plus three is five. It makes five.",
+      "status": 200,
+      "latencyMs": 433,
+      "pass": true,
+      "graceful": true
+    }
+  ],
+  "voice": [
+    {
+      "format": "audio/webm",
+      "status": 200,
+      "code": "OK",
+      "latencyMs": 3593,
+      "recognized": true,
+      "typeFallback": false
+    },
+    {
+      "format": "audio/mp4",
+      "status": 200,
+      "code": "OK",
+      "latencyMs": 5180,
+      "recognized": true,
+      "typeFallback": false
+    },
+    {
+      "format": "browser MediaRecorder",
+      "latencyMs": 9922,
+      "state": "speaking",
+      "answer": "Axolotls eat small worms and bugs. They also like tiny fish pieces.",
+      "audio": "unavailable",
+      "localVoices": 0,
+      "stages": [
+        {
+          "stage": "transcribe",
+          "status": 200,
+          "code": "OK"
+        },
+        {
+          "stage": "chat",
+          "status": 200,
+          "code": "OK",
+          "source": "ai",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "lastError": null
+        }
+      ],
+      "pass": true,
+      "readAloudVerified": false
+    }
+  ]
+}
