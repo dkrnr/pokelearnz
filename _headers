@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.jsdelivr.net; font-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.jsdelivr.net; font-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-src https://app.netlify.com; frame-ancestors 'none'; object-src 'none'
   Permissions-Policy: microphone=(self), camera=(), geolocation=()
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff

@@ -6,6 +6,7 @@ import { containsNSFW } from './safety.js';
 import {readAnswer,validAnswer,isClassifierOutput} from './answer-contract.js';
 const $ = id => document.getElementById(id);
 const DEBUG = new URL(location.href).searchParams.get('debug') === '1';
+const DEMO = new URL(location.href).searchParams.get('demo') === '1';
 const TURN_MS=15000;
 const MOCK = new URL(location.href).searchParams.get('mock') === '1';
 const STORAGE = 'pokelearn_voice_v3';
@@ -14,7 +15,7 @@ const celebrated = new Set();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 let recorder, stream, analyserContext, silenceTimer, autoStopTimer, actionTimer, speechTimer, request, idleTimer, trickTimer, audio, activeUtterance;
 let setupUnlocked = false, dialogTrigger, muteChosen = false, gateExpected, currentAudioSrc, activityPlayer, activityLoading, pendingQuestion, pendingVoice=false, turnTimer, modeTimer;
-let turnUntil=0, lastResult={source:null,model:'none',lastError:null,code:null}, audioStatus='off';
+let turnUntil=0, lastResult={source:null,model:'none',lastError:null,code:null,provider:null,openrouterResetAt:0}, audioStatus='off';
 const t = key => translate(key, state.language);
 function armSound(){$('voiceHint').textContent=MOCK?t('mockHint'):t('voiceHint');if(!muteChosen){state.sound=true;$('readAloud').setAttribute('aria-pressed','true');}}
 async function localVoice(){
@@ -29,14 +30,15 @@ function beginTurn(){
  turnTimer=setTimeout(()=>{if(epoch!==state.epoch)return;recordResult({...lastResult,lastError:'REQUEST_TIMEOUT',code:'REQUEST_TIMEOUT'});friendlyError('retryReply','retry');},TURN_MS);
 }
 function recordResult(result){
- lastResult={source:['ai','authored','fallback','safety','mock'].includes(result.source)?result.source:null,model:/^[\w./:-]{1,120}$/.test(result.model||'')?result.model:'none',lastError:typeof result.lastError==='string'&&/^[A-Z_]{2,50}$/.test(result.lastError)?result.lastError:null,code:/^[A-Z_]{2,50}$/.test(result.code||'')?result.code:null};
+ lastResult={provider:['groq','openrouter'].includes(result.provider)?result.provider:null,openrouterResetAt:Number.isFinite(result.openrouterResetAt)?result.openrouterResetAt:0,source:['ai','cache','authored','fallback','safety','mock'].includes(result.source)?result.source:null,model:/^[\w./:-]{1,120}$/.test(result.model||'')?result.model:'none',lastError:typeof result.lastError==='string'&&/^[A-Z_]{2,50}$/.test(result.lastError)?result.lastError:null,code:/^[A-Z_]{2,50}$/.test(result.code||'')?result.code:null};
  updateDebug();
 }
 function updateDebug(){
+ $('demoTag').hidden=!(DEMO&&setupUnlocked);
  const panel=$('debugStatus');if(!panel)return;panel.hidden=!(DEBUG&&setupUnlocked);
- const label={ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
+ const label={cache:'Validated answer cache',ai:'Live model',authored:'Demo bank',fallback:'Kind fallback',safety:'Local safety reply',mock:'Mock'}[lastResult.source]||'No validated answer';
  $('debugSource').textContent=label;$('debugSource').dataset.source=lastResult.source||'none';
- $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Audio: ${audioStatus}`;
+ $('debugDetails').textContent=`Code: ${lastResult.lastError||lastResult.code||'none'} · Model: ${lastResult.model} · DEMO_MODE answered: ${lastResult.lastError==='DEMO_MODE'?'yes':'no'} · Provider: ${lastResult.provider||'none'} · OpenRouter: ${lastResult.openrouterResetAt>Date.now()?'daily pause until '+new Date(lastResult.openrouterResetAt).toISOString():'no daily-limit record on this response'} · Audio: ${audioStatus}`;
 }
 function restore() {
   try {
@@ -115,7 +117,6 @@ function updateBuddy(greet = true) {
   $('movingToggle').lastElementChild.textContent=t(state.moving?'moving':'artwork');
   $('buddyName').textContent = buddy.name;
   $('buddyTypes').replaceChildren(typeChips(buddy.types));
-  $('buddyTap').setAttribute('aria-label', `${t('playWith')} ${buddy.name}`);
   $('spriteHosts').textContent = spriteHosts.join(', ');
   $('tapWord').textContent = t('tapMe');
   if (greet) caption(`${buddyGreeting(state.buddy)}${t('hello')}`);
@@ -399,7 +400,7 @@ async function askQuestion(text,{continuing=false}={}) {
       answer = boundedAnswer(mockAnswer(text));recordResult({source:'mock',model:'none',lastError:null,code:'OK'});
     } else {
       const controller = request;
-      const result=await post('chat',{question:text,buddyId:state.buddy},controller);
+      const result=await post('chat',{question:text,buddyId:state.buddy,...(DEMO?{demo:true}:{})},controller);
       answer = boundedAnswer(readAnswer(result),{greeting:result.source==='authored'&&result.kind==='greeting'});recordResult(result);
     }
     if (epoch !== state.epoch || state.answered) return;

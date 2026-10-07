@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-07T05:51:03.649Z",
+  "url": "https://deploy-preview-24--pokelearnz.netlify.app/",
+  "questionsSent": 0,
+  "cspViolations": [],
+  "runtimeErrors": [],
+  "headers": {
+    "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.jsdelivr.net; font-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-src https://app.netlify.com; frame-ancestors 'none'; object-src 'none'",
+    "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "no-referrer",
+    "permissions-policy": "microphone=(self), camera=(), geolocation=()"
+  },
+  "views": [
+    "scene",
+    "chooser",
+    "activity",
+    "typing (not submitted)"
+  ],
+  "pass": true
+}

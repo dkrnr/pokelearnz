@@ -1,4 +1,5 @@
 /** Authored science answers. Specific question patterns avoid arbitrary substring matches. */
+import extras from './extra-answers.json' with {type:'json'};
 export const answerBank=Object.freeze([
  {id:'axolotl',match:/\baxolotls?\b.{0,25}\b(?:eat|food|diet)\b/i,text:'Axolotls eat worms, bugs, and small fish. They suck food into their mouths.'},
  {id:'octopus',match:/\boctop(?:us|uses)\b.{0,25}\b(?:three|3) hearts\b/i,text:'Two hearts pump blood through the gills. One pumps blood around the body. This helps it take in oxygen.'},
@@ -22,7 +23,10 @@ export const answerBank=Object.freeze([
  {id:'butterflies',match:/\b(?:caterpillars?|butterflies|butterfly)\b.{0,25}\b(?:change|grow|become|wings)\b/i,text:'A caterpillar makes a case. Its body changes inside. It comes out with wings.'},
  {id:'sleep',match:/\bwhy\b.{0,20}\b(?:sleep|tired)\b/i,text:'Sleep gives your body time to rest. It helps your brain learn and grow.'},
  {id:'math',match:/\b(?:two (?:and|plus) two|2\s*\+\s*2)\b/i,text:'Two and two make four. Four is an even number.'}
+ ,...extras.map(item=>({...item,match:{test:question=>fuzzyMatch(question,item.keywords)}}))
 ]);
 export const unknownAnswer='That one has me stumped. We can find out with a grown-up.';
-export function knownAnswer(question){return answerBank.find(item=>item.match.test(question));}
+const stem=w=>w.replace(/ies$/,'y').replace(/(ch|sh|ss|x|z)es$/,'$1').replace(/(?<!s)s$/,'');
+function fuzzyMatch(question,keywords){const words=new Set((question.normalize('NFKC').toLowerCase().match(/[a-z]+/g)||[]).map(stem));return keywords.every(k=>words.has(stem(k)));}
+export function knownAnswer(question){return answerBank.find(item=>item.question&&item.question.toLowerCase().replace(/[?!.,]/g,'')===question.toLowerCase().replace(/[?!.,]/g,''))||answerBank.find(item=>item.match.test(question));}
 export function authoredAnswer(question){return knownAnswer(question)?.text||unknownAnswer;}

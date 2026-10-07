@@ -19,6 +19,6 @@ export function validAnswer(value,{greeting=false}={}){
  return sentences.length<=3&&sentences.every(s=>/[.!?]$/.test(s)&&s.split(/\s+/).length<=8);
 }
 export function readAnswer(body){
- if(!body||!validAnswer(body.answer,{greeting:body.source==='authored'&&body.kind==='greeting'})||!['ai','authored','fallback','safety','mock'].includes(body.source))throw Object.assign(Error('Invalid answer contract'),{code:'INVALID_ANSWER'});
+ if(!body||!validAnswer(body.answer,{greeting:body.source==='authored'&&body.kind==='greeting'})||!['ai','cache','authored','fallback','safety','mock'].includes(body.source))throw Object.assign(Error('Invalid answer contract'),{code:'INVALID_ANSWER'});
  return body.answer.trim();
 }

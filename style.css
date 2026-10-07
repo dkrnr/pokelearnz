@@ -318,7 +318,7 @@ svg {
   z-index:2;
   white-space:nowrap;
 }
-.buddy-label h1 {
+.buddy-label h2 {
   font-size:30px;
   margin:0 0 7px;
   letter-spacing:-.7px;
@@ -1026,7 +1026,7 @@ dialog::backdrop {
   .buddy-label {
     top:21%;
   }
-  .buddy-label h1 {
+  .buddy-label h2 {
     font-size:25px;
   }
   .buddy-space {
@@ -1424,3 +1424,5 @@ body {
 #debugSource{padding:8px;border:3px solid currentColor;font-weight:700}
 #debugSource[data-source=ai]{background:#daf5dc;color:#145221}
 #debugSource[data-source=authored]{background:#dcecff;color:#183f75}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}footer nav{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem;margin-bottom:.5rem}footer nav a{color:inherit;padding:.3rem}.no-js-content{max-width:52rem;padding:2rem;margin:auto;color:#153b37}

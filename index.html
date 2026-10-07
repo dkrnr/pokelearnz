@@ -22,6 +22,7 @@
     <symbol id="moon-icon" viewBox="0 0 32 32"><path d="M25 22A13 13 0 0 1 11 4a13 13 0 1 0 14 18z"/><path d="m24 3 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></symbol>
   </defs></svg>
   <a class="skip-link" href="#main">Skip to your buddy</a>
+  <h1 class="sr-only">PokeLearn: little discoveries with a learning buddy</h1>
   <main id="main" tabindex="-1" class="world" data-state="idle">
     <div class="scenery" aria-hidden="true">
       <div class="sun"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div>
@@ -39,10 +40,10 @@
       <button id="movingToggle" class="sticker" aria-pressed="true"><span aria-hidden="true">↟</span><span>Moving</span></button>
       <button id="finish" class="sticker sleep"><svg aria-hidden="true"><use href="#moon-icon"/></svg><span>Sleep</span></button>
     </nav>
-    <div class="buddy-label"><h1 id="buddyName">Pikachu</h1><div id="buddyTypes"></div></div>
+    <div class="buddy-label"><h2 id="buddyName">Pikachu</h2><div id="buddyTypes"></div></div>
     <div class="buddy-space" id="buddyStage" data-state="idle">
       <span class="listening-ring" aria-hidden="true"></span><span class="buddy-shadow" aria-hidden="true"></span>
-      <button id="buddyTap" class="buddy-tap" aria-label="Play with Pikachu">
+      <button id="buddyTap" class="buddy-tap" aria-labelledby="tapWord buddyName">
         <span id="buddyCharacter" class="buddy-character"><img src="/assets/buddies/25-official.webp" width="475" height="475" alt="Pikachu" fetchpriority="high" decoding="async" crossorigin="anonymous" /></span>
         <span class="tap-label"><span aria-hidden="true">♡</span><span id="tapWord">Tap me!</span></span>
       </button>
@@ -61,7 +62,7 @@
     </div>
     <section id="endScreen" class="end-screen" hidden aria-labelledby="endTitle"><div id="sleepingBuddy" class="sleeping-buddy" aria-hidden="true"></div><h2 id="endTitle">A lovely place to pause.</h2><p id="endCaption">Rest well. Our little discovery is done.</p><button id="wakeButton" class="sticker yellow"><span aria-hidden="true">☀</span><span>Wake buddy</span></button></section>
   </main>
-  <footer>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</footer>
+  <footer><nav aria-label="Project information"><a href="/about">About</a> · <a href="/parents">Parents</a> · <a href="/privacy">Privacy</a> · <a href="/contact">Contact</a></nav>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</footer>
   <dialog id="buddyDialog" class="pokedex" aria-labelledby="chooserTitle">
     <div class="dialog-head"><div><span class="eyebrow">YOUR LITTLE LEARNING PAL</span><h2 id="chooserTitle">Choose your buddy</h2></div><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div>
     <label class="search-label" for="buddySearch">Search by name or number</label>
@@ -86,20 +87,19 @@
   <dialog id="keyboardDialog" class="keyboard-dialog" aria-labelledby="keyboardTitle"><div class="dialog-head"><h2 id="keyboardTitle">Type to your buddy</h2><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div><form id="questionForm"><label for="questionInput">What do you wonder?</label><textarea id="questionInput" maxlength="300" rows="3" placeholder="Why are leaves green?"></textarea><button class="sticker yellow" type="submit"><span aria-hidden="true">↑</span><span>Say it</span></button></form></dialog>
   <dialog id="grownupDialog" class="grownups" aria-labelledby="grownupTitle">
     <div class="dialog-head"><h2 id="grownupTitle">For grown-ups</h2><button data-close class="sticker"><span aria-hidden="true">×</span><span>Close</span></button></div>
-    <p>A voice-first learning buddy for ages 6–9. Each answer has a calm stopping point. Sound starts off. Tapping the mic allows a spoken reply, unless sound has been switched off. Captions always stay visible.</p>
+    <p id="demoTag" class="eyebrow" hidden>Demo</p><p>A voice-first learning buddy for ages 6–9. Each answer has a calm stopping point. Sound starts off. Tapping the mic allows a spoken reply, unless sound has been switched off. Captions always stay visible.</p>
     <section id="setupGate"><h3>One-time voice setup</h3><p id="gateQuestion">Grown-up check</p><label for="gateAnswer">Your answer</label><input id="gateAnswer" type="number" inputmode="numeric" /><button id="unlockSetup" class="sticker yellow"><span aria-hidden="true">⚿</span><span>Open setup</span></button><p id="gateStatus" role="status"></p></section>
     <section id="setupSettings" hidden><h3>Microphone and online questions</h3><p>After you allow this, tapping the mic records audio, then sends it for transcription and an answer. Native browser microphone permission is still required. You can withdraw this permission here.</p><label class="check-row"><input id="onlineConsent" type="checkbox" />Allow voice and online questions on this device.</label><p id="consentStatus" role="status"></p></section>
-    <h3>Questions, voice and actual providers</h3>
+    <h3>Questions, voice and actual providers</h3><nav aria-label="Project information"><a href="/about">About</a> · <a href="/parents">Parents</a> · <a href="/privacy">Privacy</a> · <a href="/contact">Contact</a></nav>
     <section id="debugStatus" hidden><h3>Last request · debug</h3><p id="debugSource"></p><p id="debugDetails"></p></section>
-    <p><strong>Netlify</strong> hosts the app and proxies requests. Audio goes to <strong>Valsea (api.valsea.ai)</strong> for transcription. Questions and voice transcripts go to <strong>OpenRouter (openrouter.ai)</strong> and its selected model host. Development uses an ordered, configurable list of free models; no free-router. Requests inherit the developer’s OpenRouter account privacy options. Free AI providers may retain or train on questions depending on those options and their policies. This app does not guarantee zero retention. A private or paid provider must be reviewed before public launch. When online answers are unavailable, common questions can use authored answers.</p>
-    <p>Valsea’s public policy states 30-day default retention, encryption in transit and at rest, sharing with necessary cloud and speech/AI sub-processors, and no use of audio to train its models without explicit written consent. Different account retention schedules may apply. We have not audited this account’s actual handling. Its terms require account users to be at least 13; suitability and consent for a service used by ages 6–9 need provider clarification before launch. See the privacy document in this repository for the policy source and remaining review.</p>
-    <p>This app does not persist or cache questions, transcripts, recordings or answers. Netlify and the providers process them; their logging/retention policies still need review. Server quotas store counts and daily salted IP hashes in Netlify Blobs; cleanup attempts remove old counters on later activity, with no automatic deletion guarantee. The simple device consent gate is not authenticated proof of parental consent. Private details detected in text are blocked before OpenRouter, but recordings may already contain them when sent to Valsea. No browser speech recognition service is used. Authored activities support prerecorded files served by this app (none recorded yet). Optional read-aloud falls back to local device speechSynthesis voices; if unavailable, captions continue silently.</p>
+    <p>This is a university demo. Children should not enter personal information. Audio goes to Valsea. Authored answers and a validated server cache answer known questions before Groq and OpenRouter free models. Free AI providers may retain or train on questions. See <a href="/parents">how it works and its safety limits</a> and <a href="/privacy">the full data flow and provider policies</a>.</p>
+    <p>The app stores no question, transcript or recording history. It stores a capped server cache of PII-screened answers, hashed question keys, quota counters and daily salted IP hashes. The cache has a 30-day serving lifetime and cleanup on later activity. The arithmetic gate is not authenticated parental consent; audio may contain private speech before text checks. Clear device data cannot delete server/provider records.</p>
     <h3>Sprite hosts and offline use</h3><p>Pokémon images load from <strong id="spriteHosts">cdn.jsdelivr.net</strong> (jsDelivr CDN for PokeAPI sprites). That host receives image requests and your IP address, never questions or recordings. Visited sprites are cached on this device, within a 12 MiB byte budget (images over 1 MiB are not cached). All 1,025 names and types work offline after first load; unvisited pictures may need internet. No full image collection is bundled.</p>
     <h3>Optional device saving</h3><label class="check-row"><input id="saveBuddies" type="checkbox" />Remember buddy and recent choices.</label><p>Permission setup is saved separately so it is only needed once. Recent buddies stay temporary unless you enable saving. No rewards or progress counters.</p><button id="clearData" class="sticker"><span aria-hidden="true">⌫</span><span>Clear device data</span></button><p id="storageStatus" role="status"></p>
     <h3>Language</h3><label for="language">Interface and transcription language</label><select id="language"><option value="en">English</option><option value="si">සිංහල · draft</option><option value="ta">தமிழ் · draft</option></select><p>New Sinhala and Tamil interface strings are machine-translated drafts awaiting human review. Buddy names and scientific answers remain in English. Transcription follows the selected language.</p>
     <h3>About this project</h3><p>Unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures or The Pokémon Company.</p>
     <p>The six scene props open finite authored activities, available offline after first load. Install through your browser’s Add to Home Screen menu. App updates become available on a later visit.</p>
   </dialog>
-  <noscript><p>Enable JavaScript to choose and talk to a buddy.</p></noscript>
+  <noscript><section class="no-js-content"><h2>A university learning demo</h2><p>PokeLearn offers six finite activities about numbers, shapes, plants, sounds, patterns and sorting. JavaScript enables the interactive scene, buddy chooser and short answers. Children should not enter personal information. Read <a href="/parents">the parent guide</a> and <a href="/privacy">privacy details</a> without JavaScript.</p></section></noscript>
 </body>
 </html>

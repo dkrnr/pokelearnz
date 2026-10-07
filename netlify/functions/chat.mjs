@@ -2,12 +2,13 @@ import {guard,readJson,brainReply,ApiError,failure,log,abortable} from '../lib/c
 import {parseQuestion,inputDecision,safeOutput,outputHasRisk,outputRiskRules,systemPrompt,strictRetryPrompt} from '../lib/child-safety.mjs';
 import {isClassifierOutput} from '../../answer-contract.js';
 import {modelTimeoutMs,brainDeadlineMs} from '../lib/models.mjs';
-import {createProvider} from '../lib/providers/index.mjs';
+import {createAnswerCache} from '../lib/answer-cache.mjs';
+import {createProviders} from '../lib/providers/index.mjs';
 import {authoredAnswer,knownAnswer,unknownAnswer} from '../lib/answer-bank.mjs';
 import {smallTalk} from '../lib/small-talk.mjs';
 import {reserveAttempt} from '../lib/quota.mjs';
 export const config={path:['/api/chat','/.netlify/functions/chat'],rateLimit:{windowLimit:10,windowSize:60,aggregateBy:['ip','domain']}};
-export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeoutMs=modelTimeoutMs,deadlineMs=brainDeadlineMs}={}){
+export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeoutMs=modelTimeoutMs,deadlineMs=brainDeadlineMs,env=process.env,cache=createAnswerCache({env}),bankLookup=knownAnswer}={}){
  // Best-effort warm-instance backoff; quotas remain authoritative and fail closed.
  let restUntil=0,restCode,restModel='none';
  return async(request,context={})=>{
@@ -26,12 +27,20 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
    if(decision)return brainReply(decision.content,decision.code);
    const talk=smallTalk(question,parsed.buddy);
    if(talk)return brainReply(talk.answer,'OK',{source:'authored',model:'none',lastError:null,kind:talk.kind});
-   if(/^(1|true|yes)$/i.test(process.env.DEMO_MODE||''))return authored('DEMO_MODE');
-   const brain=provider||createProvider({fetcher});
-   if(!brain.configured())return authored('PROVIDER_UNAVAILABLE');
-   if(Date.now()<restUntil){used=restModel;return authored(restCode);}
-   let last='RESTING';
-   for(const model of brain.models())for(let attempt=0;attempt<2;attempt++){
+   if(parsed.demo||/^(1|true|yes)$/i.test(env.DEMO_MODE||''))return authored('DEMO_MODE');
+   const cached=await abortable(()=>cache?.get(question,parsed.buddy,request),deadline);
+   if(cached)return brainReply(cached.answer,'OK',{source:'cache',model:cached.model,provider:cached.provider});
+   const bank=bankLookup(question);if(bank&&safeOutput(bank.text))return brainReply(bank.text,'OK',{source:'authored',model:'none',lastError:null});
+   const brains=provider?[provider]:createProviders({fetcher,env});
+   if(!brains.length)return authored('PROVIDER_UNAVAILABLE');
+
+   let last='PROVIDER_UNAVAILABLE',openrouterResetAt=0;
+   for(const brain of brains){
+   if(!brain.configured())continue;
+   const providerId=brain.id||'openrouter';
+   if(providerId==='openrouter'&&Date.now()<restUntil){last=restCode;used=restModel;openrouterResetAt=restCode==='DAILY_LIMIT'?restUntil:0;continue;}
+   if(providerId==='openrouter'){openrouterResetAt=await abortable(()=>cache?.status(request)||0,deadline);if(openrouterResetAt){last='DAILY_LIMIT';continue;}}
+   providerModels: for(const model of brain.models())for(let attempt=0;attempt<2;attempt++){
     if(request.signal.aborted)throw new ApiError('CANCELLED',499);
     if(deadline.aborted)return authored('REQUEST_TIMEOUT');
     await abortable(()=>reserve(request,context),deadline);used=model;const started=performance.now();
@@ -46,24 +55,28 @@ export function createChat({fetcher=fetch,provider,reserve=reserveAttempt,timeou
      }
      // Known observed factual failure: never explain green leaves as consuming green light.
      if(knownAnswer(question)?.id==='leaves'&&(/\b(?:use|eat|absorb)\b.{0,20}\bgreen light\b/i.test(text)||(/\bgreen\b/i.test(question)&&!/\b(?:reflect|reflects|bounce|bounces)\b/i.test(text))))throw new ApiError('FACT_CHECK_FAILED',502);
-     log('OK',performance.now()-started,model,'answer');return brainReply(text.trim(),'OK',{source:'ai',model});
+     await abortable(()=>cache?.put(question,parsed.buddy,{answer:text.trim(),model,provider:providerId},request),deadline);
+     log('OK',performance.now()-started,model,'answer');return brainReply(text.trim(),'OK',{source:'ai',model,provider:providerId,openrouterResetAt});
     }catch(error){
      if(request.signal.aborted)throw new ApiError('CANCELLED',499);
      last=signal.aborted?'REQUEST_TIMEOUT':error instanceof ApiError?error.code:'OFFLINE';
      log(last,performance.now()-started,model,'answer',error instanceof ApiError?error.status:502);
      if(['DAILY_LIMIT','RATE_LIMITED'].includes(last)){
-      restCode=last;restModel=model;restUntil=last==='DAILY_LIMIT'?Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate()+1):Date.now()+30000;
-      return authored(last); // One failed free-limit request, no quota-burning model cascade.
+      if(providerId==='openrouter'&&last==='DAILY_LIMIT')openrouterResetAt=await abortable(()=>cache?.markLimit(request)||Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate()+1),deadline);
+      if(providerId==='openrouter'){restCode=last;restModel=model;restUntil=openrouterResetAt||Date.now()+30000;}
+      break providerModels; // No more calls within a depleted provider; Groq has a separate quota.
      }
      if(safetyRecovery)return authored(last);
      if(last==='OUTPUT_BLOCKED'){
       safetyRecovery=true;attempt=-1;continue; // One extra attempt on this model, within existing quota/deadline.
      }
-     if(['PROVIDER_AUTH','PROVIDER_CREDIT','CLASSIFIER_OUTPUT','FACT_CHECK_FAILED'].includes(last))return authored(last);
+     if(['CLASSIFIER_OUTPUT','FACT_CHECK_FAILED'].includes(last))return authored(last);
+     if(['PROVIDER_AUTH','PROVIDER_CREDIT'].includes(last))break providerModels;
      if(deadline.aborted)return authored('REQUEST_TIMEOUT');
     }finally{clearTimeout(attemptTimer);}
    }
-   return authored(last);
+   }
+   const fallback=authored(last);if(openrouterResetAt){const body=await fallback.json();return brainReply(body.answer,'OK',{...body,openrouterResetAt});}return fallback;
   }catch(error){
    const code=request.signal.aborted?'CANCELLED':overall.signal.aborted?'REQUEST_TIMEOUT':error instanceof ApiError?error.code:'RESTING';
    if(code==='REQUEST_TIMEOUT'&&question)return authored(code);

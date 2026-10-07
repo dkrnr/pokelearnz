@@ -1,12 +1,15 @@
 import { createHash } from "node:crypto";
 import { cp, mkdir, rm, readFile, writeFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import {transform} from "esbuild";
+import {generatePages} from "./static-pages.mjs";
 const root = new URL("../", import.meta.url),
   out = new URL("../dist/", import.meta.url);
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 for (const name of [
   "index.html",
+  "content.css",
   "style.css",
   "app.js",
   "chooser.js",
@@ -42,6 +45,8 @@ for (const name of [
   });
   await cp(new URL(name, root), new URL(name, out), { recursive: true });
 }
+try{await cp(new URL("assets/social-card.png",root),new URL("assets/social-card.png",out));}catch{}
+await generatePages(out);
 const hash = createHash("sha256");
 async function digest(dir) {
   for (const entry of (await readdir(dir, { withFileTypes: true })).sort(
@@ -63,4 +68,6 @@ await writeFile(
     .replace("__BUDDY_ASSETS__", JSON.stringify(buddyAssets))
     .replace("__AUTHORED_AUDIO__", JSON.stringify(authoredAssets)),
 );
+async function minify(dir){for(const e of await readdir(dir,{withFileTypes:true})){const p=new URL(e.name+(e.isDirectory()?'/':''),dir);if(e.isDirectory())await minify(p);else if(/\.(js|css)$/.test(e.name)){const result=await transform(await readFile(p,'utf8'),{loader:e.name.endsWith('.css')?'css':'js',minify:true,target:'es2022',legalComments:'eof'});await writeFile(p,result.code);}}}
+await minify(out);
 console.log(`Built public files at ${fileURLToPath(out)}`);

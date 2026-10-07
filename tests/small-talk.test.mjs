@@ -1,5 +1,6 @@
+const createChat=options=>makeChat({...options,bankLookup:()=>null,cache:null});
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-import {smallTalk} from '../netlify/lib/small-talk.mjs';import {createChat} from '../netlify/functions/chat.mjs';
+import {smallTalk} from '../netlify/lib/small-talk.mjs';import {createChat as makeChat} from '../netlify/functions/chat.mjs';
 import {outputRiskRules,outputHasRisk,safeOutput,strictRetryPrompt,inputDecision} from '../netlify/lib/child-safety.mjs';
 import {ApiError} from '../netlify/lib/common.mjs';
 import {readAnswer,validAnswer} from '../answer-contract.js';import catalog from '../buddy-catalog.json' with {type:'json'};
