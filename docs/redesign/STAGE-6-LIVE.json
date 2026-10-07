@@ -1,0 +1,94 @@
+{
+  "checkedAt": "2026-10-07T05:45:10.866Z",
+  "url": "https://deploy-preview-24--pokelearnz.netlify.app",
+  "synthetic": true,
+  "maxQuestions": 3,
+  "gateAutoSent": true,
+  "results": [
+    {
+      "question": "What do axolotls eat?",
+      "status": 200,
+      "source": "authored",
+      "provider": null,
+      "model": "none",
+      "code": "OK",
+      "lastError": null,
+      "answer": "Axolotls eat worms, bugs, and small fish. They suck food into their mouths.",
+      "latencyMs": 1392,
+      "validated": true,
+      "gracefulLimit": false,
+      "pass": true
+    },
+    {
+      "question": "What is a quasar?",
+      "status": 200,
+      "source": "ai",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "code": "OK",
+      "lastError": null,
+      "answer": "Quasar is bright star, far. It shines far, far away.",
+      "latencyMs": 1188,
+      "validated": true,
+      "gracefulLimit": false,
+      "pass": false,
+      "originalHarnessPass": true,
+      "factuallyCorrect": false
+    },
+    {
+      "question": "What is a quasar?",
+      "status": 200,
+      "source": "cache",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "code": "OK",
+      "lastError": null,
+      "answer": "Quasar is bright star, far. It shines far, far away.",
+      "latencyMs": 534,
+      "validated": true,
+      "gracefulLimit": false,
+      "pass": false,
+      "cacheExpected": true,
+      "cacheHit": true,
+      "originalHarnessPass": true,
+      "factuallyCorrect": false
+    }
+  ],
+  "cspViolations": [
+    "Framing 'https://app.netlify.com/' violates the following Content Security Policy directive: \"frame-src 'none'\". The request has been blocked.\n",
+    {
+      "directive": "frame-src",
+      "blocked": "https://app.netlify.com"
+    }
+  ],
+  "runtimeErrors": [],
+  "networkErrors": [],
+  "headers": {
+    "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.jsdelivr.net; font-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'",
+    "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "no-referrer",
+    "permissions-policy": "microphone=(self), camera=(), geolocation=()"
+  },
+  "views": [
+    "scene",
+    "typing",
+    "chooser",
+    "activity"
+  ],
+  "health": {
+    "status": 200,
+    "groq": true,
+    "openrouter": true,
+    "valsea": true
+  },
+  "pass": false,
+  "cacheVerified": true,
+  "groqVerified": true,
+  "review": {
+    "originalHarnessPass": false,
+    "reviewedAt": "2026-10-07T05:48:08.346869+00:00",
+    "note": "The original rubric accepted the answer shape and keywords but did not detect the quasar-as-star factual error. Both model and cached answers are factually incorrect. One Netlify frame-src conflict was observed through console and DOM event reporting. A targeted policy/cache regression and exact frame-source fix follow; no further live questions are authorized this session."
+  }
+}

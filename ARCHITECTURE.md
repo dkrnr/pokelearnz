@@ -54,7 +54,7 @@ Device storage holds opt-in, language and optional buddy/recent choices. The pub
 
 ## Security and observation
 
-The origin guard allows this site's production, strict Netlify branch/preview hosts and loopback development only. The public static server never serves `.env`, `.netlify` or repository files. `_headers` restricts scripts to self, CDN images/connect requests to jsDelivr, microphone to self, and denies frames, camera and geolocation. JSON-LD is non-executable structured data.
+The origin guard allows this site's production, strict Netlify branch/preview hosts and loopback development only. The public static server never serves `.env`, `.netlify` or repository files. `_headers` restricts scripts to self, CDN images/connect requests to jsDelivr, microphone to self, and allows only the Netlify dashboard iframe for the preview toolbar, denies framing the app itself, and denies camera and geolocation. JSON-LD is non-executable structured data.
 
 Application telemetry is limited to stage, model ID, HTTP status, error code and latency. Platform/provider logs are governed separately. Grown-up-only debug shows source/model/error and the daily-limit reset on relevant responses; the child view gets readable captions.
 

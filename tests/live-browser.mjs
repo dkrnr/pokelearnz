@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';import http from 'node:http';import {spa
 const server=createServer(),requests=[];server.prependListener('request',(req,res)=>{
  if(!/^\/(api|\.netlify\/functions)\/(health|chat)$/.test(req.url))return;
  if(req.url.endsWith('/health')){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({groq:true,openrouter:true,valsea:true}));return;}
- let raw='';req.on('data',c=>raw+=c);req.on('end',()=>{requests.push(JSON.parse(raw));const first=requests.length===1;res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({code:'OK',answer:first?'Axolotls eat worms, bugs, and tiny fish.':'A quasar shines with very bright light. It lives in a distant galaxy.',source:first?'authored':requests.length===2?'ai':'cache',model:first?'none':'fixture',provider:first?null:'groq'}));});
+ let raw='';req.on('data',c=>raw+=c);req.on('end',()=>{requests.push(JSON.parse(raw));const first=requests.length===1;res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({code:'OK',answer:first?'Axolotls eat worms, bugs, and small fish. They suck food into their mouths.':'A quasar is a bright galaxy core. Hot gas near a black hole shines.',source:first?'authored':requests.length===2?'ai':'cache',model:first?'none':'fixture',provider:first?null:'groq'}));});
 });
 // Avoid dispatching fixture routes to the actual function handlers.
 const original=server.listeners('request')[1];server.removeListener('request',original);server.on('request',(req,res)=>{if(!/^\/(api|\.netlify\/functions)\/(health|chat)$/.test(req.url))original(req,res);});
