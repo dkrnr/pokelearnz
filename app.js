@@ -333,13 +333,13 @@ async function speak(text, { audioSrc = currentAudioSrc } = {}) {
   async function fallback() {
     if (epoch !== state.epoch || fellBack) return; fellBack=true;
     if (state.sound && 'speechSynthesis' in window) {
-      const voice = await localVoice();if(epoch!==state.epoch)return;
-      if (voice) {
+      let voice;try{voice=await localVoice();}catch{ /* A missing device speech service keeps captions. */ }if(epoch!==state.epoch)return;
+      if (voice) {try{
         const utterance = new SpeechSynthesisUtterance(text); activeUtterance = utterance;
         utterance.voice = voice; utterance.rate = .85; utterance.onend = finish; utterance.onerror = ()=>{finish();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();};
         audioStatus='speaking';updateDebug();speechSynthesis.resume();speechSynthesis.speak(utterance);
         speechTimer=setTimeout(()=>{if(epoch!==state.epoch)return;speechSynthesis.cancel();finish();audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();},20000);return;
-      }
+      }catch{ /* Device speech may reject playback; show captions. */ }}
     }
     if(state.sound){audioStatus='unavailable';$('voiceHint').textContent=t('audioSilent');updateDebug();}
     // Silent visual speaking still gives children time to read every caption.
