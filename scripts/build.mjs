@@ -12,6 +12,7 @@ for (const name of [
   "content.css",
   "style.css",
   "app.js",
+  "voice.js",
   "chooser.js",
   "activity-player.js",
   "authored-audio.js",
