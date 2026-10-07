@@ -6,6 +6,8 @@ A voice-first game for ages 6–9: choose any of 1,025 Pokémon as a teacher, ta
 
 The UI checkpoint is on `redesign/kid-friendly-v3`. This `backend/hardening` branch starts from that checkpoint and adds separately reviewable server safeguards. No deployment/merge or Netlify setting change. See [Stage 4 development and repository report](docs/redesign/V3-STAGE-4.md), [Part A coverage/screens/performance](docs/redesign/V3-STAGE-3-A.md) and [Part B findings/tests/limits](docs/redesign/V3-STAGE-3-B.md).
 
+The active checkout is `/performance/projects/dkrnr/pokelearnz`. See [the migration checkpoint](docs/REPOSITORY-MIGRATION.md) for the Netlify connection, local-work transfer, verification and remaining limits.
+
 ## Local scene / mock
 
 Node **22.12+**:
