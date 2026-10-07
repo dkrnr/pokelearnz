@@ -1,3 +1,4 @@
+import {readBrowserAnswer} from './browser-answer.mjs';
 /** One explicit live check, hard-capped at three synthetic questions. Never deploys or loads .env. */
 import fs from 'node:fs/promises';import path from 'node:path';import {chromium} from 'playwright';import {assessLiveResult} from './live-result.mjs';
 const supplied=process.argv[2];if(!supplied)throw Error('Usage: npm run test:live -- <url>');
@@ -28,7 +29,7 @@ try{
   let row;
   try{
    const response=await responsePromise;await page.waitForFunction(()=>['speaking','error'].includes(window.__STUDIO_QA__.snapshot().state),{}, {timeout:18000});
-   const body=await response.json(),caption=await page.locator('#captionText').innerText();row={question,status:response.status(),source:body.source||'unknown',provider:body.provider||null,model:body.model||'none',code:body.code||'UNKNOWN',lastError:body.lastError||null,answer:caption,latencyMs:Math.round(performance.now()-began),...assessLiveResult({body,status:response.status(),caption,facts})};
+   const body=await readBrowserAnswer(response);await page.waitForFunction(()=>window.__STUDIO_QA__.snapshot().answered||window.__STUDIO_QA__.snapshot().state==='error');const caption=await page.locator('#captionText').innerText();row={question,status:response.status(),source:body.source||'unknown',provider:body.provider||null,model:body.model||'none',code:body.code||'UNKNOWN',lastError:body.lastError||null,answer:caption,latencyMs:Math.round(performance.now()-began),...assessLiveResult({body,status:response.status(),caption,facts})};
    if(index===0)report.gateAutoSent=sent===1;
    if(index===2&&['ai','cache'].includes(report.results[1]?.source)){row.cacheExpected=true;row.cacheHit=body.source==='cache';row.pass&&=row.cacheHit;}
   }catch(error){row={question,pass:false,code:/ERR_CONNECTION_CLOSED|ERR_CONNECTION_RESET|ERR_SSL/.exec(error.message)?.[0]||'UI_OR_RESPONSE_TIMEOUT'};}
